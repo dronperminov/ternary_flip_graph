@@ -1,60 +1,11 @@
-#pragma once
-
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <random>
-#include <string>
-#include <algorithm>
-
-#include "../entities/ternary_vector.hpp"
-#include "../entities/flip_set.h"
-
-typedef uint16_t vec_type;
-
-class TernaryScheme {
-    int dimension[3];
-    int elements[3];
-    int rank;
-    std::vector<TernaryVector<vec_type>> uvw[3];
-    FlipSet flips[3];
-
-    std::uniform_int_distribution<int> boolDistribution;
-    std::uniform_int_distribution<int> ijkDistribution;
-public:
-    TernaryScheme();
-
-    void initializeNaive(int n1, int n2, int n3);
-    bool read(const std::string &path);
-
-    int getRank() const;
-    int getComplexity() const;
-    int getDimension(int index) const;
-
-    bool tryFlip(std::mt19937 &generator, bool checkReduce = true);
-    bool tryPlus(std::mt19937 &generator);
-    bool tryReduce();
-    void save(const std::string &path) const;
-
-    bool validate() const;
-private:
-    void initFlips();
-    void removeZeroes();
-    void removeAt(int index);
-    void addTriplet(int i, int j, int k, const TernaryVector<vec_type> &u, const TernaryVector<vec_type> &v, const TernaryVector<vec_type> &w);
-
-    void flip(int i, int j, int k, int index1, int index2, bool checkReduce);
-    bool plus(int i, int j, int k, int index1, int index2, int variant);
-    void reduceAdd(int i, int index1, int index2);
-    void reduceSub(int i, int index1, int index2);
-
-    bool fixSigns();
-    bool validateEquation(int i, int j, int k) const;
-    void saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<vec_type>> &vectors) const;
-};
+#include "ternary_scheme.h"
 
 TernaryScheme::TernaryScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
 
+}
+
+TernaryScheme::TernaryScheme(const TernaryScheme &scheme) {
+    copy(scheme);
 }
 
 void TernaryScheme::initializeNaive(int n1, int n2, int n3) {
@@ -95,9 +46,28 @@ bool TernaryScheme::read(const std::string &path) {
 
     f >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
 
+    int maxSize = sizeof(vec_type) * 8;
+
     for (int i = 0; i < 3; i++) {
         elements[i] = dimension[i] * dimension[(i + 1) % 3];
 
+        if (dimension[i] < 1 || dimension[i] > maxSize) {
+            std::cout << "Invalid dimension \"" << dimension[i] << "\". Possible dimensions are 1 .. " << maxSize << std::endl;
+            return false;
+        }
+
+        if (elements[i] < 1 || elements[i] > maxSize) {
+            std::cout << "Invalid matrix elements count \"" << elements[i] << "\". Possible counts are 1 .. " << maxSize << std::endl;
+            return false;
+        }
+    }
+
+    if (rank < 1) {
+        std::cout << "Invalid rank \"" << rank << "\"" << std::endl;
+        return false;
+    }
+
+    for (int i = 0; i < 3; i++) {
         for (int index = 0; index < rank; index++) {
             TernaryVector<vec_type> vector(elements[i]);
             f >> vector;
@@ -112,6 +82,7 @@ bool TernaryScheme::read(const std::string &path) {
         return false;
     }
 
+    initFlips();
     return true;
 }
 
@@ -133,8 +104,16 @@ int TernaryScheme::getDimension(int index) const {
     return dimension[index];
 }
 
-bool TernaryScheme::tryFlip(std::mt19937 &generator, bool checkReduce) {
+int TernaryScheme::getAvailableFlips() const {
+    return flips[0].size() + flips[1].size() + flips[2].size();
+}
+
+bool TernaryScheme::tryFlip(std::mt19937 &generator) {
     size_t size = flips[0].size() + flips[1].size() + flips[2].size();
+
+    if (!size)
+        return false;
+
     std::vector<int> indices(size);
 
     for (size_t i = 0; i < size; i++)
@@ -175,19 +154,17 @@ bool TernaryScheme::tryFlip(std::mt19937 &generator, bool checkReduce) {
 
         if (uvw[j][index1].limitSum(uvw[j][index2], j != 2) && uvw[k][index2].limitSub(uvw[k][index1], false)) {
             if (k == 2 || uvw[k][index2].positiveFirstNonZeroSub(uvw[k][index1]))
-                flip(i, j, k, index1, index2, checkReduce);
+                flip(i, j, k, index1, index2);
             else
-                flip(i, j, k, index2, index1, checkReduce);
-
+                flip(i, j, k, index2, index1);
             return true;
         }
 
         if (uvw[k][index1].limitSum(uvw[k][index2], k != 2) && uvw[j][index2].limitSub(uvw[j][index1], false)) {
             if (j == 2 || uvw[j][index2].positiveFirstNonZeroSub(uvw[j][index1]))
-                flip(i, k, j, index1, index2, checkReduce);
+                flip(i, k, j, index1, index2);
             else
-                flip(i, k, j, index2, index1, checkReduce);
-
+                flip(i, k, j, index2, index1);
             return true;
         }
     }
@@ -208,11 +185,7 @@ bool TernaryScheme::tryPlus(std::mt19937 &generator) {
     int permutation[3] = {0, 1, 2};
     std::shuffle(permutation, permutation + 3, generator);
 
-    int i = permutation[0];
-    int j = permutation[1];
-    int k = permutation[2];
-
-    return plus(i, j, k, index1, index2, ijkDistribution(generator));
+    return plus(permutation[0], permutation[1], permutation[2], index1, index2, ijkDistribution(generator));
 }
 
 bool TernaryScheme::tryReduce() {
@@ -271,7 +244,7 @@ bool TernaryScheme::validate() const {
     return true;
 }
 
-void TernaryScheme::save(const std::string &path) const {
+void TernaryScheme::saveJson(const std::string &path) const {
     std::ofstream f(path);
 
     f << "{" << std::endl;
@@ -289,6 +262,43 @@ void TernaryScheme::save(const std::string &path) const {
     f << "}" << std::endl;
 
     f.close();
+}
+
+void TernaryScheme::saveTxt(const std::string &path) const {
+    std::ofstream f(path);
+
+    f << dimension[0] << " " << dimension[1] << " " << dimension[2] << " " << rank << std::endl;
+    
+    for (int i = 0; i < 3; i++) {
+        for (int index = 0; index < rank; index++)
+            for (int j = 0; j < elements[i]; j++)
+                f << uvw[i][index][j] << " ";
+
+        f << std::endl;
+    }
+
+    f.close();
+}
+
+void TernaryScheme::copy(const TernaryScheme &scheme) {
+    rank = scheme.rank;
+
+    for (int i = 0; i < 3; i++) {
+        dimension[i] = scheme.dimension[i];
+        elements[i] = scheme.elements[i];
+        uvw[i].clear();
+
+        for (int index = 0; index < rank; index++) {
+            TernaryVector<vec_type> vector(elements[i]);
+
+            for (int j = 0; j < elements[i]; j++)
+                vector.set(j, scheme.uvw[i][index][j]);
+
+            uvw[i].emplace_back(vector);
+        }
+    }
+
+    initFlips();
 }
 
 void TernaryScheme::initFlips() {
@@ -328,7 +338,7 @@ void TernaryScheme::addTriplet(int i, int j, int k, const TernaryVector<vec_type
     rank++;
 }
 
-void TernaryScheme::flip(int i, int j, int k, int index1, int index2, bool checkReduce) {
+void TernaryScheme::flip(int i, int j, int k, int index1, int index2) {
     uvw[j][index1] += uvw[j][index2];
     uvw[k][index2] -= uvw[k][index1];
 
@@ -346,57 +356,15 @@ void TernaryScheme::flip(int i, int j, int k, int index1, int index2, bool check
 
     for (int index = 0; index < rank; index++) {
         if (index != index1 && uvw[j][index] == uvw[j][index1]) {
-            if (checkReduce) {
-                int cmpI = uvw[i][index].compare(uvw[i][index1]);
-                if (cmpI == 1 && uvw[k][index].limitSum(uvw[k][index1], k != 2)) {
-                    reduceAdd(k, index, index1);
-                    return;
-                }
-
-                if (i == 2 && cmpI == -1 && uvw[k][index].limitSub(uvw[k][index1], true)) {
-                    reduceSub(k, index, index1);
-                    return;
-                }
-
-                int cmpK = uvw[k][index].compare(uvw[k][index1]);
-                if (cmpK == 1 && uvw[i][index].limitSum(uvw[i][index1], i != 2)) {
-                    reduceAdd(i, index, index1);
-                    return;
-                }
-
-                if (k == 2 && cmpK == -1 && uvw[i][index].limitSub(uvw[i][index1], true)) {
-                    reduceSub(i, index, index1);
-                    return;
-                }
-            }
+            if (checkFlipReduce(i, k, index, index1))
+                return;
 
             flips[j].add(index1, index);
         }
 
         if (index != index2 && uvw[k][index] == uvw[k][index2]) {
-            if (checkReduce) {
-                int cmpI = uvw[i][index].compare(uvw[i][index2]);
-                if (cmpI == 1 && uvw[j][index].limitSum(uvw[j][index2], j != 2)) {
-                    reduceAdd(j, index, index2);
-                    return;
-                }
-
-                if (i == 2 && cmpI == -1 && uvw[j][index].limitSub(uvw[j][index2], true)) {
-                    reduceSub(j, index, index2);
-                    return;
-                }
-
-                int cmpJ = uvw[j][index].compare(uvw[j][index2]);
-                if (cmpJ == 1 && uvw[i][index].limitSum(uvw[i][index2], i != 2)) {
-                    reduceAdd(i, index, index2);
-                    return;
-                }
-
-                if (j == 2 && cmpJ == -1 && uvw[i][index].limitSub(uvw[i][index2], true)) {
-                    reduceSub(i, index, index2);
-                    return;
-                }
-            }
+            if (checkFlipReduce(i, j, index, index2))
+                return;
 
             flips[k].add(index2, index);
         }
@@ -466,6 +434,38 @@ void TernaryScheme::reduceSub(int i, int index1, int index2) {
         removeZeroes();
 
     initFlips();
+}
+
+bool TernaryScheme::checkFlipReduce(int i, int j, int index1, int index2) {
+    int cmpI = uvw[i][index1].compare(uvw[i][index2]);
+    if (cmpI == 1 && uvw[j][index1].limitSum(uvw[j][index2], j != 2)) {
+        reduceAdd(j, index1, index2);
+        return true;
+    }
+
+    if (cmpI == -1 && uvw[j][index1].limitSub(uvw[j][index2], false)) {
+        if (j == 2 || uvw[j][index1].positiveFirstNonZeroSub(uvw[j][index2]))
+            reduceSub(j, index1, index2);
+        else
+            reduceSub(j, index2, index1);
+        return true;
+    }
+
+    int cmpJ = uvw[j][index1].compare(uvw[j][index2]);
+    if (cmpJ == 1 && uvw[i][index1].limitSum(uvw[i][index2], i != 2)) {
+        reduceAdd(i, index1, index2);
+        return true;
+    }
+
+    if (cmpJ == -1 && uvw[i][index1].limitSub(uvw[i][index2], false)) {
+        if (i == 2 || uvw[i][index1].positiveFirstNonZeroSub(uvw[i][index2]))
+            reduceSub(i, index1, index2);
+        else
+            reduceSub(i, index2, index1);
+        return true;
+    }
+
+    return false;
 }
 
 bool TernaryScheme::fixSigns() {

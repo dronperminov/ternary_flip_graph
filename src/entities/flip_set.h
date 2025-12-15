@@ -12,6 +12,7 @@ public:
     void add(uint32_t index1, uint32_t index2);
     void remove(uint32_t index1, uint32_t index2);
     void remove(uint32_t index);
+    bool contains(uint32_t index1, uint32_t index2) const;
     void clear();
 
     uint32_t index1(size_t i) const;
