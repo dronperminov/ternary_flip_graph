@@ -49,7 +49,8 @@ int main(int argc, char **argv) {
     TernaryScheme scheme;
 
     if (inputPath == "NULL") {
-        scheme.initializeNaive(n1, n2, n3);
+        if (!scheme.initializeNaive(n1, n2, n3))
+            return -1;
     }
     else if (!scheme.read(inputPath)) {
         return -1;

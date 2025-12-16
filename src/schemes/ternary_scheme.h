@@ -11,7 +11,7 @@
 #include "../entities/ternary_vector.hpp"
 #include "../entities/flip_set.h"
 
-typedef uint32_t vec_type;
+typedef uint64_t vec_type;
 
 class TernaryScheme {
     int dimension[3];
@@ -26,7 +26,7 @@ public:
     TernaryScheme();
     TernaryScheme(const TernaryScheme &scheme);
 
-    void initializeNaive(int n1, int n2, int n3);
+    bool initializeNaive(int n1, int n2, int n3);
     bool read(const std::string &path);
 
     int getRank() const;
@@ -56,6 +56,7 @@ private:
     bool checkFlipReduce(int j, int k, int index1, int index2);
 
     bool fixSigns();
+    bool validateDimensions() const;
     bool validateEquation(int i, int j, int k) const;
     void saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<vec_type>> &vectors) const;
 };

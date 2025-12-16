@@ -8,7 +8,7 @@ TernaryScheme::TernaryScheme(const TernaryScheme &scheme) {
     copy(scheme);
 }
 
-void TernaryScheme::initializeNaive(int n1, int n2, int n3) {
+bool TernaryScheme::initializeNaive(int n1, int n2, int n3) {
     dimension[0] = n1;
     dimension[1] = n2;
     dimension[2] = n3;
@@ -18,6 +18,9 @@ void TernaryScheme::initializeNaive(int n1, int n2, int n3) {
     elements[2] = n3 * n1;
 
     rank = n1 * n2 * n3;
+
+    if (!validateDimensions())
+        return false;
 
     uvw[0].clear();
     uvw[1].clear();
@@ -34,6 +37,7 @@ void TernaryScheme::initializeNaive(int n1, int n2, int n3) {
     }
 
     initFlips();
+    return true;
 }
 
 bool TernaryScheme::read(const std::string &path) {
@@ -46,26 +50,11 @@ bool TernaryScheme::read(const std::string &path) {
 
     f >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
 
-    int maxSize = sizeof(vec_type) * 8;
-
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
         elements[i] = dimension[i] * dimension[(i + 1) % 3];
 
-        if (dimension[i] < 1 || dimension[i] > maxSize) {
-            std::cout << "Invalid dimension \"" << dimension[i] << "\". Possible dimensions are 1 .. " << maxSize << std::endl;
-            return false;
-        }
-
-        if (elements[i] < 1 || elements[i] > maxSize) {
-            std::cout << "Invalid matrix elements count \"" << elements[i] << "\". Possible counts are 1 .. " << maxSize << std::endl;
-            return false;
-        }
-    }
-
-    if (rank < 1) {
-        std::cout << "Invalid rank \"" << rank << "\"" << std::endl;
+    if (!validateDimensions())
         return false;
-    }
 
     for (int i = 0; i < 3; i++) {
         for (int index = 0; index < rank; index++) {
@@ -495,6 +484,29 @@ bool TernaryScheme::fixSigns() {
     }
 
     return changed;
+}
+
+bool TernaryScheme::validateDimensions() const {
+    int maxSize = sizeof(vec_type) * 8;
+
+    for (int i = 0; i < 3; i++) {
+        if (dimension[i] < 1 || dimension[i] > maxSize) {
+            std::cout << "Invalid dimension \"" << dimension[i] << "\". Possible dimensions are 1 .. " << maxSize << std::endl;
+            return false;
+        }
+
+        if (elements[i] < 1 || elements[i] > maxSize) {
+            std::cout << "Invalid matrix elements count \"" << elements[i] << "\". Possible counts are 1 .. " << maxSize << std::endl;
+            return false;
+        }
+    }
+
+    if (rank < 1) {
+        std::cout << "Invalid rank \"" << rank << "\"" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 bool TernaryScheme::validateEquation(int i, int j, int k) const {
