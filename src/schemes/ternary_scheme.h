@@ -19,6 +19,7 @@ class TernaryScheme {
     int rank;
     std::vector<TernaryVector<vec_type>> uvw[3];
     FlipSet flips[3];
+    std::vector<int> indices;
 
     std::uniform_int_distribution<int> boolDistribution;
     std::uniform_int_distribution<int> ijkDistribution;
@@ -36,6 +37,8 @@ public:
 
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
+    bool trySplit(std::mt19937 &generator);
+    bool tryExpand(std::mt19937 &generator);
     bool tryReduce();
 
     void saveJson(const std::string &path) const;
@@ -51,6 +54,7 @@ private:
 
     void flip(int i, int j, int k, int index1, int index2);
     bool plus(int i, int j, int k, int index1, int index2, int variant);
+    void split(int i, int j, int k, int index1, int index2);
     void reduceAdd(int i, int index1, int index2);
     void reduceSub(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2);

@@ -103,15 +103,15 @@ bool TernaryScheme::tryFlip(std::mt19937 &generator) {
     if (!size)
         return false;
 
-    std::vector<int> indices(size);
-
+    indices.resize(size);
     for (size_t i = 0; i < size; i++)
         indices[i] = i;
 
-    std::shuffle(indices.begin(), indices.end(), generator);
-
     for (size_t p = 0; p < size; p++) {
-        size_t index = indices[p];
+        size_t q = generator() % (size - p);
+        size_t index = indices[q];
+        std::swap(indices[p], indices[q]);
+
         int i, j, k;
 
         if (index < flips[0].size()) {
@@ -175,6 +175,34 @@ bool TernaryScheme::tryPlus(std::mt19937 &generator) {
     std::shuffle(permutation, permutation + 3, generator);
 
     return plus(permutation[0], permutation[1], permutation[2], index1, index2, ijkDistribution(generator));
+}
+
+bool TernaryScheme::trySplit(std::mt19937 &generator) {
+    std::uniform_int_distribution<int> distribution(0, rank - 1);
+    int index1, index2, i;
+
+    do {
+        index1 = distribution(generator);
+        index2 = distribution(generator);
+        i = ijkDistribution(generator);
+    } while (index1 == index2 || uvw[i][index1] == uvw[i][index2]);
+
+    if (!uvw[i][index1].limitSub(uvw[i][index2], false))
+        return false;
+
+    if (i == 2 || uvw[i][index1].positiveFirstNonZeroSub(uvw[i][index2]))
+        split(i, (i + 1) % 3, (i + 2) % 3, index1, index2);
+    else
+        split(i, (i + 1) % 3, (i + 2) % 3, index2, index1);
+
+    return true;
+}
+
+bool TernaryScheme::tryExpand(std::mt19937 &generator) {
+    if (boolDistribution(generator))
+        return tryPlus(generator);
+
+    return trySplit(generator);
 }
 
 bool TernaryScheme::tryReduce() {
@@ -399,6 +427,19 @@ bool TernaryScheme::plus(int i, int j, int k, int index1, int index2, int varian
     fixSigns();
     initFlips();
     return true;
+}
+
+void TernaryScheme::split(int i, int j, int k, int index1, int index2) {
+    TernaryVector<vec_type> u = uvw[i][index1] - uvw[i][index2];
+    TernaryVector<vec_type> v(uvw[j][index1]);
+    TernaryVector<vec_type> w(uvw[k][index1]);
+
+    addTriplet(i, j, k, u, v, w);
+    uvw[i][index1] = uvw[i][index2];
+
+    removeZeroes();
+    fixSigns();
+    initFlips();
 }
 
 void TernaryScheme::reduceAdd(int i, int index1, int index2) {
