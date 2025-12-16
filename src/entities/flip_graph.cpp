@@ -94,13 +94,13 @@ void FlipGraph::report(int iteration, std::chrono::high_resolution_clock::time_p
     std::cout << "+-------------------------------------------------------------------+" << std::endl;
     std::cout << "| ";
     std::cout << "dimension: " << std::setw(8) << prettyDimension(schemes[indices[0]]) << "   ";
-    std::cout << "flip iters: " << std::setw(7) << flipIterations << "   ";
+    std::cout << "flip iters: " << std::setw(7) << prettyInt(flipIterations) << "   ";
     std::cout << std::right << std::setw(21) << ("best rank: " + std::to_string(bestRank));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
     std::cout << "threads: " << std::setw(10) << threads << "   ";
-    std::cout << "plus iters: " << std::setw(7) << plusIterations << "   ";
+    std::cout << "plus iters: " << std::setw(7) << prettyInt(plusIterations) << "   ";
     std::cout << std::right << std::setw(21) << ("iteration: " + std::to_string(iteration));
     std::cout << " |" << std::endl;
 
