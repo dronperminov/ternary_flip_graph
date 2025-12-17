@@ -1,14 +1,83 @@
-#include "ternary_scheme.h"
+#pragma once
 
-TernaryScheme::TernaryScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <random>
+#include <string>
+#include <cassert>
+#include <algorithm>
+
+#include "../entities/ternary_vector.hpp"
+#include "../entities/flip_set.h"
+
+template <typename T>
+class TernaryScheme {
+    int dimension[3];
+    int elements[3];
+    int rank;
+    std::vector<TernaryVector<T>> uvw[3];
+    FlipSet flips[3];
+    std::vector<int> indices;
+
+    std::uniform_int_distribution<int> boolDistribution;
+    std::uniform_int_distribution<int> ijkDistribution;
+public:
+    TernaryScheme();
+    TernaryScheme(const TernaryScheme<T> &scheme);
+
+    bool initializeNaive(int n1, int n2, int n3);
+    bool read(const std::string &path);
+
+    int getRank() const;
+    int getComplexity() const;
+    int getDimension(int index) const;
+    std::string getRing() const;
+    int getAvailableFlips() const;
+
+    bool tryFlip(std::mt19937 &generator);
+    bool tryPlus(std::mt19937 &generator);
+    bool trySplit(std::mt19937 &generator);
+    bool tryExpand(std::mt19937 &generator);
+    bool tryReduce();
+
+    void saveJson(const std::string &path) const;
+    void saveTxt(const std::string &path) const;
+    void copy(const TernaryScheme<T> &scheme);
+
+    bool validate() const;
+private:
+    void initFlips();
+    void removeZeroes();
+    void removeAt(int index);
+    void addTriplet(int i, int j, int k, const TernaryVector<T> &u, const TernaryVector<T> &v, const TernaryVector<T> &w);
+
+    void flip(int i, int j, int k, int index1, int index2);
+    bool plus(int i, int j, int k, int index1, int index2, int variant);
+    void split(int i, int j, int k, int index1, int index2);
+    void reduceAdd(int i, int index1, int index2);
+    void reduceSub(int i, int index1, int index2);
+    bool checkFlipReduce(int j, int k, int index1, int index2);
+
+    bool fixSigns();
+    bool validateDimensions() const;
+    bool validateEquation(int i, int j, int k) const;
+    void saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<T>> &vectors) const;
+};
+
+
+template <typename T>
+TernaryScheme<T>::TernaryScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
 
 }
 
-TernaryScheme::TernaryScheme(const TernaryScheme &scheme) {
+template <typename T>
+TernaryScheme<T>::TernaryScheme(const TernaryScheme<T> &scheme) {
     copy(scheme);
 }
 
-bool TernaryScheme::initializeNaive(int n1, int n2, int n3) {
+template <typename T>
+bool TernaryScheme<T>::initializeNaive(int n1, int n2, int n3) {
     dimension[0] = n1;
     dimension[1] = n2;
     dimension[2] = n3;
@@ -29,9 +98,9 @@ bool TernaryScheme::initializeNaive(int n1, int n2, int n3) {
     for (int i = 0; i < n1; i++) {
         for (int j = 0; j < n3; j++) {
             for (int k = 0; k < n2; k++) {
-                uvw[0].emplace_back(TernaryVector<vec_type>(n1 * n2, i * n2 + k));
-                uvw[1].emplace_back(TernaryVector<vec_type>(n2 * n3, k * n3 + j));
-                uvw[2].emplace_back(TernaryVector<vec_type>(n3 * n1, j * n1 + i));
+                uvw[0].emplace_back(TernaryVector<T>(n1 * n2, i * n2 + k));
+                uvw[1].emplace_back(TernaryVector<T>(n2 * n3, k * n3 + j));
+                uvw[2].emplace_back(TernaryVector<T>(n3 * n1, j * n1 + i));
             }
         }
     }
@@ -40,7 +109,8 @@ bool TernaryScheme::initializeNaive(int n1, int n2, int n3) {
     return true;
 }
 
-bool TernaryScheme::read(const std::string &path) {
+template <typename T>
+bool TernaryScheme<T>::read(const std::string &path) {
     std::ifstream f(path);
 
     if (!f) {
@@ -58,7 +128,7 @@ bool TernaryScheme::read(const std::string &path) {
 
     for (int i = 0; i < 3; i++) {
         for (int index = 0; index < rank; index++) {
-            TernaryVector<vec_type> vector(elements[i]);
+            TernaryVector<T> vector(elements[i]);
             f >> vector;
             uvw[i].emplace_back(vector);
         }
@@ -75,11 +145,13 @@ bool TernaryScheme::read(const std::string &path) {
     return true;
 }
 
-int TernaryScheme::getRank() const {
+template <typename T>
+int TernaryScheme<T>::getRank() const {
     return rank;
 }
 
-int TernaryScheme::getComplexity() const {
+template <typename T>
+int TernaryScheme<T>::getComplexity() const {
     int count = 0;
 
     for (int i = 0; i < 3; i++)
@@ -89,15 +161,23 @@ int TernaryScheme::getComplexity() const {
     return count - 2 * rank - elements[2];
 }
 
-int TernaryScheme::getDimension(int index) const {
+template <typename T>
+int TernaryScheme<T>::getDimension(int index) const {
     return dimension[index];
 }
 
-int TernaryScheme::getAvailableFlips() const {
+template <typename T>
+std::string TernaryScheme<T>::getRing() const {
+    return "ZT";
+}
+
+template <typename T>
+int TernaryScheme<T>::getAvailableFlips() const {
     return flips[0].size() + flips[1].size() + flips[2].size();
 }
 
-bool TernaryScheme::tryFlip(std::mt19937 &generator) {
+template <typename T>
+bool TernaryScheme<T>::tryFlip(std::mt19937 &generator) {
     size_t size = flips[0].size() + flips[1].size() + flips[2].size();
 
     if (!size)
@@ -161,7 +241,8 @@ bool TernaryScheme::tryFlip(std::mt19937 &generator) {
     return false;
 }
 
-bool TernaryScheme::tryPlus(std::mt19937 &generator) {
+template <typename T>
+bool TernaryScheme<T>::tryPlus(std::mt19937 &generator) {
     std::uniform_int_distribution<int> distribution(0, rank - 1);
     int index1 = distribution(generator);
     int index2 = distribution(generator);
@@ -177,7 +258,8 @@ bool TernaryScheme::tryPlus(std::mt19937 &generator) {
     return plus(permutation[0], permutation[1], permutation[2], index1, index2, ijkDistribution(generator));
 }
 
-bool TernaryScheme::trySplit(std::mt19937 &generator) {
+template <typename T>
+bool TernaryScheme<T>::trySplit(std::mt19937 &generator) {
     std::uniform_int_distribution<int> distribution(0, rank - 1);
     int index1, index2, i;
 
@@ -198,14 +280,19 @@ bool TernaryScheme::trySplit(std::mt19937 &generator) {
     return true;
 }
 
-bool TernaryScheme::tryExpand(std::mt19937 &generator) {
+template <typename T>
+bool TernaryScheme<T>::tryExpand(std::mt19937 &generator) {
+    if (rank >= dimension[0] * dimension[1] * dimension[2])
+        return false;
+
     if (boolDistribution(generator))
         return tryPlus(generator);
 
     return trySplit(generator);
 }
 
-bool TernaryScheme::tryReduce() {
+template <typename T>
+bool TernaryScheme<T>::tryReduce() {
     for (size_t i = 0; i < flips[0].size(); i++) {
         int index1 = flips[0].index1(i);
         int index2 = flips[0].index2(i);
@@ -246,7 +333,8 @@ bool TernaryScheme::tryReduce() {
     return false;
 }
 
-bool TernaryScheme::validate() const {
+template <typename T>
+bool TernaryScheme<T>::validate() const {
     for (int i = 0; i < elements[0]; i++)
         for (int j = 0; j < elements[1]; j++)
             for (int k = 0; k < elements[2]; k++)
@@ -261,7 +349,8 @@ bool TernaryScheme::validate() const {
     return true;
 }
 
-void TernaryScheme::saveJson(const std::string &path) const {
+template <typename T>
+void TernaryScheme<T>::saveJson(const std::string &path) const {
     std::ofstream f(path);
 
     f << "{" << std::endl;
@@ -281,7 +370,8 @@ void TernaryScheme::saveJson(const std::string &path) const {
     f.close();
 }
 
-void TernaryScheme::saveTxt(const std::string &path) const {
+template <typename T>
+void TernaryScheme<T>::saveTxt(const std::string &path) const {
     std::ofstream f(path);
 
     f << dimension[0] << " " << dimension[1] << " " << dimension[2] << " " << rank << std::endl;
@@ -297,7 +387,8 @@ void TernaryScheme::saveTxt(const std::string &path) const {
     f.close();
 }
 
-void TernaryScheme::copy(const TernaryScheme &scheme) {
+template <typename T>
+void TernaryScheme<T>::copy(const TernaryScheme<T> &scheme) {
     rank = scheme.rank;
 
     for (int i = 0; i < 3; i++) {
@@ -306,7 +397,7 @@ void TernaryScheme::copy(const TernaryScheme &scheme) {
         uvw[i].clear();
 
         for (int index = 0; index < rank; index++) {
-            TernaryVector<vec_type> vector(elements[i]);
+            TernaryVector<T> vector(elements[i]);
 
             for (int j = 0; j < elements[i]; j++)
                 vector.set(j, scheme.uvw[i][index][j]);
@@ -318,7 +409,8 @@ void TernaryScheme::copy(const TernaryScheme &scheme) {
     initFlips();
 }
 
-void TernaryScheme::initFlips() {
+template <typename T>
+void TernaryScheme<T>::initFlips() {
     for (int i = 0; i < 3; i++) {
         flips[i].clear();
 
@@ -329,13 +421,15 @@ void TernaryScheme::initFlips() {
     }
 }
 
-void TernaryScheme::removeZeroes() {
+template <typename T>
+void TernaryScheme<T>::removeZeroes() {
     for (int index = 0; index < rank; index++)
         if (!uvw[0][index] || !uvw[1][index] || !uvw[2][index])
             removeAt(index--);
 }
 
-void TernaryScheme::removeAt(int index) {
+template <typename T>
+void TernaryScheme<T>::removeAt(int index) {
     if (index != rank) {
         uvw[0][index] = uvw[0].back();
         uvw[1][index] = uvw[1].back();
@@ -348,14 +442,16 @@ void TernaryScheme::removeAt(int index) {
     uvw[2].pop_back();
 }
 
-void TernaryScheme::addTriplet(int i, int j, int k, const TernaryVector<vec_type> &u, const TernaryVector<vec_type> &v, const TernaryVector<vec_type> &w) {
+template <typename T>
+void TernaryScheme<T>::addTriplet(int i, int j, int k, const TernaryVector<T> &u, const TernaryVector<T> &v, const TernaryVector<T> &w) {
     uvw[i].emplace_back(u);
     uvw[j].emplace_back(v);
     uvw[k].emplace_back(w);
     rank++;
 }
 
-void TernaryScheme::flip(int i, int j, int k, int index1, int index2) {
+template <typename T>
+void TernaryScheme<T>::flip(int i, int j, int k, int index1, int index2) {
     uvw[j][index1] += uvw[j][index2];
     uvw[k][index2] -= uvw[k][index1];
 
@@ -388,22 +484,23 @@ void TernaryScheme::flip(int i, int j, int k, int index1, int index2) {
     }
 }
 
-bool TernaryScheme::plus(int i, int j, int k, int index1, int index2, int variant) {
-    TernaryVector<vec_type> a1(uvw[i][index1]);
-    TernaryVector<vec_type> b1(uvw[j][index1]);
-    TernaryVector<vec_type> c1(uvw[k][index1]);
+template <typename T>
+bool TernaryScheme<T>::plus(int i, int j, int k, int index1, int index2, int variant) {
+    TernaryVector<T> a1(uvw[i][index1]);
+    TernaryVector<T> b1(uvw[j][index1]);
+    TernaryVector<T> c1(uvw[k][index1]);
 
-    TernaryVector<vec_type> a2(uvw[i][index2]);
-    TernaryVector<vec_type> b2(uvw[j][index2]);
-    TernaryVector<vec_type> c2(uvw[k][index2]);
+    TernaryVector<T> a2(uvw[i][index2]);
+    TernaryVector<T> b2(uvw[j][index2]);
+    TernaryVector<T> c2(uvw[k][index2]);
 
-    TernaryVector<vec_type> aAdd = a1 + a2;
-    TernaryVector<vec_type> bAdd = b1 + b2;
-    TernaryVector<vec_type> cAdd = c1 + c2;
+    TernaryVector<T> aAdd = a1 + a2;
+    TernaryVector<T> bAdd = b1 + b2;
+    TernaryVector<T> cAdd = c1 + c2;
 
-    TernaryVector<vec_type> aSub = a2 - a1;
-    TernaryVector<vec_type> bSub = b2 - b1;
-    TernaryVector<vec_type> cSub = c2 - c1;
+    TernaryVector<T> aSub = a2 - a1;
+    TernaryVector<T> bSub = b2 - b1;
+    TernaryVector<T> cSub = c2 - c1;
 
     if (variant == 0 && aSub.limit(i != 2) && bAdd.limit(j != 2) && cSub.limit(k != 2)) {
         uvw[j][index1] = bAdd;
@@ -429,10 +526,11 @@ bool TernaryScheme::plus(int i, int j, int k, int index1, int index2, int varian
     return true;
 }
 
-void TernaryScheme::split(int i, int j, int k, int index1, int index2) {
-    TernaryVector<vec_type> u = uvw[i][index1] - uvw[i][index2];
-    TernaryVector<vec_type> v(uvw[j][index1]);
-    TernaryVector<vec_type> w(uvw[k][index1]);
+template <typename T>
+void TernaryScheme<T>::split(int i, int j, int k, int index1, int index2) {
+    TernaryVector<T> u = uvw[i][index1] - uvw[i][index2];
+    TernaryVector<T> v(uvw[j][index1]);
+    TernaryVector<T> w(uvw[k][index1]);
 
     addTriplet(i, j, k, u, v, w);
     uvw[i][index1] = uvw[i][index2];
@@ -442,7 +540,8 @@ void TernaryScheme::split(int i, int j, int k, int index1, int index2) {
     initFlips();
 }
 
-void TernaryScheme::reduceAdd(int i, int index1, int index2) {
+template <typename T>
+void TernaryScheme<T>::reduceAdd(int i, int index1, int index2) {
     uvw[i][index1] += uvw[i][index2];
     bool isZero = !uvw[i][index1];
 
@@ -454,7 +553,8 @@ void TernaryScheme::reduceAdd(int i, int index1, int index2) {
     initFlips();
 }
 
-void TernaryScheme::reduceSub(int i, int index1, int index2) {
+template <typename T>
+void TernaryScheme<T>::reduceSub(int i, int index1, int index2) {
     uvw[i][index1] -= uvw[i][index2];
     bool isZero = !uvw[i][index1];
 
@@ -466,7 +566,8 @@ void TernaryScheme::reduceSub(int i, int index1, int index2) {
     initFlips();
 }
 
-bool TernaryScheme::checkFlipReduce(int i, int j, int index1, int index2) {
+template <typename T>
+bool TernaryScheme<T>::checkFlipReduce(int i, int j, int index1, int index2) {
     int cmpI = uvw[i][index1].compare(uvw[i][index2]);
     if (cmpI == 1 && uvw[j][index1].limitSum(uvw[j][index2], j != 2)) {
         reduceAdd(j, index1, index2);
@@ -498,7 +599,8 @@ bool TernaryScheme::checkFlipReduce(int i, int j, int index1, int index2) {
     return false;
 }
 
-bool TernaryScheme::fixSigns() {
+template <typename T>
+bool TernaryScheme<T>::fixSigns() {
     bool changed = false;
 
     for (int index = 0; index < rank; index++) {
@@ -527,8 +629,9 @@ bool TernaryScheme::fixSigns() {
     return changed;
 }
 
-bool TernaryScheme::validateDimensions() const {
-    int maxSize = sizeof(vec_type) * 8;
+template <typename T>
+bool TernaryScheme<T>::validateDimensions() const {
+    int maxSize = sizeof(T) * 8;
 
     for (int i = 0; i < 3; i++) {
         if (dimension[i] < 1 || dimension[i] > maxSize) {
@@ -550,7 +653,8 @@ bool TernaryScheme::validateDimensions() const {
     return true;
 }
 
-bool TernaryScheme::validateEquation(int i, int j, int k) const {
+template <typename T>
+bool TernaryScheme<T>::validateEquation(int i, int j, int k) const {
     int i1 = i / dimension[1];
     int i2 = i % dimension[1];
     int j1 = j / dimension[2];
@@ -567,7 +671,8 @@ bool TernaryScheme::validateEquation(int i, int j, int k) const {
     return equation == target;
 }
 
-void TernaryScheme::saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<vec_type>> &vectors) const {
+template <typename T>
+void TernaryScheme<T>::saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<T>> &vectors) const {
     f << "    \"" << name << "\": [" << std::endl;
 
     for (size_t index = 0; index < vectors.size(); index++)

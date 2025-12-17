@@ -1,6 +1,6 @@
 CXX = g++
-FLAGS = -Wall -O3 -std=c++14 -fopenmp
-OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o src/schemes/ternary_scheme.o src/entities/flip_graph.o
+FLAGS = -Wall -O3 -std=c++17 -fopenmp
+OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o
 
 all: ternary_flip_graph
 
