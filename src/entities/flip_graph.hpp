@@ -24,6 +24,7 @@ class FlipGraph {
 
     std::vector<Scheme> schemes;
     std::vector<Scheme> schemesBest;
+    std::vector<Scheme> improvements;
     std::vector<size_t> flips;
     std::vector<size_t> iterations;
     std::vector<int> bestRanks;
@@ -38,10 +39,10 @@ public:
     void run(const Scheme &scheme, int targetRank);
 private:
     void initialize(const Scheme &scheme);
-    void runIteration(const Scheme &scheme);
+    void runIteration();
     void updateBest(size_t iteration);
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
-    void randomWalk(Scheme &scheme, Scheme &schemeBest, const Scheme &schemeInitial, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator);
+    void randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator);
 
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
@@ -83,7 +84,7 @@ void FlipGraph<Scheme>::run(const Scheme &scheme, int targetRank) {
 
     for (size_t iteration = 0; bestRank > targetRank; iteration++) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        runIteration(scheme);
+        runIteration();
         updateBest(iteration);
         auto t2 = std::chrono::high_resolution_clock::now();
         elapsedTimes.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0);
@@ -95,6 +96,8 @@ void FlipGraph<Scheme>::run(const Scheme &scheme, int targetRank) {
 template <typename Scheme>
 void FlipGraph<Scheme>::initialize(const Scheme &scheme) {
     bestRank = scheme.getRank();
+    improvements.clear();
+    improvements.push_back(Scheme(scheme));
 
     for (int i = 0; i < count; i++) {
         schemes[i].copy(scheme);
@@ -107,10 +110,10 @@ void FlipGraph<Scheme>::initialize(const Scheme &scheme) {
 }
 
 template <typename Scheme>
-void FlipGraph<Scheme>::runIteration(const Scheme &scheme)  {
+void FlipGraph<Scheme>::runIteration()  {
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++)
-        randomWalk(schemes[i], schemesBest[i], scheme, flips[i], iterations[i], bestRanks[i], generators[omp_get_thread_num()]);
+        randomWalk(schemes[i], schemesBest[i], flips[i], iterations[i], bestRanks[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
@@ -131,6 +134,7 @@ void FlipGraph<Scheme>::updateBest(size_t iteration) {
     std::string path = getSavePath(schemesBest[top], iteration, outputPath);
     schemesBest[top].saveJson(path + ".json");
     schemesBest[top].saveTxt(path + ".txt");
+    improvements.push_back(Scheme(schemesBest[top]));
 
     std::cout << "Rank was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
     bestRank = bestRanks[top];
@@ -203,7 +207,7 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
 }
 
 template <typename Scheme>
-void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, const Scheme &schemeInitial, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator) {
+void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator) {
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 
@@ -234,9 +238,10 @@ void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, const Sch
             flipsCount = 0;
         
         if (iterationsCount >= resetIterations) {
-            scheme.copy(schemeInitial);
-            schemeBest.copy(schemeInitial);
-            bestRank = schemeInitial.getRank();
+            Scheme &initial = improvements[generator() % improvements.size()];
+            scheme.copy(initial);
+            schemeBest.copy(initial);
+            bestRank = initial.getRank();
             flipsCount = 0;
             iterationsCount = 0;
         }
