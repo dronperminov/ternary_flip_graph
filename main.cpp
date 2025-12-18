@@ -21,7 +21,8 @@ bool runFlipGraph(const ArgParser &parser, const std::string &ring) {
     int count = std::stoi(parser.get("--count"));
     int targetRank = std::stoi(parser.get("--target-rank"));
     size_t flipIterations = std::stoul(parser.get("--flip-iterations"));
-    size_t plusIterations = std::stoul(parser.get("--plus-iterations"));
+    size_t minPlusIterations = std::stoul(parser.get("--min-plus-iterations"));
+    size_t maxPlusIterations = std::stoul(parser.get("--max-plus-iterations"));
     size_t resetIterations = std::stoul(parser.get("--reset-iterations"));
     int plusDiff = std::stoi(parser.get("--plus-diff"));
     double reduceProbability = std::stod(parser.get("--reduce-probability"));
@@ -38,7 +39,7 @@ bool runFlipGraph(const ArgParser &parser, const std::string &ring) {
     std::cout << "- count: " << count << std::endl;
     std::cout << "- target rank: " << targetRank << std::endl;
     std::cout << "- flip iterations: " << flipIterations << std::endl;
-    std::cout << "- plus iterations: " << plusIterations << std::endl;
+    std::cout << "- plus iterations: " << minPlusIterations << " .. " << maxPlusIterations << std::endl;
     std::cout << "- reset iterations: " << resetIterations << std::endl;
     std::cout << "- plus diff: " << plusDiff << std::endl;
     std::cout << "- reduce probability: " << reduceProbability << std::endl;
@@ -66,7 +67,7 @@ bool runFlipGraph(const ArgParser &parser, const std::string &ring) {
     std::cout << "Initial scheme correct, start!" << std::endl;
     std::cout << std::endl;
 
-    FlipGraph<Scheme> flipGraph(count, outputPath, threads, flipIterations, plusIterations, resetIterations, plusDiff, reduceProbability, seed, topCount);
+    FlipGraph<Scheme> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, reduceProbability, seed, topCount);
     flipGraph.run(scheme, targetRank);
     return true;
 }
@@ -81,8 +82,9 @@ int main(int argc, char **argv) {
     parser.add("-o", ArgType::String, "PATH", "path to save schemes", "schemes");
     parser.add("--count", ArgType::Natural, "INT", "number of parallel runners", "8");
     parser.add("--target-rank", ArgType::Natural, "INT", "rank for stop finding", "0");
-    parser.add("--flip-iterations", ArgType::Natural, "INT", "number of iterations if flip call before reporting ", "10000");
-    parser.add("--plus-iterations", ArgType::Natural, "INT", "number of iterations of plus call", "8000");
+    parser.add("--flip-iterations", ArgType::Natural, "INT", "number of iterations if flip call before reporting ", "100000");
+    parser.add("--min-plus-iterations", ArgType::Natural, "INT", "minimum number of iterations of plus call", "5000");
+    parser.add("--max-plus-iterations", ArgType::Natural, "INT", "maximum number of iterations of plus call", "100000");
     parser.add("--reset-iterations", ArgType::Natural, "INT", "number of iterations of plus call", "100000000");
     parser.add("--plus-diff", ArgType::Natural, "INT", "maximum difference between scheme rank and best rank for plus call", "1");
     parser.add("--reduce-probability", ArgType::Real, "REAL", "probability of reduce call", "0");
@@ -97,10 +99,10 @@ int main(int argc, char **argv) {
     std::string ring = parser.get("--ring");
 
     if (ring == "Z2")
-        return runFlipGraph<BinaryScheme<uint64_t>>(parser, ring);
+        return runFlipGraph<BinaryScheme<uint32_t>>(parser, ring);
 
     if (ring == "ZT")
-        return runFlipGraph<TernaryScheme<uint64_t>>(parser, ring);
+        return runFlipGraph<TernaryScheme<uint32_t>>(parser, ring);
 
     std::cout << "error: invalid ring option: \"" << ring << "\"" << std::endl;
     return -1;

@@ -15,7 +15,6 @@ class FlipGraph {
     std::string outputPath;
     int threads;
     size_t flipIterations;
-    size_t plusIterations;
     size_t resetIterations;
     int plusDiff;
     double reduceProbability;
@@ -27,14 +26,16 @@ class FlipGraph {
     std::vector<Scheme> improvements;
     std::vector<size_t> flips;
     std::vector<size_t> iterations;
+    std::vector<size_t> plusIterations;
     std::vector<int> bestRanks;
     std::vector<int> indices;
     int bestRank;
 
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
+    std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t plusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount);
+    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount);
 
     void run(const Scheme &scheme, int targetRank);
 private:
@@ -42,7 +43,7 @@ private:
     void runIteration();
     void updateBest(size_t iteration);
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
-    void randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator);
+    void randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator);
 
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
@@ -52,12 +53,11 @@ private:
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t plusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount) : uniform(0.0, 1.0) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
     this->flipIterations = flipIterations;
-    this->plusIterations = plusIterations;
     this->plusDiff = plusDiff;
     this->resetIterations = resetIterations;
     this->reduceProbability = reduceProbability;
@@ -72,6 +72,7 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
     bestRanks.resize(count);
     flips.resize(count);
     iterations.resize(count);
+    plusIterations.resize(count);
     indices.resize(count);
 }
 
@@ -99,12 +100,14 @@ void FlipGraph<Scheme>::initialize(const Scheme &scheme) {
     improvements.clear();
     improvements.push_back(Scheme(scheme));
 
+    #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
         schemes[i].copy(scheme);
         schemesBest[i].copy(scheme);
         bestRanks[i] = bestRank;
         flips[i] = 0;
         iterations[i] = 0;
+        plusIterations[i] = plusDistribution(generators[omp_get_thread_num()]);
         indices[i] = i;
     }
 }
@@ -113,7 +116,7 @@ template <typename Scheme>
 void FlipGraph<Scheme>::runIteration()  {
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++)
-        randomWalk(schemes[i], schemesBest[i], flips[i], iterations[i], bestRanks[i], generators[omp_get_thread_num()]);
+        randomWalk(schemes[i], schemesBest[i], flips[i], iterations[i], plusIterations[i], bestRanks[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
@@ -159,55 +162,58 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
 
     std::cout << std::left;
-    std::cout << "+--------------------------------------------------------------------------------+" << std::endl;
+    std::cout << "+-----------------------------------------------------------------------------------+" << std::endl;
     std::cout << "| ";
-    std::cout << "dimension: " << std::setw(13) << prettyDimension(schemes[indices[0]]) << "   ";
-    std::cout << "flip iters: " << std::setw(13) << prettyInt(flipIterations) << "   ";
-    std::cout << std::right << std::setw(23) << ("best rank: " + std::to_string(bestRank));
+    std::cout << "dimension: " << std::setw(14) << prettyDimension(schemes[indices[0]]) << "   ";
+    std::cout << "seed: " << std::setw(20) << seed << "   ";
+    std::cout << std::right << std::setw(24) << ("best rank: " + std::to_string(bestRank));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
-    std::cout << "threads: " << std::setw(15) << threads << "   ";
-    std::cout << "plus iters: " << std::setw(13) << prettyInt(plusIterations) << "   ";
-    std::cout << std::right << std::setw(23) << ("iteration: " + std::to_string(iteration));
+    std::cout << "threads: " << std::setw(16) << threads << "   ";
+    std::cout << "flip iters: " << std::setw(14) << prettyInt(flipIterations) << "   ";
+    std::cout << std::right << std::setw(24) << ("iteration: " + std::to_string(iteration));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
-    std::cout << "count: " << std::setw(17) << count << "   ";
-    std::cout << "reset iters: " << std::setw(12) << prettyInt(resetIterations) << "   ";
-    std::cout << std::right << std::setw(23) << ("elapsed: " + prettyTime(elapsed));
+    std::cout << "count: " << std::setw(18) << count << "   ";
+    std::cout << "reset iters: " << std::setw(13) << prettyInt(resetIterations) << "   ";
+    std::cout << std::right << std::setw(24) << ("elapsed: " + prettyTime(elapsed));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
-    std::cout << "ring: " << std::setw(18) << schemes[0].getRing() << "   ";
-    std::cout << "plus diff: " << std::setw(14) << plusDiff << "   ";
-    std::cout << std::right << std::setw(23) << ("seed: " + std::to_string(seed));
+    std::cout << "ring: " << std::setw(19) << schemes[0].getRing() << "   ";
+    std::cout << "plus diff: " << std::setw(15) << plusDiff << "   ";
+    std::cout << "                        ";
     std::cout << " |" << std::endl;
 
-    std::cout << "+================================================================================+" << std::endl;
-    std::cout << "| run id | best | curr | complexity | iterations | flips count | flips available |" << std::endl;
-    std::cout << "+--------+------+------+------------+------------+-------------+-----------------+" << std::endl;
+    std::cout << "+===================================================================================+" << std::endl;
+    std::cout << "| runner | scheme rank |   naive    |            |        flips        |    plus    |" << std::endl;
+    std::cout << "|   id   | best | curr | complexity | iterations |  count  | available | iterations |" << std::endl;
+    std::cout << "+--------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
     std::cout << std::right;
 
     for (int i = 0; i < topCount; i++) {
+        int runner = indices[i];
         std::cout << "| ";
-        std::cout << std::setw(6) << indices[i] << " | ";
-        std::cout << std::setw(4) << schemesBest[indices[i]].getRank() << " | ";
-        std::cout << std::setw(4) << schemes[indices[i]].getRank() << " | ";
-        std::cout << std::setw(10) << schemes[indices[i]].getComplexity() << " | ";
-        std::cout << std::setw(10) << prettyInt(iterations[indices[i]]) << " | ";
-        std::cout << std::setw(11) << prettyInt(flips[indices[i]]) << " | ";
-        std::cout << std::setw(15) << schemes[indices[i]].getAvailableFlips() << " |";
+        std::cout << std::setw(6) << runner << " | ";
+        std::cout << std::setw(4) << schemesBest[runner].getRank() << " | ";
+        std::cout << std::setw(4) << schemes[runner].getRank() << " | ";
+        std::cout << std::setw(10) << schemes[runner].getComplexity() << " | ";
+        std::cout << std::setw(10) << prettyInt(iterations[runner]) << " | ";
+        std::cout << std::setw(7) << prettyInt(flips[runner]) << " | ";
+        std::cout << std::setw(9) << schemes[runner].getAvailableFlips() << " | ";
+        std::cout << std::setw(10) << prettyInt(plusIterations[runner]) << " |";
         std::cout << std::endl;
     }
 
-    std::cout << "+--------+------+------+------------+------------+-------------+-----------------+" << std::endl;
+    std::cout << "+--------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
     std::cout << std::endl;
 }
 
 template <typename Scheme>
-void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, int &bestRank, std::mt19937 &generator) {
+void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator) {
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 
@@ -244,6 +250,7 @@ void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &f
             bestRank = initial.getRank();
             flipsCount = 0;
             iterationsCount = 0;
+            plusIterations = plusDistribution(generator);
         }
     }
 }
