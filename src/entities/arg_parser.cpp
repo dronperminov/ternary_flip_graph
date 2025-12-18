@@ -100,11 +100,16 @@ bool ArgParser::validate(const Arg &arg, const std::string &value) const {
 }
 
 bool ArgParser::isNatural(const std::string &value) const {
-    for (size_t i = 0; i < value.size(); i++)
+    size_t size = value.size();
+
+    if (value.back() == 'K' || value.back() == 'M')
+        size--;
+
+    for (size_t i = 0; i < size; i++)
         if (value[i] < '0' || value[i] > '9')
             return false;
 
-    return true;
+    return std::stoul(value) > 0;
 }
 
 bool ArgParser::isReal(const std::string &value) const {
