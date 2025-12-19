@@ -7,9 +7,9 @@
 #include <omp.h>
 
 #include "src/entities/arg_parser.h"
-#include "src/entities/flip_graph.hpp"
 #include "src/schemes/ternary_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
+#include "src/flip_graph.hpp"
 
 int getMaxMatrixElements(int &n1, int &n2, int &n3, const std::string &inputPath) {
     if (inputPath != "NULL") {

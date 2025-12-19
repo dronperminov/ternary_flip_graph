@@ -273,7 +273,7 @@ bool FlipGraph<Scheme>::compare(int index1, int index2) const {
     int complexity2 = schemes[index2].getComplexity();
 
     if (complexity1 != complexity2)
-        return complexity1 < complexity2;
+        return complexity1 > complexity2;
 
     return index1 < index2;
 }
