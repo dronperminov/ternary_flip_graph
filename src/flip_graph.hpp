@@ -9,6 +9,8 @@
 #include <vector>
 #include <omp.h>
 
+#include "utils.h"
+
 template <typename Scheme>
 class FlipGraph {
     int count;
@@ -47,9 +49,7 @@ private:
 
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
-    std::string prettyInt(size_t value) const;
     std::string prettyDimension(const Scheme &scheme) const;
-    std::string prettyTime(double elapsed) const;
 };
 
 template <typename Scheme>
@@ -273,7 +273,7 @@ bool FlipGraph<Scheme>::compare(int index1, int index2) const {
     int complexity2 = schemes[index2].getComplexity();
 
     if (complexity1 != complexity2)
-        return complexity1 > complexity2;
+        return complexity1 < complexity2;
 
     return index1 < index2;
 }
@@ -291,42 +291,8 @@ std::string FlipGraph<Scheme>::getSavePath(const Scheme &scheme, int iteration, 
 }
 
 template <typename Scheme>
-std::string FlipGraph<Scheme>::prettyInt(size_t value) const {
-    std::stringstream ss;
-
-    if (value < 1000)
-        ss << value;
-    else if (value < 1000000)
-        ss << std::setprecision(2) << std::fixed << (value / 1000.0) << "K";
-    else
-        ss << std::setprecision(1) << std::fixed << (value / 1000000.0) << "M";
-
-    return ss.str();
-}
-
-template <typename Scheme>
 std::string FlipGraph<Scheme>::prettyDimension(const Scheme &scheme) const {
     std::stringstream ss;
     ss << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2);
-    return ss.str();
-}
-
-template <typename Scheme>
-std::string FlipGraph<Scheme>::prettyTime(double elapsed) const {
-    std::stringstream ss;
-
-    if (elapsed < 60) {
-        ss << std::setprecision(2) << std::fixed << elapsed;
-    }
-    else {
-        int seconds = int(elapsed + 0.5);
-        int hours = seconds / 3600;
-        int minutes = (seconds % 3600) / 60;
-
-        ss << std::setw(2) << std::setfill('0') << hours << ":";
-        ss << std::setw(2) << std::setfill('0') << minutes << ":";
-        ss << std::setw(2) << std::setfill('0') << (seconds % 60);
-    }
-
     return ss.str();
 }
