@@ -47,6 +47,7 @@ public:
     void initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path);
     void initializeBestTernaryRanks();
+    void initializeBestBinaryRanks();
 
     void run();
 private:
@@ -208,14 +209,13 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["3x5x7"] = 83;
     dimension2knownRank["3x5x8"] = 94;
     dimension2knownRank["3x5x9"] = 105;
-    dimension2knownRank["3x5x10"] = 116;
     dimension2knownRank["3x5x11"] = 128;
     dimension2knownRank["3x5x12"] = 140;
-    dimension2knownRank["3x6x6"] = 85;
+    dimension2knownRank["3x6x6"] = 83;
     dimension2knownRank["3x6x7"] = 99;
     dimension2knownRank["3x6x8"] = 112;
     dimension2knownRank["3x6x9"] = 126;
-    dimension2knownRank["3x6x10"] = 140;
+    dimension2knownRank["3x6x10"] = 139;
     dimension2knownRank["3x7x7"] = 115;
     dimension2knownRank["3x7x8"] = 128;
     dimension2knownRank["3x7x9"] = 147;
@@ -241,6 +241,62 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["7x7x9"] = 316;
     dimension2knownRank["7x8x8"] = 310;
     dimension2knownRank["8x8x8"] = 343;
+}
+
+template <typename Scheme>
+void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
+    dimension2knownRank["2x4x5"] = 33;
+    dimension2knownRank["2x4x10"] = 65;
+    dimension2knownRank["2x4x13"] = 84;
+    dimension2knownRank["2x5x10"] = 80;
+    dimension2knownRank["2x7x9"] = 100;
+    dimension2knownRank["3x3x6"] = 42;
+    dimension2knownRank["3x3x8"] = 56;
+    dimension2knownRank["3x3x9"] = 64;
+    dimension2knownRank["3x3x10"] = 71;
+    dimension2knownRank["3x3x11"] = 78;
+    dimension2knownRank["3x3x12"] = 84;
+    dimension2knownRank["3x3x13"] = 91;
+    dimension2knownRank["3x3x14"] = 98;
+    dimension2knownRank["3x3x15"] = 105;
+    dimension2knownRank["3x3x16"] = 112;
+    dimension2knownRank["3x4x7"] = 64;
+    dimension2knownRank["3x4x13"] = 118;
+    dimension2knownRank["3x4x14"] = 127;
+    dimension2knownRank["3x4x15"] = 137;
+    dimension2knownRank["3x6x6"] = 83;
+    dimension2knownRank["3x6x7"] = 96;
+    dimension2knownRank["3x6x9"] = 122;
+    dimension2knownRank["3x6x10"] = 136;
+    dimension2knownRank["3x7x8"] = 128;
+    dimension2knownRank["3x7x9"] = 143;
+    dimension2knownRank["4x4x4"] = 47;
+    dimension2knownRank["4x4x5"] = 60;
+    dimension2knownRank["4x4x8"] = 94;
+    dimension2knownRank["4x4x9"] = 107;
+    dimension2knownRank["4x4x11"] = 132;
+    dimension2knownRank["4x4x12"] = 141;
+    dimension2knownRank["4x4x13"] = 154;
+    dimension2knownRank["4x4x14"] = 167;
+    dimension2knownRank["4x4x15"] = 179;
+    dimension2knownRank["4x4x16"] = 188;
+    dimension2knownRank["4x5x5"] = 73;
+    dimension2knownRank["4x5x6"] = 89;
+    dimension2knownRank["4x5x9"] = 133;
+    dimension2knownRank["4x5x10"] = 146;
+    dimension2knownRank["4x5x11"] = 162;
+    dimension2knownRank["4x5x12"] = 177;
+    dimension2knownRank["4x7x9"] = 187;
+    dimension2knownRank["5x5x9"] = 166;
+    dimension2knownRank["5x5x10"] = 183;
+    dimension2knownRank["5x5x11"] = 200;
+    dimension2knownRank["5x5x12"] = 217;
+    dimension2knownRank["6x6x10"] = 252;
+    dimension2knownRank["7x7x7"] = 248;
+    dimension2knownRank["7x7x8"] = 274;
+    dimension2knownRank["7x7x9"] = 313;
+    dimension2knownRank["7x8x8"] = 302;
+    dimension2knownRank["8x8x8"] = 329;
 }
 
 template <typename Scheme>

@@ -34,6 +34,7 @@ public:
     int getComplexity() const;
     int getDimension(int index) const;
     std::string getRing() const;
+    std::string getHash() const;
     int getAvailableFlips() const;
 
     bool tryFlip(std::mt19937 &generator);
@@ -200,6 +201,28 @@ int TernaryScheme<T>::getDimension(int index) const {
 template <typename T>
 std::string TernaryScheme<T>::getRing() const {
     return "ZT";
+}
+
+template <typename T>
+std::string TernaryScheme<T>::getHash() const {
+    std::vector<std::string> lines;
+
+    for (int index = 0; index < rank; index++) {
+        std::stringstream ss;
+
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < elements[i]; j++)
+                ss << (uvw[i][index][j] + 1);
+
+        lines.push_back(ss.str());
+    }
+
+    std::sort(lines.begin(), lines.end());
+    std::stringstream hash;
+    for (int index = 0; index < rank; index++)
+        hash << lines[index];
+
+    return hash.str();
 }
 
 template <typename T>

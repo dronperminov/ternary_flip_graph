@@ -69,6 +69,8 @@ bool runMetaFlipGraph(const ArgParser &parser, int n1, int n2, int n3, const std
 
     if (ring == "ZT" || ring == "ternary")
         metaFlipGraph.initializeBestTernaryRanks();
+    else if (ring == "Z2" || ring == "binary")
+        metaFlipGraph.initializeBestBinaryRanks();
 
     if (inputPath == "NULL") {
         metaFlipGraph.initializeNaive(n1, n2, n3);
@@ -124,11 +126,11 @@ int main(int argc, char **argv) {
 
     std::string ring = parser.get("--ring");
 
-    // if (ring == "Z2" || ring == "binary")
-        // return runMetaFlipGraph<BinaryScheme, uint64_t>(parser, n1, n2, n3, inputPath, ring);
+    if (ring == "Z2" || ring == "binary")
+        return runMetaFlipGraph<BinaryScheme, uint64_t>(parser, n1, n2, n3, inputPath, ring);
 
     if (ring == "ZT" || ring == "ternary")
-        return runMetaFlipGraph<TernaryScheme, uint32_t>(parser, n1, n2, n3, inputPath, ring);
+        return runMetaFlipGraph<TernaryScheme, uint64_t>(parser, n1, n2, n3, inputPath, ring);
 
     std::cout << "error: invalid ring option: \"" << ring << "\"" << std::endl;
     return -1;
