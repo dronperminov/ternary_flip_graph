@@ -6,26 +6,11 @@
 #include <algorithm>
 #include <omp.h>
 
+#include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/schemes/ternary_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/meta_flip_graph.hpp"
-
-size_t parseNatural(std::string value) {
-    size_t multiplier = 1;
-
-    if (value.back() == 'K') {
-        multiplier = 1000;
-    }
-    else if (value.back() == 'M') {
-        multiplier = 1000000;
-    }
-
-    if (multiplier > 1)
-        value.pop_back();
-
-    return std::stoul(value) * multiplier;
-}
 
 template <template<typename> typename Scheme, typename T>
 bool runMetaFlipGraph(const ArgParser &parser, int n1, int n2, int n3, const std::string inputPath, const std::string &ring) {
@@ -52,6 +37,7 @@ bool runMetaFlipGraph(const ArgParser &parser, int n1, int n2, int n3, const std
         std::cout << "- input path: " << inputPath << std::endl;
 
     std::cout << "- output path: " << outputPath << std::endl;
+    std::cout << std::endl;
     std::cout << "- flip iterations: " << flipIterations << std::endl;
     std::cout << "- plus iterations: " << minPlusIterations << " .. " << maxPlusIterations << std::endl;
     std::cout << "- reset iterations: " << resetIterations << std::endl;
@@ -59,6 +45,7 @@ bool runMetaFlipGraph(const ArgParser &parser, int n1, int n2, int n3, const std
     std::cout << "- reduce probability: " << reduceProbability << std::endl;
     std::cout << "- resize probability: " << resizeProbability << std::endl;
     std::cout << "- ring: " << ring << std::endl;
+    std::cout << std::endl;
     std::cout << "- count: " << count << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- top count: " << topCount << std::endl;

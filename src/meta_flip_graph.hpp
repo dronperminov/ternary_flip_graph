@@ -400,13 +400,13 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
         if (result == dimension2bestRank.end() || rank < result->second) {
             dimension2bestRank[dimension] = rank;
             dimension2bestIndex[dimension] = i;
-            schemesBest[i].copy(schemes[i]);
         }
-        else if (prettyDimension(schemesBest[i]) != prettyDimension(schemes[i])) {
+
+        if (prettyDimension(schemesBest[i], true) != dimension)
             schemesBest[i].copy(schemes[i]);
-        }
     }
 
+    #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < count; i++)
         bestRanks[i] = dimension2bestRank[newDimensions[i]];
 
@@ -497,7 +497,7 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
             std::cout << std::setw(6) << runner << " | ";
             std::cout << std::setw(6) << dimension << " | ";
             std::cout << std::setw(6) << prettyDimension(schemes[runner]) << " | ";
-            std::cout << std::setw(4) << schemesBest[runner].getRank() << " | ";
+            std::cout << std::setw(4) << bestRanks[runner] << " | ";
             std::cout << std::setw(4) << schemes[runner].getRank() << " | ";
             std::cout << std::setw(10) << schemes[runner].getComplexity() << " | ";
             std::cout << std::setw(10) << prettyInt(iterations[runner]) << " | ";
@@ -530,8 +530,10 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
             flipsCount = 0;
 
         int rank = scheme.getRank();
-        if (rank < prevRank)
+        if (rank < prevRank) {
             flipsCount = 0;
+            iterationsCount = 0;
+        }
 
         flipsCount++;
         iterationsCount++;
@@ -539,7 +541,6 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
         if (rank < bestRank) {
             schemeBest.copy(scheme);
             bestRank = rank;
-            iterationsCount = 0;
         }
 
         if (flipsCount >= plusIterations && rank < bestRank + plusDiff && scheme.tryExpand(generator))
@@ -568,7 +569,7 @@ void MetaFlipGraph<Scheme>::resize(Scheme &scheme, size_t &flipsCount, size_t &i
         scheme.swapSizes(generator);
 
     int index = generator() % schemesBest.size();
-    int minN = 2;
+    int minN = 3;
     int maxN = 16;
     int maxRank = 345;
     bool resized = true;
@@ -634,8 +635,8 @@ void MetaFlipGraph<Scheme>::updateIndices() {
 
 template <typename Scheme>
 bool MetaFlipGraph<Scheme>::compare(int index1, int index2) const {
-    int bestRank1 = schemesBest[index1].getRank();
-    int bestRank2 = schemesBest[index2].getRank();
+    int bestRank1 = bestRanks[index1];
+    int bestRank2 = bestRanks[index2];
 
     if (bestRank1 != bestRank2)
         return bestRank1 < bestRank2;
