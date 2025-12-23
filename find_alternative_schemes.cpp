@@ -18,7 +18,6 @@ std::string getSavePath(const Scheme<T> &scheme, const std::string &outputPath, 
     ss << "_m" << scheme.getRank();
     ss << "_v" << std::setw(6) << std::setfill('0') << version;
     ss << "_" << scheme.getRing();
-    ss << ".json";
     return ss.str();
 }
 
@@ -28,6 +27,12 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::string outputPath = parser.get("-o");
     size_t maxCount = std::stoul(parser.get("--max-count"));
     int seed = std::stoi(parser.get("--seed"));
+    std::string format = parser.get("--format");
+
+    if (format != "json" && format != "txt") {
+        std::cout << "Invalid output format (" << format << "), available only \"json\" and \"txt\"" << std::endl;
+        return -1;
+    }
 
     if (seed == 0)
         seed = time(0);
@@ -41,6 +46,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << "- max count: " << maxCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
+    std::cout << "- format: " << format << std::endl;
     std::cout << "- dimension: " << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2) << std::endl;
     std::cout << "- rank: " << scheme.getRank() << std::endl;
     std::cout << "- ring: " << scheme.getRing() << std::endl;
@@ -65,7 +71,11 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
         std::cout << "| " << std::setw(9) << iteration << " | " << std::setw(11) << count << " | " << std::setw(10) << scheme.getComplexity() << " |" << std::endl;
 
         std::string path = getSavePath(scheme, outputPath, count);
-        scheme.saveJson(path);
+        if (format == "json")
+            scheme.saveJson(path + ".json");
+        else
+            scheme.saveTxt(path + ".txt");
+
         hashes.insert(hash);
     }
 
@@ -81,6 +91,7 @@ int main(int argc, char **argv) {
     parser.add("--ring", ArgType::String, "Z2/ZT", "coefficient ring: Z2 ({0, 1}) or ZT ({-1, 0, 1})", "ZT");
     parser.add("--max-count", ArgType::Natural, "INT", "number of alternative schemes", "10000");
     parser.add("--seed", ArgType::Natural, "INT", "random seed (0 = time-based)", "0");
+    parser.add("--format", ArgType::String, "txt/json", "saving schemes format (.json or .txt)", "json");
 
     if (!parser.parse(argc, argv))
         return 0;

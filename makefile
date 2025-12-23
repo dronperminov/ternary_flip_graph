@@ -17,4 +17,4 @@ find_alternative_schemes: $(OBJECTS)
 	$(CXX) $(FLAGS) -c $< -o $@
 
 clean:
-	del /F /S /Q *.o ternary_flip_graph ternary_meta_flip_graph
+	rm -rf $(OBJECTS) ternary_flip_graph ternary_meta_flip_graph find_alternative_schemes
