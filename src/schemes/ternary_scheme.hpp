@@ -173,6 +173,7 @@ bool TernaryScheme<T>::read(std::istream &is) {
     if (!validate())
         return false;
 
+    fixSigns();
     initFlips();
     return true;
 }
