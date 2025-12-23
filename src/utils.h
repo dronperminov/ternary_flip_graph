@@ -7,3 +7,4 @@
 
 std::string prettyInt(size_t value);
 std::string prettyTime(double elapsed);
+size_t parseNatural(std::string value);

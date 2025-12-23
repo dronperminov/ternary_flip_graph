@@ -31,3 +31,22 @@ std::string prettyTime(double elapsed) {
 
     return ss.str();
 }
+
+size_t parseNatural(std::string value) {
+    size_t multiplier = 1;
+
+    if (value.back() == 'K' || value.back() == 'k') {
+        multiplier = 1000;
+    }
+    else if (value.back() == 'M' || value.back() == 'm') {
+        multiplier = 1000000;
+    }
+    else if (value.back() == 'B' || value.back() == 'b') {
+        multiplier = 1000000000;
+    }
+
+    if (multiplier > 1)
+        value.pop_back();
+
+    return std::stoul(value) * multiplier;
+}

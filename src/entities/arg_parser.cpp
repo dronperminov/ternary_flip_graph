@@ -102,7 +102,7 @@ bool ArgParser::validate(const Arg &arg, const std::string &value) const {
 bool ArgParser::isNatural(const std::string &value) const {
     size_t size = value.size();
 
-    if (value.back() == 'K' || value.back() == 'M')
+    if (value.back() == 'K' || value.back() == 'k' || value.back() == 'M' || value.back() == 'm' || value.back() == 'B' || value.back() == 'b')
         size--;
 
     for (size_t i = 0; i < size; i++)

@@ -22,6 +22,8 @@ class FlipGraph {
     double reduceProbability;
     int seed;
     int topCount;
+    size_t maxImprovements;
+    size_t improvementsIndex;
 
     std::vector<Scheme> schemes;
     std::vector<Scheme> schemesBest;
@@ -37,11 +39,17 @@ class FlipGraph {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount);
+    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements);
 
-    void run(const Scheme &scheme, int targetRank);
+    bool initializeNaive(int n1, int n2, int n3);
+    bool initializeFromFile(const std::string &path);
+
+    void run(int targetRank);
 private:
-    void initialize(const Scheme &scheme);
+    void resetImprovements();
+    void addImprovement(const Scheme &scheme);
+
+    void initialize();
     void runIteration();
     void updateBest(size_t iteration);
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
@@ -53,7 +61,7 @@ private:
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
@@ -63,6 +71,9 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
     this->reduceProbability = reduceProbability;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
+    this->maxImprovements = maxImprovements;
+
+    resetImprovements();
 
     for (int i = 0; i < threads; i++)
         generators.emplace_back(seed + i);
@@ -77,8 +88,56 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
 }
 
 template <typename Scheme>
-void FlipGraph<Scheme>::run(const Scheme &scheme, int targetRank) {
-    initialize(scheme);
+bool FlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
+    if (!schemes[0].initializeNaive(n1, n2, n3))
+        return false;
+
+    #pragma omp parallel for num_threads(threads)
+    for (int i = 1; i < count; i++)
+        schemes[i].copy(schemes[0]);
+
+    resetImprovements();
+    addImprovement(schemes[0]);
+    return true;
+}
+
+template <typename Scheme>
+bool FlipGraph<Scheme>::initializeFromFile(const std::string &path) {
+    std::ifstream f(path);
+
+    if (!f) {
+        std::cout << "Unable open file \"" << path << "\"" << std::endl;
+        return false;
+    }
+
+    int schemesCount;
+    f >> schemesCount;
+
+    std::cout << "Start reading " << std::min(schemesCount, count) << " / " << schemesCount << " schemes from \"" << path << "\"" << std::endl;
+
+    bool valid = true;
+    for (int i = 0; i < schemesCount && i < count && valid; i++)
+        valid = schemes[i].read(f);
+
+    f.close();
+
+    if (!valid)
+        return false;
+
+    resetImprovements();
+    for (int i = 0; i <schemesCount && i < count && improvements.size() < maxImprovements; i++)
+        addImprovement(schemes[i]);
+
+    #pragma omp parallel for num_threads(threads)
+    for (int i = schemesCount; i < count; i++)
+        schemes[i].copy(schemes[i % schemesCount]);
+
+    return true;
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::run(int targetRank) {
+    initialize();
 
     auto startTime = std::chrono::high_resolution_clock::now();
     std::vector<double> elapsedTimes;
@@ -95,16 +154,35 @@ void FlipGraph<Scheme>::run(const Scheme &scheme, int targetRank) {
 }
 
 template <typename Scheme>
-void FlipGraph<Scheme>::initialize(const Scheme &scheme) {
-    bestRank = scheme.getRank();
+void FlipGraph<Scheme>::resetImprovements() {
     improvements.clear();
-    improvements.push_back(Scheme(scheme));
+    improvementsIndex = 0;
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::addImprovement(const Scheme &scheme) {
+    if (improvements.size() < maxImprovements) {
+        improvements.push_back(Scheme(scheme));
+        improvementsIndex = 0;
+    }
+    else {
+        improvements[improvementsIndex].copy(scheme);
+        improvementsIndex = (improvementsIndex + 1) % maxImprovements;
+    }
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::initialize() {
+    bestRank = schemes[0].getRank();
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
-        schemes[i].copy(scheme);
-        schemesBest[i].copy(scheme);
-        bestRanks[i] = bestRank;
+        int rank = schemes[i].getRank();
+        if (rank < bestRank)
+            bestRank = rank;
+
+        schemesBest[i].copy(schemes[i]);
+        bestRanks[i] = rank;
         flips[i] = 0;
         iterations[i] = 0;
         plusIterations[i] = plusDistribution(generators[omp_get_thread_num()]);
@@ -137,7 +215,7 @@ void FlipGraph<Scheme>::updateBest(size_t iteration) {
     std::string path = getSavePath(schemesBest[top], iteration, outputPath);
     schemesBest[top].saveJson(path + ".json");
     schemesBest[top].saveTxt(path + ".txt");
-    improvements.push_back(Scheme(schemesBest[top]));
+    addImprovement(schemesBest[top]);
 
     std::cout << "Rank was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
     bestRank = bestRanks[top];
@@ -184,7 +262,7 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
     std::cout << "| " << std::left;
     std::cout << "ring: " << std::setw(19) << schemes[0].getRing() << "   ";
     std::cout << "plus diff: " << std::setw(15) << plusDiff << "   ";
-    std::cout << "                        ";
+    std::cout << std::right << std::setw(24) << ("improvements: " + std::to_string(improvements.size()) + " / " + std::to_string(maxImprovements));
     std::cout << " |" << std::endl;
 
     std::cout << "+===================================================================================+" << std::endl;
