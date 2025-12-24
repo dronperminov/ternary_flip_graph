@@ -63,7 +63,7 @@ private:
     void updateIndices();
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
-    std::string prettyDimension(const Scheme &scheme, bool sorted = false) const;
+    std::string sortedDimension(const Scheme &scheme) const;
 };
 
 template <typename Scheme>
@@ -130,7 +130,7 @@ void MetaFlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
         schemes[i].initializeNaive(n1, n2, n3);
 
     dimension2improvements.clear();
-    dimension2improvements[prettyDimension(schemes[0], true)].push_back(Scheme(schemes[0]));
+    dimension2improvements[sortedDimension(schemes[0])].push_back(Scheme(schemes[0]));
 }
 
 template <typename Scheme>
@@ -160,7 +160,7 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path) {
 
     dimension2improvements.clear();
     for (size_t i = 0; i < count && i < schemesCount; i++)
-        dimension2improvements[prettyDimension(schemes[i], true)].push_back(Scheme(schemes[i]));
+        dimension2improvements[sortedDimension(schemes[i])].push_back(Scheme(schemes[i]));
 
     #pragma omp parallel for num_threads(threads)
     for (size_t i = schemesCount; i < count; i++)
@@ -336,7 +336,7 @@ void MetaFlipGraph<Scheme>::initialize() {
         iterations[i] = 0;
         plusIterations[i] = plusDistribution(generators[omp_get_thread_num()]);
 
-        dimension2bestRank[prettyDimension(schemes[i], true)] = rank;
+        dimension2bestRank[sortedDimension(schemes[i])] = rank;
     }
 
     updateRanks(0, false);
@@ -372,7 +372,7 @@ void MetaFlipGraph<Scheme>::updateBest(size_t iteration) {
             continue;
 
         if (!schemesBest[top].validate()) {
-            std::cout << "error: unable to save scheme " << prettyDimension(schemesBest[top]) << " - it is invalid" << std::endl;
+            std::cout << "error: unable to save scheme " << schemesBest[top].getDimension() << " - it is invalid" << std::endl;
             exit(-1);
         }
 
@@ -392,7 +392,7 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
     std::unordered_map<std::string, int> dimension2bestIndex;
 
     for (size_t i = 0; i < count; i++) {
-        std::string dimension = prettyDimension(schemes[i], true);
+        std::string dimension = sortedDimension(schemes[i]);
         int rank = schemes[i].getRank();
         newDimensions[i] = dimension;
 
@@ -402,7 +402,7 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
             dimension2bestIndex[dimension] = i;
         }
 
-        if (prettyDimension(schemesBest[i], true) != dimension)
+        if (sortedDimension(schemesBest[i]) != dimension)
             schemesBest[i].copy(schemes[i]);
     }
 
@@ -422,7 +422,7 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
             continue;
 
         if (!schemes[pair.second].validate()) {
-            std::cout << "error: unable to save scheme " << prettyDimension(schemes[pair.second]) << " - it is invalid" << std::endl;
+            std::cout << "error: unable to save scheme " << schemes[pair.second].getDimension() << " - it is invalid" << std::endl;
             exit(-1);
         }
 
@@ -496,7 +496,7 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
             std::cout << "| ";
             std::cout << std::setw(6) << runner << " | ";
             std::cout << std::setw(6) << dimension << " | ";
-            std::cout << std::setw(6) << prettyDimension(schemes[runner]) << " | ";
+            std::cout << std::setw(6) << schemes[runner].getDimension() << " | ";
             std::cout << std::setw(4) << bestRanks[runner] << " | ";
             std::cout << std::setw(4) << schemes[runner].getRank() << " | ";
             std::cout << std::setw(10) << schemes[runner].getComplexity() << " | ";
@@ -547,7 +547,7 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
             flipsCount = 0;
 
         if (iterationsCount >= resetIterations) {
-            std::string dimension = prettyDimension(scheme, true);
+            std::string dimension = sortedDimension(scheme);
             Scheme &initial = dimension2improvements[dimension][generator() % dimension2improvements[dimension].size()];
 
             scheme.copy(initial);
@@ -599,7 +599,7 @@ void MetaFlipGraph<Scheme>::updateIndices() {
     dimensions.clear();
 
     for (size_t i = 0; i < count; i++)
-        dimension2indices[prettyDimension(schemes[i], true)].push_back(i);
+        dimension2indices[sortedDimension(schemes[i])].push_back(i);
 
     for (auto &pair : dimension2indices) {
         size_t partialCount = std::min(topCount, pair.second.size());
@@ -660,21 +660,19 @@ template <typename Scheme>
 std::string MetaFlipGraph<Scheme>::getSavePath(const Scheme &scheme, int iteration, const std::string path) const {
     std::stringstream ss;
     ss << path << "/";
-    ss << prettyDimension(scheme, true);
+    ss << sortedDimension(scheme);
     ss << "_m" << scheme.getRank();
     ss << "_c" << scheme.getComplexity();
     ss << "_iteration" << iteration;
-    ss << "_" << prettyDimension(scheme);
+    ss << "_" << scheme.getDimension();
     ss << "_" << scheme.getRing();
     return ss.str();
 }
 
 template <typename Scheme>
-std::string MetaFlipGraph<Scheme>::prettyDimension(const Scheme &scheme, bool sorted) const {
+std::string MetaFlipGraph<Scheme>::sortedDimension(const Scheme &scheme) const {
     int dimension[3] = {scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2)};
-
-    if (sorted)
-        std::sort(dimension, dimension + 3);
+    std::sort(dimension, dimension + 3);
 
     std::stringstream ss;
     ss << dimension[0] << "x" << dimension[1] << "x" << dimension[2];

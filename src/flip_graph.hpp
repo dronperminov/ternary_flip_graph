@@ -57,7 +57,6 @@ private:
 
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
-    std::string prettyDimension(const Scheme &scheme) const;
 };
 
 template <typename Scheme>
@@ -242,7 +241,7 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
     std::cout << std::left;
     std::cout << "+-----------------------------------------------------------------------------------+" << std::endl;
     std::cout << "| ";
-    std::cout << "dimension: " << std::setw(14) << prettyDimension(schemes[indices[0]]) << "   ";
+    std::cout << "dimension: " << std::setw(14) << schemes[indices[0]].getDimension() << "   ";
     std::cout << "seed: " << std::setw(20) << seed << "   ";
     std::cout << std::right << std::setw(24) << ("best rank: " + std::to_string(bestRank));
     std::cout << " |" << std::endl;
@@ -360,17 +359,10 @@ template <typename Scheme>
 std::string FlipGraph<Scheme>::getSavePath(const Scheme &scheme, int iteration, const std::string path) const {
     std::stringstream ss;
     ss << path << "/";
-    ss << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2);
+    ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
     ss << "_c" << scheme.getComplexity();
     ss << "_iteration" << iteration;
     ss << "_" << scheme.getRing();
-    return ss.str();
-}
-
-template <typename Scheme>
-std::string FlipGraph<Scheme>::prettyDimension(const Scheme &scheme) const {
-    std::stringstream ss;
-    ss << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2);
     return ss.str();
 }

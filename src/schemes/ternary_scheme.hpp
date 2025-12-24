@@ -9,19 +9,12 @@
 #include <algorithm>
 
 #include "../entities/ternary_vector.hpp"
-#include "../entities/flip_set.h"
+#include "base_scheme.h"
 
 template <typename T>
-class TernaryScheme {
-    int dimension[3];
-    int elements[3];
-    int rank;
+class TernaryScheme : public BaseScheme {
     std::vector<TernaryVector<T>> uvw[3];
-    FlipSet flips[3];
     std::vector<int> indices;
-
-    std::uniform_int_distribution<int> boolDistribution;
-    std::uniform_int_distribution<int> ijkDistribution;
 public:
     TernaryScheme();
     TernaryScheme(const TernaryScheme<T> &scheme);
@@ -30,12 +23,9 @@ public:
     bool read(const std::string &path);
     bool read(std::istream &is);
 
-    int getRank() const;
     int getComplexity() const;
-    int getDimension(int index) const;
     std::string getRing() const;
     std::string getHash() const;
-    int getAvailableFlips() const;
 
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
@@ -88,9 +78,8 @@ private:
     void saveMatrix(std::ofstream &f, std::string name, const std::vector<TernaryVector<T>> &vectors) const;
 };
 
-
 template <typename T>
-TernaryScheme<T>::TernaryScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
+TernaryScheme<T>::TernaryScheme() {
 
 }
 
@@ -179,11 +168,6 @@ bool TernaryScheme<T>::read(std::istream &is) {
 }
 
 template <typename T>
-int TernaryScheme<T>::getRank() const {
-    return rank;
-}
-
-template <typename T>
 int TernaryScheme<T>::getComplexity() const {
     int count = 0;
 
@@ -192,11 +176,6 @@ int TernaryScheme<T>::getComplexity() const {
             count += uvw[i][index].nonZeroCount();
 
     return count - 2 * rank - elements[2];
-}
-
-template <typename T>
-int TernaryScheme<T>::getDimension(int index) const {
-    return dimension[index];
 }
 
 template <typename T>
@@ -224,11 +203,6 @@ std::string TernaryScheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
-}
-
-template <typename T>
-int TernaryScheme<T>::getAvailableFlips() const {
-    return flips[0].size() + flips[1].size() + flips[2].size();
 }
 
 template <typename T>

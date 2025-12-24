@@ -8,18 +8,11 @@
 #include <cassert>
 #include <algorithm>
 
-#include "../entities/flip_set.h"
+#include "base_scheme.h"
 
 template <typename T>
-class BinaryScheme {
-    int dimension[3];
-    int elements[3];
-    int rank;
+class BinaryScheme : public BaseScheme {
     std::vector<T> uvw[3];
-    FlipSet flips[3];
-
-    std::uniform_int_distribution<int> boolDistribution;
-    std::uniform_int_distribution<int> ijkDistribution;
 public:
     BinaryScheme();
     BinaryScheme(const BinaryScheme<T> &scheme);
@@ -28,12 +21,9 @@ public:
     bool read(const std::string &path);
     bool read(std::istream &is);
 
-    int getRank() const;
     int getComplexity() const;
-    int getDimension(int index) const;
     std::string getRing() const;
     std::string getHash() const;
-    int getAvailableFlips() const;
 
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
@@ -85,7 +75,7 @@ private:
 };
 
 template <typename T>
-BinaryScheme<T>::BinaryScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
+BinaryScheme<T>::BinaryScheme() {
 
 }
 
@@ -178,11 +168,6 @@ bool BinaryScheme<T>::read(std::istream &is) {
 }
 
 template <typename T>
-int BinaryScheme<T>::getRank() const {
-    return rank;
-}
-
-template <typename T>
 int BinaryScheme<T>::getComplexity() const {
     int count = 0;
 
@@ -191,11 +176,6 @@ int BinaryScheme<T>::getComplexity() const {
             count += __builtin_popcountll(uvw[i][index]);
 
     return count - 2 * rank - elements[2];
-}
-
-template <typename T>
-int BinaryScheme<T>::getDimension(int index) const {
-    return dimension[index];
 }
 
 template <typename T>
@@ -223,11 +203,6 @@ std::string BinaryScheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
-}
-
-template <typename T>
-int BinaryScheme<T>::getAvailableFlips() const {
-    return flips[0].size() + flips[1].size() + flips[2].size();
 }
 
 template <typename T>
