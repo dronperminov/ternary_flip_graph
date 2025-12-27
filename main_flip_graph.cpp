@@ -9,6 +9,7 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/schemes/ternary_scheme.hpp"
+#include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/flip_graph.hpp"
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
     parser.add("--reset-iterations", ArgType::Natural, "INT", "total iterations before reset", "100M");
     parser.add("--plus-diff", ArgType::Natural, "INT", "maximum rank difference for plus operations", "4");
     parser.add("--reduce-probability", ArgType::Real, "REAL", "probability of reduce operation (0.0 to 1.0)", "0");
-    parser.add("--ring", ArgType::String, "Z2/ZT", "coefficient ring: Z2 ({0, 1}) or ZT ({-1, 0, 1})", "ZT");
+    parser.add("--ring", ArgType::String, "Z2/Z3/ZT", "coefficient ring: Z2 ({0, 1}) or Z3 ({0, 1, 2}) or ZT ({-1, 0, 1})", "ZT");
 
     parser.add("--count", ArgType::Natural, "INT", "number of parallel runners", "8");
     parser.add("--threads", ArgType::Natural, "INT", "number of OpenMP threads", std::to_string(omp_get_max_threads()));
@@ -155,6 +156,9 @@ int main(int argc, char **argv) {
 
     if (ring == "Z2" || ring == "binary")
         return runFlipGraphSizes<BinaryScheme>(parser, nn);
+
+    if (ring == "Z3")
+        return runFlipGraphSizes<Mod3Scheme>(parser, nn);
 
     if (ring == "ZT" || ring == "ternary")
         return runFlipGraphSizes<TernaryScheme>(parser, nn);
