@@ -62,7 +62,8 @@ private:
     void flip(int i, int j, int k, int index1, int index2);
     void plus(int i, int j, int k, int index1, int index2, int variant);
     void split(int i, int j, int k, int index1, int index2);
-    void reduce(int i, int index1, int index2);
+    void reduceAdd(int i, int index1, int index2);
+    void reduceSub(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2);
 
     bool isValidProject(int p, int minN) const;
@@ -293,13 +294,25 @@ bool Mod3Scheme<T>::tryReduce() {
         int index1 = flips[0].index1(i);
         int index2 = flips[0].index2(i);
 
-        if (uvw[1][index1] == uvw[1][index2]) {
-            reduce(2, index1, index2);
+        int cmp1 = uvw[1][index1].compare(uvw[1][index2]);
+        if (cmp1 == 1) {
+            reduceAdd(2, index1, index2);
             return true;
         }
 
-        if (uvw[2][index1] == uvw[2][index2]) {
-            reduce(1, index1, index2);
+        if (cmp1 == -1) {
+            reduceSub(2, index1, index2);
+            return true;
+        }
+
+        int cmp2 = uvw[2][index1].compare(uvw[2][index2]);
+        if (cmp2 == 1) {
+            reduceAdd(1, index1, index2);
+            return true;
+        }
+
+        if (cmp2 == -1) {
+            reduceSub(1, index1, index2);
             return true;
         }
     }
@@ -308,8 +321,14 @@ bool Mod3Scheme<T>::tryReduce() {
         int index1 = flips[1].index1(i);
         int index2 = flips[1].index2(i);
 
-        if (uvw[2][index1] == uvw[2][index2]) {
-            reduce(0, index1, index2);
+        int cmp = uvw[2][index1].compare(uvw[2][index2]);
+        if (cmp == 1) {
+            reduceAdd(0, index1, index2);
+            return true;
+        }
+
+        if (cmp == -1) {
+            reduceSub(0, index1, index2);
             return true;
         }
     }
@@ -871,7 +890,7 @@ void Mod3Scheme<T>::split(int i, int j, int k, int index1, int index2) {
 }
 
 template <typename T>
-void Mod3Scheme<T>::reduce(int i, int index1, int index2) {
+void Mod3Scheme<T>::reduceAdd(int i, int index1, int index2) {
     uvw[i][index1] += uvw[i][index2];
     bool isZero = !uvw[i][index1];
 
@@ -884,20 +903,44 @@ void Mod3Scheme<T>::reduce(int i, int index1, int index2) {
 }
 
 template <typename T>
+void Mod3Scheme<T>::reduceSub(int i, int index1, int index2) {
+    uvw[i][index1] -= uvw[i][index2];
+    bool isZero = !uvw[i][index1];
+
+    removeAt(index2);
+
+    if (isZero)
+        removeZeroes();
+
+    initFlips();
+}
+
+template <typename T>
 bool Mod3Scheme<T>::checkFlipReduce(int i, int j, int index1, int index2) {
-    if (uvw[i][index1] == uvw[i][index2]) {
-        reduce(j, index1, index2);
+    int cmpI = uvw[i][index1].compare(uvw[i][index2]);
+    if (cmpI == 1) {
+        reduceAdd(j, index1, index2);
         return true;
     }
 
-    if (uvw[j][index1] == uvw[j][index2]) {
-        reduce(i, index1, index2);
+    if (cmpI == -1) {
+        reduceSub(j, index1, index2);
+        return true;
+    }
+
+    int cmpJ = uvw[j][index1].compare(uvw[j][index2]);
+    if (cmpJ == 1) {
+        reduceAdd(i, index1, index2);
+        return true;
+    }
+
+    if (cmpJ == -1) {
+        reduceSub(i, index1, index2);
         return true;
     }
 
     return false;
 }
-
 
 template <typename T>
 bool Mod3Scheme<T>::isValidProject(int p, int minN) const {

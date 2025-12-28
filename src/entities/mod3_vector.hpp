@@ -14,6 +14,7 @@ struct Mod3Vector {
     void set(int index, int value);
     void inverse();
 
+    int compare(const Mod3Vector &vector) const;
     bool operator==(const Mod3Vector &vector) const;
     bool operator!=(const Mod3Vector &vector) const;
     int operator[](int index) const;
@@ -89,6 +90,17 @@ void Mod3Vector<T>::set(int index, int value) {
 template <typename T>
 void Mod3Vector<T>::inverse() {
     std::swap(low, high);
+}
+
+template <typename T>
+int Mod3Vector<T>::compare(const Mod3Vector &vector) const {
+    if (low == vector.low && high == vector.high)
+        return 1;
+
+    if (low == vector.high && high == vector.low)
+        return -1;
+
+    return 0;
 }
 
 template <typename T>
