@@ -8,6 +8,7 @@
 
 #include "src/entities/arg_parser.h"
 #include "src/schemes/binary_scheme.hpp"
+#include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/ternary_scheme.hpp"
 
 template <template<typename> typename Scheme, typename T>
@@ -25,6 +26,8 @@ template <template<typename> typename Scheme, typename T>
 int runFindAlternativeSchemes(const ArgParser &parser) {
     std::string inputPath = parser.get("-i");
     std::string outputPath = parser.get("-o");
+    double plusProbability = std::stod(parser.get("--plus-probability"));
+    int plusDiff = std::stoi(parser.get("--plus-diff"));
     size_t maxCount = std::stoul(parser.get("--max-count"));
     int seed = std::stoi(parser.get("--seed"));
     std::string format = parser.get("--format");
@@ -44,25 +47,37 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "Start finding alternative schemes" << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
+    std::cout << "- plus probability: " << plusProbability << std::endl;
+    std::cout << "- plus diff: " << plusDiff << std::endl;
     std::cout << "- max count: " << maxCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- format: " << format << std::endl;
+    std::cout << std::endl;
     std::cout << "- dimension: " << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2) << std::endl;
     std::cout << "- rank: " << scheme.getRank() << std::endl;
     std::cout << "- ring: " << scheme.getRing() << std::endl;
     std::cout << std::endl;
 
     std::mt19937 generator(seed);
+    std::uniform_real_distribution<double> uniform(0.0, 1.0);
+
     std::unordered_set<std::string> hashes;
     hashes.insert(scheme.getHash());
 
     size_t count = 0;
+    int rank = scheme.getRank();
 
     std::cout << "+-----------+-------------+------------+" << std::endl;
     std::cout << "| iteration | alternative | complexity |" << std::endl;
     std::cout << "+-----------+-------------+------------+" << std::endl;
 
-    for (size_t iteration = 1; count < maxCount && scheme.tryFlip(generator); iteration++) {
+    for (size_t iteration = 1; count < maxCount; iteration++) {
+        if (!scheme.tryFlip(generator) || (scheme.getRank() < rank + plusDiff && uniform(generator) < plusProbability))
+            scheme.tryPlus(generator);
+
+        if (scheme.getRank() != rank)
+            continue;
+
         std::string hash = scheme.getHash();
         if (hashes.find(hash) != hashes.end())
             continue;
@@ -88,7 +103,9 @@ int main(int argc, char **argv) {
 
     parser.add("-i", ArgType::String, "PATH", "path to input file with initial scheme", "NULL");
     parser.add("-o", ArgType::String, "PATH", "output directory for alternative schemes", "schemes");
-    parser.add("--ring", ArgType::String, "Z2/ZT", "coefficient ring: Z2 ({0, 1}) or ZT ({-1, 0, 1})", "ZT");
+    parser.add("--plus-probability", ArgType::Real, "REAL", "probability of plus operation (0.0 to 1.0)", "0.2");
+    parser.add("--plus-diff", ArgType::Natural, "INT", "maximum rank difference for plus operations", "2");
+    parser.add("--ring", ArgType::String, "Z2/Z3/ZT", "coefficient ring: Z2 ({0, 1}), Z3 ({0, 1, 2}) or ZT ({-1, 0, 1})", "ZT");
     parser.add("--max-count", ArgType::Natural, "INT", "number of alternative schemes", "10000");
     parser.add("--seed", ArgType::Natural, "INT", "random seed (0 = time-based)", "0");
     parser.add("--format", ArgType::String, "txt/json", "saving schemes format (.json or .txt)", "json");
@@ -99,6 +116,9 @@ int main(int argc, char **argv) {
     std::string ring = parser.get("--ring");
     if (ring == "Z2" || ring == "binary")
         return runFindAlternativeSchemes<BinaryScheme, uint64_t>(parser);
+
+    if (ring == "Z3")
+        return runFindAlternativeSchemes<Mod3Scheme, uint64_t>(parser);
 
     if (ring == "ZT" || ring == "ternary")
         return runFindAlternativeSchemes<TernaryScheme, uint64_t>(parser);
