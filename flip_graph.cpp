@@ -44,6 +44,7 @@ int runFlipGraph(const ArgParser &parser) {
     size_t resetIterations = parseNatural(parser.get("--reset-iterations"));
     int plusDiff = std::stoi(parser.get("--plus-diff"));
     double reduceProbability = std::stod(parser.get("--reduce-probability"));
+    double copyBestProbability = std::stod(parser.get("--copy-best-probability"));
     std::string ring = parser.get("--ring");
 
     int count = std::stoi(parser.get("--count"));
@@ -70,6 +71,7 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- reset iterations: " << resetIterations << std::endl;
     std::cout << "- plus diff: " << plusDiff << std::endl;
     std::cout << "- reduce probability: " << reduceProbability << std::endl;
+    std::cout << "- copy best probability: " << copyBestProbability << std::endl;
     std::cout << "- ring: " << ring << std::endl;
     std::cout << std::endl;
     std::cout << "- count: " << count << std::endl;
@@ -80,7 +82,7 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
 
-    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, reduceProbability, seed, topCount, maxImprovements, format);
+    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, reduceProbability, copyBestProbability, seed, topCount, maxImprovements, format);
 
     bool valid = inputPath == "NULL" ? flipGraph.initializeNaive(n1, n2, n3) : flipGraph.initializeFromFile(inputPath);
     if (!valid)
@@ -122,6 +124,7 @@ int main(int argc, char **argv) {
     parser.add("--reset-iterations", ArgType::Natural, "INT", "total iterations before reset", "100M");
     parser.add("--plus-diff", ArgType::Natural, "INT", "maximum rank difference for plus operations", "4");
     parser.add("--reduce-probability", ArgType::Real, "REAL", "probability of reduce operation (0.0 to 1.0)", "0");
+    parser.add("--copy-best-probability", ArgType::Real, "REAL", "probability to replace p% of schemes with best scheme after improvement (0.0 to 1.0)", "0.5");
     parser.add("--ring", ArgType::String, "Z2/Z3/ZT", "coefficient ring: Z2 ({0, 1}), Z3 ({0, 1, 2}) or ZT ({-1, 0, 1})", "ZT");
 
     parser.add("--count", ArgType::Natural, "INT", "number of parallel runners", "8");

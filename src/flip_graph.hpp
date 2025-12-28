@@ -20,6 +20,7 @@ class FlipGraph {
     size_t resetIterations;
     int plusDiff;
     double reduceProbability;
+    double copyBestProbability;
     int seed;
     int topCount;
     size_t maxImprovements;
@@ -40,7 +41,7 @@ class FlipGraph {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
+    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path);
@@ -63,7 +64,7 @@ private:
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
@@ -71,6 +72,7 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
     this->plusDiff = plusDiff;
     this->resetIterations = resetIterations;
     this->reduceProbability = reduceProbability;
+    this->copyBestProbability = copyBestProbability;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
     this->maxImprovements = maxImprovements;
@@ -224,11 +226,13 @@ void FlipGraph<Scheme>::updateBest(size_t iteration) {
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
-        if (uniform(generators[omp_get_thread_num()]) > 0.5)
+        if (uniform(generators[omp_get_thread_num()]) >= copyBestProbability || i == top)
             continue;
 
-        schemes[i].copy(schemesBest[indices[0]]);
+        schemes[i].copy(schemesBest[top]);
+        schemesBest[i].copy(schemesBest[top]);
         iterations[i] = 0;
+        flips[i] = 0;
     }
 }
 
