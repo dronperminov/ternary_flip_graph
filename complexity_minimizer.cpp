@@ -9,6 +9,7 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/schemes/ternary_scheme.hpp"
+#include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/complexity_minimizer.hpp"
 
@@ -63,7 +64,7 @@ int main(int argc, char **argv) {
 
     parser.add("--flip-iterations", ArgType::Natural, "INT", "flip iterations before reporting ", "100K");
     parser.add("--plus-probability", ArgType::Real, "REAL", "probability of plus operation (0.0 to 1.0)", "0");
-    parser.add("--ring", ArgType::String, "Z2/ZT", "coefficient ring: Z2 ({0, 1}) or ZT ({-1, 0, 1})", "ZT");
+    parser.add("--ring", ArgType::String, "Z2/Z3/ZT", "coefficient ring: Z2 ({0, 1}), Z3 ({0, 1, 2}) or ZT ({-1, 0, 1})", "ZT");
 
     parser.add("--count", ArgType::Natural, "INT", "number of parallel runners", "8");
     parser.add("--threads", ArgType::Natural, "INT", "number of OpenMP threads", std::to_string(omp_get_max_threads()));
@@ -79,6 +80,9 @@ int main(int argc, char **argv) {
 
     if (ring == "Z2" || ring == "binary")
         return runComplexityMinimizer<BinaryScheme, uint64_t>(parser);
+
+    if (ring == "Z3")
+        return runComplexityMinimizer<Mod3Scheme, uint64_t>(parser);
 
     if (ring == "ZT" || ring == "ternary")
         return runComplexityMinimizer<TernaryScheme, uint64_t>(parser);

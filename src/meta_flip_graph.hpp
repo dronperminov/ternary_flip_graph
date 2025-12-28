@@ -24,6 +24,7 @@ class MetaFlipGraph {
     double resizeProbability;
     int seed;
     size_t topCount;
+    std::string format;
 
     std::vector<Scheme> schemes;
     std::vector<Scheme> schemesBest;
@@ -42,7 +43,7 @@ class MetaFlipGraph {
     std::unordered_map<std::string, std::vector<int>> dimension2indices;
     std::vector<std::string> dimensions;
 public:
-    MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount);
+    MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format);
 
     void initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path);
@@ -64,10 +65,12 @@ private:
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
     std::string sortedDimension(const Scheme &scheme) const;
+
+    void saveScheme(const Scheme &scheme, const std::string &path) const;
 };
 
 template <typename Scheme>
-MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, (int) count);
@@ -78,6 +81,7 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
     this->resizeProbability = resizeProbability;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
+    this->format = format;
 
     for (int i = 0; i < threads; i++)
         generators.emplace_back(seed + i);
@@ -377,11 +381,10 @@ void MetaFlipGraph<Scheme>::updateBest(size_t iteration) {
         }
 
         std::string path = getSavePath(schemesBest[top], iteration, outputPath);
-        schemesBest[top].saveJson(path + ".json");
-        schemesBest[top].saveTxt(path + ".txt");
+        saveScheme(schemesBest[top], path);
         dimension2improvements[pair.first].push_back(Scheme(schemesBest[top]));
 
-        std::cout << "Rank of " << pair.first << " was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
+        std::cout << "Rank of " << pair.first << " was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "." << format << "\"" << std::endl;
         dimension2bestRank[pair.first] = bestRanks[top];
     }
 }
@@ -427,9 +430,8 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
         }
 
         std::string path = getSavePath(schemes[pair.second], iteration, outputPath);
-        schemes[pair.second].saveJson(path + ".json");
-        schemes[pair.second].saveTxt(path + ".txt");
-        std::cout << "Rank of " << pair.first << " was improved to " << bestRanks[pair.second] << ", scheme was saved to \"" << path << "\"" << std::endl;
+        saveScheme(schemes[pair.second], path);
+        std::cout << "Rank of " << pair.first << " was improved to " << bestRanks[pair.second] << ", scheme was saved to \"" << path << "." << format << "\"" << std::endl;
     }
 }
 
@@ -677,4 +679,14 @@ std::string MetaFlipGraph<Scheme>::sortedDimension(const Scheme &scheme) const {
     std::stringstream ss;
     ss << dimension[0] << "x" << dimension[1] << "x" << dimension[2];
     return ss.str();
+}
+
+template <typename Scheme>
+void MetaFlipGraph<Scheme>::saveScheme(const Scheme &scheme, const std::string &path) const {
+    if (format == "json") {
+        scheme.saveJson(path + ".json");
+    }
+    else if (format == "txt") {
+        scheme.saveTxt(path + ".txt");
+    }
 }

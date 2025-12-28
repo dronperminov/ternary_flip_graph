@@ -24,6 +24,7 @@ class FlipGraph {
     int topCount;
     size_t maxImprovements;
     size_t improvementsIndex;
+    std::string format;
 
     std::vector<Scheme> schemes;
     std::vector<Scheme> schemesBest;
@@ -39,7 +40,7 @@ class FlipGraph {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements);
+    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path);
@@ -57,10 +58,12 @@ private:
 
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
+
+    void saveScheme(const Scheme &scheme, const std::string &path) const;
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
@@ -71,6 +74,7 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
     this->seed = seed;
     this->topCount = std::min(topCount, count);
     this->maxImprovements = maxImprovements;
+    this->format = format;
 
     resetImprovements();
 
@@ -212,11 +216,10 @@ void FlipGraph<Scheme>::updateBest(size_t iteration) {
     }
 
     std::string path = getSavePath(schemesBest[top], iteration, outputPath);
-    schemesBest[top].saveJson(path + ".json");
-    schemesBest[top].saveTxt(path + ".txt");
+    saveScheme(schemesBest[top], path);
     addImprovement(schemesBest[top]);
 
-    std::cout << "Rank was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
+    std::cout << "Rank was improved from " << bestRank << " to " << bestRanks[top] << ", scheme was saved to \"" << path << "." << format << "\"" << std::endl;
     bestRank = bestRanks[top];
 
     #pragma omp parallel for num_threads(threads)
@@ -365,4 +368,14 @@ std::string FlipGraph<Scheme>::getSavePath(const Scheme &scheme, int iteration, 
     ss << "_iteration" << iteration;
     ss << "_" << scheme.getRing();
     return ss.str();
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::saveScheme(const Scheme &scheme, const std::string &path) const {
+    if (format == "json") {
+        scheme.saveJson(path + ".json");
+    }
+    else if (format == "txt") {
+        scheme.saveTxt(path + ".txt");
+    }
 }

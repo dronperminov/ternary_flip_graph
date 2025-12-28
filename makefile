@@ -2,13 +2,13 @@ CXX = g++
 FLAGS = -Wall -O3 -std=c++17 -fopenmp
 OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o src/utils.o src/schemes/base_scheme.o
 
-all: ternary_flip_graph ternary_meta_flip_graph complexity_minimizer find_alternative_schemes
+all: flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes
 
-ternary_flip_graph: $(OBJECTS)
-	$(CXX) $(FLAGS) $(OBJECTS) main_flip_graph.cpp -o ternary_flip_graph
+flip_graph: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) flip_graph.cpp -o flip_graph
 
-ternary_meta_flip_graph: $(OBJECTS)
-	$(CXX) $(FLAGS) $(OBJECTS) main_meta_flip_graph.cpp -o ternary_meta_flip_graph
+meta_flip_graph: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) meta_flip_graph.cpp -o meta_flip_graph
 
 complexity_minimizer: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) complexity_minimizer.cpp -o complexity_minimizer
@@ -20,4 +20,4 @@ find_alternative_schemes: $(OBJECTS)
 	$(CXX) $(FLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJECTS) ternary_flip_graph ternary_meta_flip_graph find_alternative_schemes
+	rm -rf $(OBJECTS) flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes
