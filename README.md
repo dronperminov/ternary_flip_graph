@@ -1,12 +1,13 @@
-# ternary_flip_graph tools
+# ternary_flip_graph
 
 [![arXiv:2511.20317](https://img.shields.io/badge/arXiv-2511.20317-b31b1b.svg)](https://arxiv.org/abs/2511.20317)
+[![arXiv:2512.13365](https://img.shields.io/badge/arXiv-2512.21980-b31b1b.svg)](https://arxiv.org/abs/2512.21980)
 
 A comprehensive toolkit for discovering fast matrix multiplication algorithms using flip graph exploration with support for Z₂, Z₃ and ternary coefficient sets.
 
 
 ## Key Features
-* Multi-ring support: works with Z₂ (`{0, 1}`), Z₃ (`{0, 1, 2}`) and ternary coefficient sets (`{-1,0,1}`);
+* Multi-ring support: works with Z₂ (`{0, 1}`), Z₃ (`{0, 1, 2}`) and ternary coefficient sets (`{-1, 0, 1}`);
 * No lifting required: ternary coefficients (`{-1, 0, 1}`) produce schemes valid over any ring automatically;
 * Parallel exploration: multi-threaded search with configurable parallel runners;
 * Multiple optimization strategies: rank minimization, naive complexity minimization and alternative scheme discovery;
@@ -183,6 +184,16 @@ If you use this software in your research, please cite:
     author={Perminov, Andrew I},
     journal={arXiv preprint arXiv:2511.20317},
     url={https://arxiv.org/abs/2511.20317},
+    year={2025}
+}
+```
+
+```bibtex
+@article{perminov202558,
+    title={A 58-Addition, Rank-23 Scheme for General 3x3 Matrix Multiplication},
+    author={Perminov, Andrew I},
+    journal={arXiv preprint arXiv:2512.21980},
+    url={https://arxiv.org/abs/2512.21980},
     year={2025}
 }
 ```
