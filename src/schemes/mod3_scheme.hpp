@@ -64,7 +64,7 @@ private:
     void split(int i, int j, int k, int index1, int index2);
     void reduceAdd(int i, int index1, int index2);
     void reduceSub(int i, int index1, int index2);
-    bool checkFlipReduce(int j, int k, int index1, int index2);
+    bool checkFlipReduce(int j, int k, int index1, int index2, int sign);
 
     bool isValidProject(int p, int minN) const;
     bool isValidExtension(int p, int maxN, int maxRank) const;
@@ -647,7 +647,7 @@ void Mod3Scheme<T>::saveTxt(const std::string &path) const {
     std::ofstream f(path);
 
     f << dimension[0] << " " << dimension[1] << " " << dimension[2] << " " << rank << std::endl;
-    
+
     for (int i = 0; i < 3; i++) {
         for (int index = 0; index < rank; index++)
             for (int j = 0; j < elements[i]; j++)
@@ -822,18 +822,22 @@ void Mod3Scheme<T>::flip(int i, int j, int k, int index1, int index2) {
     }
 
     for (int index = 0; index < rank; index++) {
-        if (index != index1 && uvw[j][index] == uvw[j][index1]) {
-            if (checkFlipReduce(i, k, index, index1))
+        if (index != index1) {
+            int cmp = uvw[j][index].compare(uvw[j][index1]);
+            if (cmp != 0 && checkFlipReduce(i, k, index, index1, cmp))
                 return;
 
-            flips[j].add(index1, index);
+            if (cmp == 1)
+                flips[j].add(index1, index);
         }
 
-        if (index != index2 && uvw[k][index] == uvw[k][index2]) {
-            if (checkFlipReduce(i, j, index, index2))
+        if (index != index2) {
+            int cmp = uvw[k][index].compare(uvw[k][index2]);
+            if (cmp != 0 && checkFlipReduce(i, j, index, index2, cmp))
                 return;
 
-            flips[k].add(index2, index);
+            if (cmp == 1)
+                flips[k].add(index2, index);
         }
     }
 }
@@ -916,25 +920,25 @@ void Mod3Scheme<T>::reduceSub(int i, int index1, int index2) {
 }
 
 template <typename T>
-bool Mod3Scheme<T>::checkFlipReduce(int i, int j, int index1, int index2) {
+bool Mod3Scheme<T>::checkFlipReduce(int i, int j, int index1, int index2, int sign) {
     int cmpI = uvw[i][index1].compare(uvw[i][index2]);
-    if (cmpI == 1) {
+    if (cmpI == sign) {
         reduceAdd(j, index1, index2);
         return true;
     }
 
-    if (cmpI == -1) {
+    if (cmpI == -sign) {
         reduceSub(j, index1, index2);
         return true;
     }
 
     int cmpJ = uvw[j][index1].compare(uvw[j][index2]);
-    if (cmpJ == 1) {
+    if (cmpJ == sign) {
         reduceAdd(i, index1, index2);
         return true;
     }
 
-    if (cmpJ == -1) {
+    if (cmpJ == -sign) {
         reduceSub(i, index1, index2);
         return true;
     }
