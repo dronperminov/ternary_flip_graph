@@ -94,12 +94,14 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
 
 template <typename Scheme>
 bool FlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
+    std::cout << "Start initializing with naive " << n1 << "x" << n2 << "x" << n3 << " schemes" << std::endl;
+
     if (!schemes[0].initializeNaive(n1, n2, n3))
         return false;
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 1; i < count; i++)
-        schemes[i].copy(schemes[0]);
+        schemes[i].initializeNaive(n1, n2, n3);
 
     resetImprovements();
     addImprovement(schemes[0]);

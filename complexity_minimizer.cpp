@@ -15,19 +15,19 @@
 
 template <template<typename> typename Scheme, typename T>
 int runComplexityMinimizer(const ArgParser &parser) {
-    std::string inputPath = parser.get("-i");
-    std::string outputPath = parser.get("-o");
+    std::string inputPath = parser["--input-path"];
+    std::string outputPath = parser["--output-path"];
 
-    size_t flipIterations = parseNatural(parser.get("--flip-iterations"));
-    double plusProbability = std::stod(parser.get("--plus-probability"));
-    std::string ring = parser.get("--ring");
+    std::string ring = parser["--ring"];
+    size_t flipIterations = parseNatural(parser["--flip-iterations"]);
+    double plusProbability = std::stod(parser["--plus-probability"]);
 
-    int count = std::stoi(parser.get("--count"));
-    int threads = std::stoi(parser.get("--threads"));
-    int topCount = std::stoi(parser.get("--top-count"));
-    int seed = std::stoi(parser.get("--seed"));
-    int maxNoImprovements = std::stoi(parser.get("--max-no-improvements"));
-    std::string format = parser.get("--format");
+    int count = std::stoi(parser["--count"]);
+    int threads = std::stoi(parser["--threads"]);
+    int topCount = std::stoi(parser["--top-count"]);
+    int seed = std::stoi(parser["--seed"]);
+    int maxNoImprovements = std::stoi(parser["--max-no-improvements"]);
+    std::string format = parser["--format"];
 
     if (seed == 0)
         seed = time(0);
@@ -36,9 +36,10 @@ int runComplexityMinimizer(const ArgParser &parser) {
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
+    std::cout << "- ring: " << ring << std::endl;
     std::cout << "- flip iterations: " << flipIterations << std::endl;
     std::cout << "- plus probability: " << plusProbability << std::endl;
-    std::cout << "- ring: " << ring << std::endl;
+    std::cout << std::endl;
     std::cout << "- count: " << count << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- top count: " << topCount << std::endl;
@@ -59,34 +60,31 @@ int runComplexityMinimizer(const ArgParser &parser) {
 int main(int argc, char **argv) {
     ArgParser parser("complexity_minimizer", "Find fast matrix multiplication scheme with lowest naive complexity using flip graph");
 
-    parser.add("-i", ArgType::String, "PATH", "path to input file with initial scheme");
-    parser.add("-o", ArgType::String, "PATH", "output directory for discovered schemes", "schemes");
+    parser.addSection("Input / output");
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial schemes", "", true);
+    parser.add("--output-path", "-o", ArgType::Path, "Output directory for minimized schemes", "schemes");
 
-    parser.add("--flip-iterations", ArgType::Natural, "INT", "flip iterations before reporting ", "100K");
-    parser.add("--plus-probability", ArgType::Real, "REAL", "probability of plus operation (0.0 to 1.0)", "0");
-    parser.add("--ring", ArgType::String, "Z2/Z3/ZT", "coefficient ring: Z2 ({0, 1}), Z3 ({0, 1, 2}) or ZT ({-1, 0, 1})", "ZT");
+    parser.addSection("Complexity minimizer parameters");
+    parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
+    parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting ", "100K");
+    parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0");
 
-    parser.add("--count", ArgType::Natural, "INT", "number of parallel runners", "8");
-    parser.add("--threads", ArgType::Natural, "INT", "number of OpenMP threads", std::to_string(omp_get_max_threads()));
-    parser.add("--top-count", ArgType::Natural, "INT", "number of top schemes to report", "10");
-    parser.add("--seed", ArgType::Natural, "INT", "random seed (0 = time-based)", "0");
-    parser.add("--max-no-improvements", ArgType::Natural, "INT", "maximum iterations without complexity improvement before termination", "3");
-    parser.add("--format", ArgType::String, "txt/json", "output format for saved schemes: txt or json", "json");
+    parser.addSection("Run parameters");
+    parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");
+    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
+    parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
+    parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
+    parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without complexity improvement before termination", "3");
+    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
     if (!parser.parse(argc, argv))
         return 0;
 
-    std::string ring = parser.get("--ring");
-
-    if (ring == "Z2" || ring == "binary")
+    if (parser["--ring"] == "Z2")
         return runComplexityMinimizer<BinaryScheme, uint64_t>(parser);
 
-    if (ring == "Z3")
+    if (parser["--ring"] == "Z3")
         return runComplexityMinimizer<Mod3Scheme, uint64_t>(parser);
 
-    if (ring == "ZT" || ring == "ternary")
-        return runComplexityMinimizer<TernaryScheme, uint64_t>(parser);
-
-    std::cout << "error: invalid ring option: \"" << ring << "\"" << std::endl;
-    return -1;
+    return runComplexityMinimizer<TernaryScheme, uint64_t>(parser);
 }

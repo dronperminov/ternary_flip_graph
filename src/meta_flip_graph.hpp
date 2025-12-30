@@ -45,7 +45,7 @@ class MetaFlipGraph {
 public:
     MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format);
 
-    void initializeNaive(int n1, int n2, int n3);
+    bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path);
     void initializeBestTernaryRanks();
     void initializeBestBinaryRanks();
@@ -126,15 +126,19 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
 }
 
 template <typename Scheme>
-void MetaFlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
+bool MetaFlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
     std::cout << "Start initializing with naive " << n1 << "x" << n2 << "x" << n3 << " schemes" << std::endl;
 
+    if (!schemes[0].initializeNaive(n1, n2, n3))
+        return false;
+
     #pragma omp parallel for num_threads(threads)
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 1; i < count; i++)
         schemes[i].initializeNaive(n1, n2, n3);
 
     dimension2improvements.clear();
     dimension2improvements[sortedDimension(schemes[0])].push_back(Scheme(schemes[0]));
+    return true;
 }
 
 template <typename Scheme>

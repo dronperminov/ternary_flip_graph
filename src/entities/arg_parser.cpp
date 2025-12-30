@@ -1,105 +1,116 @@
 #include "arg_parser.h"
 
-ArgParser::ArgParser(const std::string &name, const std::string &description) {
-    this->name = name;
+
+Argument::Argument(const std::string &longName, const std::string &shortName, ArgType type, const std::string &description, const std::string &section, const std::vector<std::string> &choices, const std::string &defaultValue, bool required) {
+    this->longName = longName;
+    this->shortName = shortName;
+    this->type = type;
     this->description = description;
-    this->required = 0;
+    this->section = section;
+    this->choices = choices;
+    this->defaultValue = defaultValue;
+    this->value = defaultValue;
+    this->required = required;
+    this->isSet = false;
 }
 
-void ArgParser::add(const std::string &name, ArgType type, const std::string &meta, const std::string &description, const std::string &value) {
-    args.push_back({name, type, meta, description, value});
+std::string Argument::getHelpName() const {
+    std::stringstream ss;
 
-    if (value == "")
-        required++;
+    if (longName.empty()) {
+        ss << shortName;
+    }
+    else if (shortName.empty()) {
+        ss << longName;
+    }
+    else {
+        ss << shortName + ", " + longName;
+    }
+
+    ss << " " << getTypeHint();
+    return ss.str();
 }
 
-bool ArgParser::parse(int argc, char *argv[]) {
-    if (argc == 2 && std::string(argv[1]) == "--help") {
-        help();
+std::string Argument::getHelpDescription() const {
+    std::stringstream ss;
+    ss << description;
+
+    if (type != ArgType::Flag && !defaultValue.empty())
+        ss << " (default: " << defaultValue << ")";
+
+    if (required)
+        ss << " [REQUIRED]";
+
+    return ss.str();
+}
+
+std::string Argument::getTypeHint() const {
+    if (!choices.empty()) {
+        std::stringstream ss;
+        ss << "{";
+
+        for (size_t i = 0; i < choices.size(); i++)
+            ss << (i > 0 ? ", " : "") << choices[i];
+
+        ss << "}";
+        return ss.str();
+    }
+
+    if (type == ArgType::Natural)
+        return "INT";
+
+    if (type == ArgType::Real)
+        return "REAL";
+
+    if (type == ArgType::String)
+        return "STR";
+
+    if (type == ArgType::Path)
+        return "PATH";
+
+    return "";
+}
+
+size_t Argument::getWidth() const {
+    size_t typeHintWidth = 1 + getTypeHint().length();
+
+    if (longName.empty())
+        return shortName.length() + typeHintWidth;
+
+    if (shortName.empty())
+        return longName.length() + typeHintWidth;
+
+    return longName.length() + 2 + shortName.length() + typeHintWidth;
+}
+
+bool Argument::validate(const std::string &parsedName) const {
+    if (type != ArgType::Flag && !isValidChoice(value)) {
+        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not valid choice. Valid choices are: ";
+
+        for (size_t i = 0; i < choices.size(); i++)
+            std::cerr << (i > 0 ? ", " : "") << choices[i];
+
+        std::cerr << std::endl;
         return false;
     }
 
-    std::unordered_map<std::string, Arg> name2arg;
-
-    for (auto arg : args) {
-        name2arg[arg.name] = arg;
-
-        if (arg.value != "")
-            parsed[arg.name] = arg.value;
-    }
-
-    for (int i = 1; i < argc; i += 2) {
-        std::string name = argv[i];
-
-        if (name2arg.find(name) == name2arg.end()) {
-            std::cerr << "unknown argument \"" << name << "\"" << std::endl;
-            return false;
-        }
-
-        if (i == argc - 1) {
-            std::cerr << "no value for arg \"" << name << "\"" << std::endl;
-            return false;
-        }
-
-        parsed[name] = argv[i + 1];
-
-        if (!validate(name2arg[name], parsed[name]))
-            return false;
-    }
-
-    return checkRequired();
-}
-
-void ArgParser::help() {
-    std::cout << description << std::endl;
-    std::cout << "Usage: ./" << name;
-
-    for (auto arg : args) {
-        if (arg.value != "")
-            std::cout << " [" << arg.name << " " << arg.value << "]";
-        else
-            std::cout << " " << arg.name << " " << arg.meta;
-    }
-
-    std::cout << std::endl << std::endl;
-    std::cout << "Arguments description:" << std::endl;
-
-    for (auto arg : args) {
-        std::cout << arg.name << ": " << arg.description;
-
-        if (arg.value != "")
-            std::cout << " (default: " << arg.value << ")";
-
-        std::cout << std::endl;
-    }
-}
-
-std::string ArgParser::get(const std::string &name) const {
-    auto it = parsed.find(name);
-    if (it == parsed.end())
-        throw std::runtime_error("no parsed value for argument \"" + name + "\"");
-
-    return it->second;
-}
-
-bool ArgParser::validate(const Arg &arg, const std::string &value) const {
-    if (arg.type == ArgType::String)
+    if (type == ArgType::String || type == ArgType::Path)
         return true;
 
-    if (arg.type == ArgType::Natural && !isNatural(value)) {
-        std::cerr << "value for arg \"" << arg.name << "\" is not natural (" << value << ")" << std::endl;
+    if (type == ArgType::Natural && !isNatural(value)) {
+        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not natural" << std::endl;
         return false;
     }
 
-    if (arg.type == ArgType::Real && !isReal(value)) {
-        std::cerr << "value for arg \"" << arg.name << "\" is not real (" << value << ")" << std::endl;
+    if (type == ArgType::Real && !isReal(value)) {
+        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not real" << std::endl;
         return false;
     }
 
     return true;
 }
 
-bool ArgParser::isNatural(const std::string &value) const {
+bool Argument::isNatural(const std::string &value) const {
     size_t size = value.size();
 
     if (value.back() == 'K' || value.back() == 'k' || value.back() == 'M' || value.back() == 'm' || value.back() == 'B' || value.back() == 'b')
@@ -112,7 +123,7 @@ bool ArgParser::isNatural(const std::string &value) const {
     return std::stoul(value) > 0;
 }
 
-bool ArgParser::isReal(const std::string &value) const {
+bool Argument::isReal(const std::string &value) const {
     if (value.size() == 0)
         return false;
 
@@ -133,13 +144,144 @@ bool ArgParser::isReal(const std::string &value) const {
     return true;
 }
 
-bool ArgParser::checkRequired() const {
-    for (auto arg : args) {
-        if (arg.value == "" && parsed.find(arg.name) == parsed.end()) {
-            std::cerr << "no value for argument \"" << arg.name << "\"" << std::endl;
+bool Argument::isValidChoice(const std::string &value) const {
+    if (choices.empty())
+        return true;
+
+    return std::find(choices.begin(), choices.end(), value) != choices.end();
+}
+
+ArgParser::ArgParser(const std::string &name, const std::string &description) {
+    this->name = name;
+    this->description = description;
+    this->maxArgWidth = 30;
+
+    addSection("Main options");
+    add("--help", "-h", ArgType::Flag, "Show this help message");
+}
+
+void ArgParser::addSection(const std::string &section) {
+    sections.push_back(section);
+}
+
+void ArgParser::addChoices(const std::string &longName, const std::string &shortName, ArgType type, const std::string &description, const std::vector<std::string> &choices, const std::string &defaultValue, bool required) {
+    Argument argument(longName, shortName, type, description, sections.back(), choices, defaultValue, required);
+    arguments.emplace_back(argument);
+
+    if (!longName.empty())
+        arg2index[longName] = arguments.size() - 1;
+
+    if (!shortName.empty())
+        arg2index[shortName] = arguments.size() - 1;
+
+    maxArgWidth = std::max(maxArgWidth, argument.getWidth());
+}
+
+void ArgParser::addChoices(const std::string &name, ArgType type, const std::string &description, const std::vector<std::string> &choices, const std::string &defaultValue, bool required) {
+    if (name.find("--") == 0) {
+        addChoices(name, "", type, description, choices, defaultValue, required);
+    }
+    else if (name.find("-") == 0) {
+        addChoices("", name, type, description, choices, defaultValue, required);
+    }
+    else
+        throw std::runtime_error("Argument name must starts with \"-\" or \"--\"");
+}
+
+void ArgParser::add(const std::string &longName, const std::string &shortName, ArgType type, const std::string &description, const std::string &defaultValue, bool required) {
+    addChoices(longName, shortName, type, description, {}, defaultValue, required);
+}
+
+void ArgParser::add(const std::string &name, ArgType type, const std::string &description, const std::string &defaultValue, bool required) {
+    addChoices(name, type, description, {}, defaultValue, required);
+}
+
+bool ArgParser::parse(int argc, char *argv[]) {
+    if (argc > 0)
+        name = argv[0];
+
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "--help" || arg == "-h") {
+            help();
+            return false;
+        }
+
+        auto it = arg2index.find(arg);
+        if (it == arg2index.end()) {
+            std::cerr << "Unknown argument: " << arg << std::endl;
+            return false;
+        }
+
+        Argument& argument = arguments[it->second];
+        argument.isSet = true;
+
+        if (argument.type == ArgType::Flag) {
+            argument.value = "true";
+            continue;
+        }
+
+        if (i + 1 >= argc) {
+            std::cerr << "Missing value for argument: " << arg << std::endl;
+            return false;
+        }
+
+        argument.value = argv[++i];
+        if (!argument.validate(arg))
+            return false;
+    }
+
+    for (const auto& argument : arguments) {
+        if (argument.required && !argument.isSet) {
+            std::cerr << "Required argument missing: " << (argument.longName.empty() ? argument.shortName : argument.longName) << std::endl;
             return false;
         }
     }
 
     return true;
+}
+
+bool ArgParser::isSet(const std::string &name) const {
+    auto it = arg2index.find(name);
+    if (it == arg2index.end())
+        return false;
+
+    return arguments[it->second].isSet;
+}
+
+void ArgParser::help() const {
+    std::cout << description << std::endl;
+    std::cout << std::endl;
+    std::cout << "Usage: " << name << " [ARGS...]" << std::endl;
+
+    std::unordered_map<std::string, std::vector<const Argument *>> section2args;
+
+    for (const auto &argument : arguments)
+        section2args[argument.section].push_back(&argument);
+
+    for (const auto &section : sections) {
+        if (section2args.at(section).empty())
+            continue;
+
+        std::cout << std::endl << section << ":" << std::endl;
+
+        for (const auto &argument : section2args.at(section)) {
+            std::cout << std::left << std::setw(maxArgWidth + 2) << argument->getHelpName();
+            std::cout << argument->getHelpDescription();
+            std::cout << std::endl;
+        }
+    }
+}
+
+std::string ArgParser::get(const std::string &name) const {
+    auto it = arg2index.find(name);
+    if (it == arg2index.end())
+        throw std::runtime_error("Argument not found: " + name);
+
+    return arguments[it->second].value;
+}
+
+std::string ArgParser::operator[](const std::string &name) const {
+    return get(name);
 }
