@@ -19,6 +19,7 @@ class ComplexityMinimizer {
     size_t flipIterations;
     double plusProbability;
     int seed;
+    int goal;
     int topCount;
     std::string format;
 
@@ -31,7 +32,7 @@ class ComplexityMinimizer {
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
 public:
-    ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int seed, int topCount, const std::string &format);
+    ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int seed, bool maximize, int topCount, const std::string &format);
 
     bool initializeFromFile(const std::string &path);
     void run(int maxNoImprovements);
@@ -47,7 +48,7 @@ private:
 };
 
 template <typename Scheme>
-ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int seed, int topCount, const std::string &format) : uniform(0.0, 1.0) {
+ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int seed, bool maximize, int topCount, const std::string &format) : uniform(0.0, 1.0) {
     this->initialCount = 0;
     this->count = count;
     this->outputPath = outputPath;
@@ -55,6 +56,7 @@ ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &o
     this->flipIterations = flipIterations;
     this->plusProbability = plusProbability;
     this->seed = seed;
+    this->goal = maximize ? -1 : 1;
     this->topCount = std::min(topCount, count);
     this->format = format;
     this->bestComplexity = 0;
@@ -161,7 +163,7 @@ void ComplexityMinimizer<Scheme>::minimize(Scheme &scheme, Scheme &schemeBest, i
             continue;
 
         int complexity = scheme.getComplexity();
-        if (complexity < bestComplexity) {
+        if ((complexity - bestComplexity) * goal < 0) {
             bestComplexity = complexity;
             schemeBest.copy(scheme);
         }
@@ -174,7 +176,7 @@ void ComplexityMinimizer<Scheme>::minimize(Scheme &scheme, Scheme &schemeBest, i
 template <typename Scheme>
 bool ComplexityMinimizer<Scheme>::updateBest() {
     std::partial_sort(indices.begin(), indices.begin() + topCount, indices.end(), [this](int index1, int index2) {
-        return bestComplexities[index1] < bestComplexities[index2];
+        return (bestComplexities[index1] - bestComplexities[index2]) * goal < 0;
     });
 
     #pragma omp parallel for num_threads(threads)
@@ -183,7 +185,7 @@ bool ComplexityMinimizer<Scheme>::updateBest() {
             schemes[i].copy(schemesBest[indices[0]]);
 
     int top = indices[0];
-    if (bestComplexities[top] >= bestComplexity)
+    if ((bestComplexities[top] - bestComplexity) * goal >= 0)
         return false;
 
     if (!schemesBest[top].validate()) {

@@ -26,13 +26,14 @@ int runComplexityMinimizer(const ArgParser &parser) {
     int threads = std::stoi(parser["--threads"]);
     int topCount = std::stoi(parser["--top-count"]);
     int seed = std::stoi(parser["--seed"]);
+    bool maximize = parser["--maximize"] == "true";
     int maxNoImprovements = std::stoi(parser["--max-no-improvements"]);
     std::string format = parser["--format"];
 
     if (seed == 0)
         seed = time(0);
 
-    std::cout << "Parsed parameters of the complexity minimizer algorithm:" << std::endl;
+    std::cout << "Parsed parameters of the complexity " << (maximize ? "maximizer" : "minimizer") << " algorithm:" << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
@@ -48,7 +49,7 @@ int runComplexityMinimizer(const ArgParser &parser) {
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
 
-    ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, seed, topCount, format);
+    ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, seed, maximize, topCount, format);
 
     if (!minimizer.initializeFromFile(inputPath))
         return -1;
@@ -74,6 +75,7 @@ int main(int argc, char **argv) {
     parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
+    parser.add("--maximize", ArgType::Flag, "Maximize complexity instead of minimizing", "false");
     parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without complexity improvement before termination", "3");
     parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
