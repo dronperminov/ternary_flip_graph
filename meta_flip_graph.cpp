@@ -67,7 +67,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = metaFlipGraph.initializeFromFile(parser["--input-path"]);
+        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser["--multiple"] == "true");
     }
     else {
         valid = metaFlipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
@@ -89,8 +89,9 @@ int main(int argc, char **argv) {
     parser.add("-n3", ArgType::Natural, "Number of columns in second matrix (B)");
 
     parser.addSection("Input / output");
-    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial schemes");
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)");
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
+    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
 
     parser.addSection("Meta flip graph parameters");
     parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
@@ -119,6 +120,11 @@ int main(int argc, char **argv) {
 
     if (parser.isSet("--input-path") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
         std::cerr << "Specify either dimension args (-n1 -n2 -n3) or an input file (-i), not both" << std::endl;
+        return -1;
+    }
+
+    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
+        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
         return -1;
     }
 

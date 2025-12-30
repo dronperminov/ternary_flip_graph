@@ -25,8 +25,12 @@ int getMaxMatrixElements(const ArgParser &parser) {
             return 0;
         }
 
-        int count;
-        f >> count >> n1 >> n2 >> n3;
+        int count = 1;
+
+        if (parser["--multiple"] == "true")
+            f >> count;
+
+        f >> n1 >> n2 >> n3;
         f.close();
     }
     else {
@@ -35,7 +39,19 @@ int getMaxMatrixElements(const ArgParser &parser) {
         n3 = std::stoi(parser["-n3"]);
     }
 
-    return std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
+    int nn = std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
+
+    if (nn < 1) {
+        std::cerr << "input matrix sizes is not valid: " << n1 << "x" << n2 << "x" << n3 << std::endl;
+        return 0;
+    }
+
+    if (nn > 64) {
+        std::cerr << "input matrix sizes too big: " << n1 << "x" << n2 << "x" << n3 << std::endl;
+        return 0;
+    }
+
+    return nn;
 }
 
 template <template<typename> typename Scheme, typename T>
@@ -91,7 +107,7 @@ int runFlipGraph(const ArgParser &parser) {
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = flipGraph.initializeFromFile(parser["--input-path"]);
+        valid = flipGraph.initializeFromFile(parser["--input-path"], parser["--multiple"] == "true");
     }
     else {
         valid = flipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
@@ -112,11 +128,7 @@ int runFlipGraphSizes(const ArgParser &parser, int nn) {
     if (nn <= 32)
         return runFlipGraph<Scheme, uint32_t>(parser);
 
-    if (nn <= 64)
-        return runFlipGraph<Scheme, uint64_t>(parser);
-
-    std::cout << "error: input matrix sizes too big" << std::endl;
-    return -1;
+    return runFlipGraph<Scheme, uint64_t>(parser);
 }
 
 int main(int argc, char **argv) {
@@ -128,8 +140,9 @@ int main(int argc, char **argv) {
     parser.add("-n3", ArgType::Natural, "Number of columns in second matrix (B)");
 
     parser.addSection("Input / output");
-    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial schemes");
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)");
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
+    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
 
     parser.addSection("Flip graph parameters");
     parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
@@ -163,8 +176,13 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
+        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
+        return -1;
+    }
+
     int nn = getMaxMatrixElements(parser);
-    if (nn < 1)
+    if (!nn)
         return -1;
 
     if (parser["--ring"] == "Z2")
