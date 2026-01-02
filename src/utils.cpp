@@ -7,8 +7,10 @@ std::string prettyInt(size_t value) {
         ss << value;
     else if (value < 1000000)
         ss << std::setprecision(2) << std::fixed << (value / 1000.0) << "K";
-    else
+    else if (value < 1000000000)
         ss << std::setprecision(1) << std::fixed << (value / 1000000.0) << "M";
+    else
+        ss << std::setprecision(1) << std::fixed << (value / 1000000000.0) << "B";
 
     return ss.str();
 }
