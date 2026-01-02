@@ -301,6 +301,8 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
 
 template <typename Scheme>
 void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator) {
+    plusIterations = plusDistribution(generator);
+
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 

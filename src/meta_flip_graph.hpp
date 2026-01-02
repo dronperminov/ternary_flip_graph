@@ -525,6 +525,8 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
 
 template <typename Scheme>
 void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator) {
+    plusIterations = plusDistribution(generator);
+
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 
