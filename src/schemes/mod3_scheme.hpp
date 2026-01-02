@@ -14,6 +14,7 @@
 template <typename T>
 class Mod3Scheme : public BaseScheme {
     std::vector<Mod3Vector<T>> uvw[3];
+    FlipSet flipsNeg[3];
 public:
     Mod3Scheme();
     Mod3Scheme(const Mod3Scheme<T> &scheme);
@@ -59,9 +60,10 @@ private:
     void addColumn(int matrix);
     void addRow(int matrix);
 
-    void flip(int i, int j, int k, int index1, int index2);
+    void flip(int i, int j, int k, int index1, int index2, bool pos);
     void plus(int i, int j, int k, int index1, int index2, int variant);
     void split(int i, int j, int k, int index1, int index2);
+    bool reduce(int i, int index1, int index2, int sign);
     void reduceAdd(int i, int index1, int index2);
     void reduceSub(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2, int sign);
@@ -73,6 +75,7 @@ private:
 
     bool validateDimensions() const;
     bool validateEquation(int i, int j, int k) const;
+    void normalize();
     void saveMatrix(std::ofstream &f, std::string name, const std::vector<Mod3Vector<T>> &vectors) const;
 };
 
@@ -204,12 +207,21 @@ std::string Mod3Scheme<T>::getHash() const {
 
 template <typename T>
 bool Mod3Scheme<T>::tryFlip(std::mt19937 &generator) {
-    size_t size = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();
+    size_t sizePos = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t size = sizePos + sizeNeg;
 
     if (!size)
         return false;
 
+    if (flipsNeg[0].size() + flipsNeg[1].size() > flips[0].size() + flips[1].size())
+        normalize();
+
+    sizePos = flips[0].size() + flips[1].size() + flips[2].size();
+    size = sizePos + flipsNeg[2].size();
+
     size_t index = generator() % size;
+    bool pos = index < sizePos;
 
     int i, j, k;
 
@@ -224,15 +236,21 @@ bool Mod3Scheme<T>::tryFlip(std::mt19937 &generator) {
         k = 2;
         index -= flips[0].size();
     }
-    else {
+    else if (index < sizePos) {
         i = 2;
         j = 0;
         k = 1;
         index -= flips[0].size() + flips[1].size();
     }
+    else {
+        i = 2;
+        j = 0;
+        k = 1;
+        index -= sizePos;
+    }
 
-    int index1 = flips[i].index1(index);
-    int index2 = flips[i].index2(index);
+    int index1 = pos ? flips[i].index1(index) : flipsNeg[i].index1(index);
+    int index2 = pos ? flips[i].index2(index) : flipsNeg[i].index2(index);
 
     if (boolDistribution(generator))
         std::swap(j, k);
@@ -240,7 +258,7 @@ bool Mod3Scheme<T>::tryFlip(std::mt19937 &generator) {
     if (boolDistribution(generator))
         std::swap(index1, index2);
 
-    flip(i, j, k, index1, index2);
+    flip(i, j, k, index1, index2, pos);
     return true;
 }
 
@@ -294,43 +312,38 @@ bool Mod3Scheme<T>::tryReduce() {
         int index1 = flips[0].index1(i);
         int index2 = flips[0].index2(i);
 
-        int cmp1 = uvw[1][index1].compare(uvw[1][index2]);
-        if (cmp1 == 1) {
-            reduceAdd(2, index1, index2);
+        if (reduce(2, index1, index2, uvw[1][index1].compare(uvw[1][index2])))
             return true;
-        }
 
-        if (cmp1 == -1) {
-            reduceSub(2, index1, index2);
+        if (reduce(1, index1, index2, uvw[2][index1].compare(uvw[2][index2])))
             return true;
-        }
-
-        int cmp2 = uvw[2][index1].compare(uvw[2][index2]);
-        if (cmp2 == 1) {
-            reduceAdd(1, index1, index2);
-            return true;
-        }
-
-        if (cmp2 == -1) {
-            reduceSub(1, index1, index2);
-            return true;
-        }
     }
 
     for (size_t i = 0; i < flips[1].size(); i++) {
         int index1 = flips[1].index1(i);
         int index2 = flips[1].index2(i);
 
-        int cmp = uvw[2][index1].compare(uvw[2][index2]);
-        if (cmp == 1) {
-            reduceAdd(0, index1, index2);
+        if (reduce(0, index1, index2, uvw[2][index1].compare(uvw[2][index2])))
             return true;
-        }
+    }
 
-        if (cmp == -1) {
-            reduceSub(0, index1, index2);
+    for (size_t i = 0; i < flipsNeg[0].size(); i++) {
+        int index1 = flipsNeg[0].index1(i);
+        int index2 = flipsNeg[0].index2(i);
+
+        if (reduce(2, index1, index2, -uvw[1][index1].compare(uvw[1][index2])))
             return true;
-        }
+
+        if (reduce(1, index1, index2, -uvw[2][index1].compare(uvw[2][index2])))
+            return true;
+    }
+
+    for (size_t i = 0; i < flipsNeg[1].size(); i++) {
+        int index1 = flipsNeg[1].index1(i);
+        int index2 = flipsNeg[1].index2(i);
+
+        if (reduce(0, index1, index2, -uvw[2][index1].compare(uvw[2][index2])))
+            return true;
     }
 
     return false;
@@ -696,11 +709,18 @@ template <typename T>
 void Mod3Scheme<T>::initFlips() {
     for (int i = 0; i < 3; i++) {
         flips[i].clear();
+        flipsNeg[i].clear();
 
-        for (int index1 = 0; index1 < rank; index1++)
-            for (int index2 = index1 + 1; index2 < rank; index2++)
-                if (uvw[i][index1] == uvw[i][index2])
+        for (int index1 = 0; index1 < rank; index1++) {
+            for (int index2 = index1 + 1; index2 < rank; index2++) {
+                int cmp = uvw[i][index1].compare(uvw[i][index2]);
+
+                if (cmp == 1)
                     flips[i].add(index1, index2);
+                else if (cmp == -1)
+                    flipsNeg[i].add(index1, index2);
+            }
+        }
     }
 }
 
@@ -808,12 +828,19 @@ void Mod3Scheme<T>::addRow(int matrix) {
 }
 
 template <typename T>
-void Mod3Scheme<T>::flip(int i, int j, int k, int index1, int index2) {
-    uvw[j][index1] += uvw[j][index2];
+void Mod3Scheme<T>::flip(int i, int j, int k, int index1, int index2, bool pos) {
+    if (pos)
+        uvw[j][index1] += uvw[j][index2];
+    else
+        uvw[j][index1] -= uvw[j][index2];
+
     uvw[k][index2] -= uvw[k][index1];
 
     flips[j].remove(index1);
     flips[k].remove(index2);
+
+    flipsNeg[j].remove(index1);
+    flipsNeg[k].remove(index2);
 
     if (!uvw[j][index1] || !uvw[k][index2]) {
         removeZeroes();
@@ -829,6 +856,8 @@ void Mod3Scheme<T>::flip(int i, int j, int k, int index1, int index2) {
 
             if (cmp == 1)
                 flips[j].add(index1, index);
+            else if (cmp == -1)
+                flipsNeg[j].add(index1, index);
         }
 
         if (index != index2) {
@@ -838,6 +867,8 @@ void Mod3Scheme<T>::flip(int i, int j, int k, int index1, int index2) {
 
             if (cmp == 1)
                 flips[k].add(index2, index);
+            else if (cmp == -1)
+                flipsNeg[k].add(index2, index);
         }
     }
 }
@@ -894,6 +925,19 @@ void Mod3Scheme<T>::split(int i, int j, int k, int index1, int index2) {
 }
 
 template <typename T>
+bool Mod3Scheme<T>::reduce(int i, int index1, int index2, int sign) {
+    if (sign == 0)
+        return false;
+
+    if (sign == 1)
+        reduceAdd(i, index1, index2);
+    else
+        reduceSub(i, index1, index2);
+
+    return true;
+}
+
+template <typename T>
 void Mod3Scheme<T>::reduceAdd(int i, int index1, int index2) {
     uvw[i][index1] += uvw[i][index2];
     bool isZero = !uvw[i][index1];
@@ -922,26 +966,12 @@ void Mod3Scheme<T>::reduceSub(int i, int index1, int index2) {
 template <typename T>
 bool Mod3Scheme<T>::checkFlipReduce(int i, int j, int index1, int index2, int sign) {
     int cmpI = uvw[i][index1].compare(uvw[i][index2]);
-    if (cmpI == sign) {
-        reduceAdd(j, index1, index2);
+    if (reduce(j, index1, index2, cmpI * sign))
         return true;
-    }
-
-    if (cmpI == -sign) {
-        reduceSub(j, index1, index2);
-        return true;
-    }
 
     int cmpJ = uvw[j][index1].compare(uvw[j][index2]);
-    if (cmpJ == sign) {
-        reduceAdd(i, index1, index2);
+    if (reduce(i, index1, index2, cmpJ * sign))
         return true;
-    }
-
-    if (cmpJ == -sign) {
-        reduceSub(i, index1, index2);
-        return true;
-    }
 
     return false;
 }
@@ -1044,6 +1074,32 @@ bool Mod3Scheme<T>::validateEquation(int i, int j, int k) const {
         equation += uvw[0][index][i] * uvw[1][index][j] * uvw[2][index][k];
 
     return equation % 3 == target;
+}
+
+template <typename T>
+void Mod3Scheme<T>::normalize() {
+    for (int index = 0; index < rank; index++) {
+        bool i = uvw[0][index].isCanonized();
+        bool j = uvw[1][index].isCanonized();
+
+        if (i && j)
+            continue;
+
+        if (!i && !j) {
+            uvw[0][index].inverse();
+            uvw[1][index].inverse();
+        }
+        else if (!i) {
+            uvw[0][index].inverse();
+            uvw[2][index].inverse();
+        }
+        else {
+            uvw[1][index].inverse();
+            uvw[2][index].inverse();
+        }
+    }
+
+    initFlips();
 }
 
 template <typename T>

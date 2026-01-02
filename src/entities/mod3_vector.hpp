@@ -27,6 +27,7 @@ struct Mod3Vector {
     Mod3Vector& operator-=(const Mod3Vector &vector);
 
     int nonZeroCount() const;
+    bool isCanonized() const;
 
     operator bool() const;
 
@@ -175,6 +176,20 @@ Mod3Vector<T>::operator bool() const {
 template <typename T>
 int Mod3Vector<T>::nonZeroCount() const {
     return __builtin_popcountll(low | high);
+}
+
+template <typename T>
+bool Mod3Vector<T>::isCanonized() const {
+    T ones = low | high;
+
+    for (int i = 0; i < n; i++) {
+        T mask = T(1) << i;
+
+        if (ones & mask)
+            return low & mask;
+    }
+
+    return true;
 }
 
 template <typename T>
