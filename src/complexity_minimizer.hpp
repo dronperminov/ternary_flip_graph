@@ -34,7 +34,7 @@ class ComplexityMinimizer {
 public:
     ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int seed, bool maximize, int topCount, const std::string &format);
 
-    bool initializeFromFile(const std::string &path);
+    bool initializeFromFile(const std::string &path, bool multiple);
     void run(int maxNoImprovements);
 private:
     void initialize();
@@ -74,7 +74,7 @@ ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &o
 }
 
 template <typename Scheme>
-bool ComplexityMinimizer<Scheme>::initializeFromFile(const std::string &path) {
+bool ComplexityMinimizer<Scheme>::initializeFromFile(const std::string &path, bool multiple) {
     std::ifstream f(path);
 
     if (!f) {
@@ -82,7 +82,10 @@ bool ComplexityMinimizer<Scheme>::initializeFromFile(const std::string &path) {
         return false;
     }
 
-    f >> initialCount;
+    initialCount = 1;
+
+    if (multiple)
+        f >> initialCount;
 
     std::cout << "Start reading " << std::min(initialCount, count) << " / " << initialCount << " schemes from \"" << path << "\"" << std::endl;
 

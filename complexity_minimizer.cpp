@@ -51,7 +51,7 @@ int runComplexityMinimizer(const ArgParser &parser) {
 
     ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, seed, maximize, topCount, format);
 
-    if (!minimizer.initializeFromFile(inputPath))
+    if (!minimizer.initializeFromFile(inputPath, parser["--multiple"] == "true"))
         return -1;
 
     minimizer.run(maxNoImprovements);
@@ -62,8 +62,9 @@ int main(int argc, char **argv) {
     ArgParser parser("complexity_minimizer", "Find fast matrix multiplication scheme with lowest naive complexity using flip graph");
 
     parser.addSection("Input / output");
-    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial schemes", "", true);
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for minimized schemes", "schemes");
+    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
 
     parser.addSection("Complexity minimizer parameters");
     parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
