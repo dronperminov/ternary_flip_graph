@@ -20,6 +20,7 @@ class MetaFlipGraph {
     size_t flipIterations;
     size_t resetIterations;
     int plusDiff;
+    double sandwichingProbability;
     double reduceProbability;
     double resizeProbability;
     int seed;
@@ -43,7 +44,7 @@ class MetaFlipGraph {
     std::unordered_map<std::string, std::vector<int>> dimension2indices;
     std::vector<std::string> dimensions;
 public:
-    MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format);
+    MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple);
@@ -70,12 +71,13 @@ private:
 };
 
 template <typename Scheme>
-MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, (int) count);
     this->flipIterations = flipIterations;
     this->plusDiff = plusDiff;
+    this->sandwichingProbability = sandwichingProbability;
     this->resetIterations = resetIterations;
     this->reduceProbability = reduceProbability;
     this->resizeProbability = resizeProbability;
@@ -263,7 +265,6 @@ void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
     dimension2knownRank["2x7x9"] = 100;
     dimension2knownRank["3x3x6"] = 42;
     dimension2knownRank["3x3x8"] = 56;
-    dimension2knownRank["3x3x9"] = 64;
     dimension2knownRank["3x3x10"] = 71;
     dimension2knownRank["3x3x11"] = 78;
     dimension2knownRank["3x3x12"] = 84;
@@ -304,7 +305,7 @@ void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
     dimension2knownRank["5x5x12"] = 217;
     dimension2knownRank["6x6x10"] = 252;
     dimension2knownRank["7x7x7"] = 248;
-    dimension2knownRank["7x7x8"] = 274;
+    dimension2knownRank["7x7x8"] = 273;
     dimension2knownRank["7x7x9"] = 313;
     dimension2knownRank["7x8x8"] = 302;
     dimension2knownRank["8x8x8"] = 329;
@@ -537,8 +538,11 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
             continue;
         }
 
-        if (uniform(generator) < reduceProbability && scheme.tryReduce())
+        if (reduceProbability && uniform(generator) < reduceProbability && scheme.tryReduce())
             flipsCount = 0;
+
+        if (sandwichingProbability && uniform(generator) < sandwichingProbability)
+            scheme.trySandwiching(generator);
 
         int rank = scheme.getRank();
         if (rank < prevRank) {

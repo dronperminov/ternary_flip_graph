@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "../entities/ternary_vector.hpp"
+#include "../algebra/matrix.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -31,6 +32,7 @@ public:
     bool tryPlus(std::mt19937 &generator);
     bool trySplit(std::mt19937 &generator);
     bool tryExpand(std::mt19937 &generator);
+    bool trySandwiching(std::mt19937 &generator);
     bool tryReduce();
 
     bool tryProject(std::mt19937 &generator, int minN);
@@ -318,6 +320,78 @@ bool TernaryScheme<T>::tryExpand(std::mt19937 &generator) {
         return tryPlus(generator);
 
     return trySplit(generator);
+}
+
+template <typename T>
+bool TernaryScheme<T>::trySandwiching(std::mt19937 &generator) {
+    Matrix u(dimension[0], dimension[0]);
+    Matrix v(dimension[1], dimension[1]);
+    Matrix w(dimension[2], dimension[2]);
+
+    Matrix u1(dimension[0], dimension[0]);
+    Matrix v1(dimension[1], dimension[1]);
+    Matrix w1(dimension[2], dimension[2]);
+
+    do {
+        u.random(-1, 1, 1, generator);
+    } while (!u.invertible(u1));
+
+    do {
+        v.random(-1, 1, 1, generator);
+    } while (!v.invertible(v1));
+
+    do {
+        w.random(-1, 1, 1, generator);
+    } while (!w.invertible(w1));
+
+    if (!u1.isTernary() || !v1.isTernary() || !w1.isTernary())
+        return false;
+
+    std::vector<Matrix> mus, mvs, mws;
+    mus.reserve(rank);
+    mvs.reserve(rank);
+    mus.reserve(rank);
+
+    for (int index = 0; index < rank; index++) {
+        Matrix mu(dimension[0], dimension[1]);
+        Matrix mv(dimension[1], dimension[2]);
+        Matrix mw(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            mu[i] = uvw[0][index][i];
+
+        for (int i = 0; i < elements[1]; i++)
+            mv[i] = uvw[1][index][i];
+
+        for (int i = 0; i < elements[2]; i++)
+            mw[i] = uvw[2][index][i];
+
+        mu.sandwich(u, v1);
+        mv.sandwich(v, w1);
+        mw.sandwich(w, u1);
+
+        if (!mu.isTernary() || !mv.isTernary() || !mw.isTernary())
+            return false;
+
+        mus.emplace_back(mu);
+        mvs.emplace_back(mv);
+        mws.emplace_back(mw);
+    }
+
+    for (int index = 0; index < rank; index++) {
+        for (int i = 0; i < elements[0]; i++)
+            uvw[0][index].set(i, mus[index][i].numerator());
+
+        for (int i = 0; i < elements[1]; i++)
+            uvw[1][index].set(i, mvs[index][i].numerator());
+
+        for (int i = 0; i < elements[2]; i++)
+            uvw[2][index].set(i, mws[index][i].numerator());
+    }
+
+    fixSigns();
+    initFlips();
+    return true;
 }
 
 template <typename T>

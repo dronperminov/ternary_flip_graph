@@ -29,6 +29,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::string outputPath = parser["--output-path"];
 
     std::string ring = parser["--ring"];
+    double sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
     double plusProbability = std::stod(parser["--plus-probability"]);
     int plusDiff = std::stoi(parser["--plus-diff"]);
 
@@ -43,6 +44,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
+    std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << "- plus probability: " << plusProbability << std::endl;
     std::cout << "- plus diff: " << plusDiff << std::endl;
     std::cout << std::endl;
@@ -70,13 +72,16 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     size_t count = 0;
     int rank = scheme.getRank();
 
-    std::cout << "+-----------+-------------+------------+" << std::endl;
-    std::cout << "| iteration | alternative | complexity |" << std::endl;
-    std::cout << "+-----------+-------------+------------+" << std::endl;
+    std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
+    std::cout << "| iteration | alternative | complexity | available flips |" << std::endl;
+    std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
 
     for (size_t iteration = 1; count < maxCount; iteration++) {
         if (!scheme.tryFlip(generator) || (scheme.getRank() < rank + plusDiff && uniform(generator) < plusProbability))
-            scheme.tryPlus(generator);
+            scheme.tryExpand(generator);
+
+        if (uniform(generator) < sandwichingProbability)
+            scheme.trySandwiching(generator);
 
         if (scheme.getRank() != rank)
             continue;
@@ -86,7 +91,12 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
             continue;
 
         count++;
-        std::cout << "| " << std::setw(9) << iteration << " | " << std::setw(11) << count << " | " << std::setw(10) << scheme.getComplexity() << " |" << std::endl;
+        std::cout << "| ";
+        std::cout << std::setw(9) << iteration << " | ";
+        std::cout << std::setw(11) << count << " | ";
+        std::cout << std::setw(10) << scheme.getComplexity() << " | ";
+        std::cout << std::setw(15) << scheme.getAvailableFlips() << " |";
+        std::cout << std::endl;
 
         std::string path = getSavePath(scheme, outputPath, count);
         if (format == "json")
@@ -110,6 +120,7 @@ int main(int argc, char **argv) {
 
     parser.addSection("Find algorithm parameters");
     parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
+    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.5");
     parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.2");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
 

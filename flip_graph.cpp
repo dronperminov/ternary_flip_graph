@@ -65,6 +65,7 @@ int runFlipGraph(const ArgParser &parser) {
     size_t maxPlusIterations = parseNatural(parser["--max-plus-iterations"]);
     size_t resetIterations = parseNatural(parser["--reset-iterations"]);
     int plusDiff = std::stoi(parser["--plus-diff"]);
+    double sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
     double reduceProbability = std::stod(parser["--reduce-probability"]);
     double copyBestProbability = std::stod(parser["--copy-best-probability"]);
     int maxImprovements = std::stoi(parser["--max-improvements"]);
@@ -92,6 +93,7 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- plus iterations: " << minPlusIterations << " .. " << maxPlusIterations << std::endl;
     std::cout << "- reset iterations: " << resetIterations << std::endl;
     std::cout << "- plus diff: " << plusDiff << std::endl;
+    std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << "- reduce probability: " << reduceProbability << std::endl;
     std::cout << "- copy best probability: " << copyBestProbability << std::endl;
     std::cout << "- max improvements: " << maxImprovements << std::endl;
@@ -103,7 +105,7 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
 
-    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, reduceProbability, copyBestProbability, seed, topCount, maxImprovements, format);
+    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, sandwichingProbability, reduceProbability, copyBestProbability, seed, topCount, maxImprovements, format);
 
     bool valid;
     if (parser.isSet("--input-path")) {
@@ -152,6 +154,7 @@ int main(int argc, char **argv) {
     parser.add("--max-plus-iterations", ArgType::Natural, "Maximum period for plus operator calls", "100K");
     parser.add("--reset-iterations", ArgType::Natural, "Total iterations before reset", "100M");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "4");
+    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
     parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
     parser.add("--copy-best-probability", ArgType::Real, "Probability to replace scheme with best scheme after improvement, from 0.0 to 1.0", "0.5");
     parser.add("--max-improvements", ArgType::Natural, "Maximum saved recent improvements for reset sampling", "10");

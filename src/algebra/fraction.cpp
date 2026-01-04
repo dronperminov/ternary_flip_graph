@@ -1,39 +1,8 @@
-#pragma once
+#include "fraction.h"
 
-#include <iostream>
-#include <numeric>
-#include <stdexcept>
-
-class Fraction {
-    int64_t num;
-    int64_t den;
-public:
-    Fraction(int64_t numerator = 0, int64_t denominator = 1);
-
-    int numerator() const;
-    int denominator() const;
-
-    Fraction operator-() const;
-    Fraction operator+(const Fraction &fraction) const;
-    Fraction operator-(const Fraction &fraction) const;
-    Fraction operator*(const Fraction &fraction) const;
-    Fraction operator/(const Fraction &fraction) const;
-
-    Fraction& operator+=(const Fraction &fraction);
-    Fraction& operator-=(const Fraction &fraction);
-    Fraction& operator*=(const Fraction &fraction);
-    Fraction& operator/=(const Fraction &fraction);
-
-    bool operator==(const Fraction &fraction) const;
-    bool operator==(int value) const;
-
-    bool operator!=(const Fraction &fraction) const;
-    bool operator!=(int value) const;
-
-    friend std::ostream& operator<<(std::ostream &os, const Fraction &fraction);
-private:
-    void normalize();
-};
+Fraction abs(const Fraction &fraction) {
+    return Fraction(abs(fraction.numerator()), fraction.denominator());
+}
 
 Fraction::Fraction(int64_t numerator, int64_t denominator) {
     num = denominator > 0 ? numerator : -numerator;
@@ -47,6 +16,14 @@ int Fraction::numerator() const {
 
 int Fraction::denominator() const {
     return den;
+}
+
+bool Fraction::isInteger() const {
+    return den == 1;
+}
+
+bool Fraction::isTernaryInteger() const {
+    return den == 1 && -1 <= num && num <= 1;
 }
 
 Fraction Fraction::operator-() const {
@@ -122,6 +99,14 @@ bool Fraction::operator!=(int value) const {
     return num != value || den != 1;
 }
 
+bool Fraction::operator>(const Fraction& fraction) const {
+    return num * fraction.den > fraction.num * den;
+}
+
+bool Fraction::operator<(const Fraction& fraction) const {
+    return num * fraction.den < fraction.num * den;
+}
+
 void Fraction::normalize() {
     if (num == 0) {
         den = 1;
@@ -138,4 +123,10 @@ void Fraction::normalize() {
 
 std::ostream& operator<<(std::ostream &os, const Fraction &fraction) {
     return os << fraction.num << "/" << fraction.den;
+}
+
+std::istream& operator>>(std::istream &is, Fraction &fraction) {
+    is >> fraction.num >> fraction.den;
+    fraction.normalize();
+    return is;
 }

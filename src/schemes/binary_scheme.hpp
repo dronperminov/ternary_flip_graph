@@ -8,6 +8,7 @@
 #include <cassert>
 #include <algorithm>
 
+#include "../algebra/matrix.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -29,6 +30,7 @@ public:
     bool tryPlus(std::mt19937 &generator);
     bool trySplit(std::mt19937 &generator);
     bool tryExpand(std::mt19937 &generator);
+    bool trySandwiching(std::mt19937 &generator);
     bool tryReduce();
 
     bool tryProject(std::mt19937 &generator, int minN);
@@ -289,6 +291,70 @@ bool BinaryScheme<T>::tryExpand(std::mt19937 &generator) {
         return tryPlus(generator);
 
     return trySplit(generator);
+}
+
+template <typename T>
+bool BinaryScheme<T>::trySandwiching(std::mt19937 &generator) {
+    Matrix u(dimension[0], dimension[0]);
+    Matrix v(dimension[1], dimension[1]);
+    Matrix w(dimension[2], dimension[2]);
+
+    Matrix u1(dimension[0], dimension[0]);
+    Matrix v1(dimension[1], dimension[1]);
+    Matrix w1(dimension[2], dimension[2]);
+
+    do {
+        u.random(0, 1, 1, generator);
+    } while (!u.invertible(u1));
+
+    do {
+        v.random(0, 1, 1, generator);
+    } while (!v.invertible(v1));
+
+    do {
+        w.random(0, 1, 1, generator);
+    } while (!w.invertible(w1));
+
+    if (!u1.toRing(2) || !v1.toRing(2) || !w1.toRing(2))
+        return false;
+
+    for (int index = 0; index < rank; index++) {
+        Matrix mu(dimension[0], dimension[1]);
+        Matrix mv(dimension[1], dimension[2]);
+        Matrix mw(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            mu[i] = (uvw[0][index] >> i) & 1;
+
+        for (int i = 0; i < elements[1]; i++)
+            mv[i] = (uvw[1][index] >> i) & 1;
+
+        for (int i = 0; i < elements[2]; i++)
+            mw[i] = (uvw[2][index] >> i) & 1;
+
+        mu.sandwich(u, v1);
+        mv.sandwich(v, w1);
+        mw.sandwich(w, u1);
+
+        mu.toRing(2);
+        mv.toRing(2);
+        mw.toRing(2);
+
+        uvw[0][index] = 0;
+        for (int i = 0; i < elements[0]; i++)
+            uvw[0][index] |= T(mu[i].numerator()) << i;
+
+        uvw[1][index] = 0;
+        for (int i = 0; i < elements[1]; i++)
+            uvw[1][index] |= T(mv[i].numerator()) << i;
+
+        uvw[2][index] = 0;
+        for (int i = 0; i < elements[2]; i++)
+            uvw[2][index] |= T(mw[i].numerator()) << i;
+    }
+
+    initFlips();
+    return true;
 }
 
 template <typename T>
