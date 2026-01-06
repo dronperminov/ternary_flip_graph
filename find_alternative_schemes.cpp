@@ -57,10 +57,18 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     if (!scheme.read(inputPath))
         return -1;
 
+    int schemeRank = scheme.getRank();
+    int targetRank = parser.isSet("--target-rank") ? std::stoi(parser["--target-rank"]) : schemeRank;
+
     std::cout << "Readed scheme parameters:" << std::endl;
     std::cout << "- ring: " << ring << std::endl;
     std::cout << "- dimension: " << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2) << std::endl;
-    std::cout << "- rank: " << scheme.getRank() << std::endl;
+    std::cout << "- rank: " << scheme.getRank();
+
+    if (targetRank != schemeRank)
+        std::cout << " (target: " << targetRank << ")";
+
+    std::cout << std::endl;
     std::cout << std::endl;
 
     std::mt19937 generator(seed);
@@ -70,20 +78,19 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     hashes.insert(scheme.getHash());
 
     size_t count = 0;
-    int rank = scheme.getRank();
 
     std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
     std::cout << "| iteration | alternative | complexity | available flips |" << std::endl;
     std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
 
     for (size_t iteration = 1; count < maxCount; iteration++) {
-        if (!scheme.tryFlip(generator) || (scheme.getRank() < rank + plusDiff && uniform(generator) < plusProbability))
+        if (!scheme.tryFlip(generator) || (scheme.getRank() < targetRank + plusDiff && uniform(generator) < plusProbability))
             scheme.tryExpand(generator);
 
         if (uniform(generator) < sandwichingProbability)
             scheme.trySandwiching(generator);
 
-        if (scheme.getRank() != rank)
+        if (scheme.getRank() != targetRank)
             continue;
 
         std::string hash = scheme.getHash();
@@ -123,6 +130,7 @@ int main(int argc, char **argv) {
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.5");
     parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.2");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
+    parser.add("--target-rank", ArgType::Natural, "Rank of alternative schemes");
 
     parser.addSection("Run parameters");
     parser.add("--max-count", ArgType::Natural, "Number of alternative schemes", "10000");
