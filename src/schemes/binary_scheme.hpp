@@ -8,7 +8,7 @@
 #include <cassert>
 #include <algorithm>
 
-#include "../algebra/matrix.h"
+#include "../algebra/binary_matrix.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -295,33 +295,22 @@ bool BinaryScheme<T>::tryExpand(std::mt19937 &generator) {
 
 template <typename T>
 bool BinaryScheme<T>::trySandwiching(std::mt19937 &generator) {
-    Matrix u(dimension[0], dimension[0]);
-    Matrix v(dimension[1], dimension[1]);
-    Matrix w(dimension[2], dimension[2]);
+    BinaryMatrix u(dimension[0], dimension[0]);
+    BinaryMatrix v(dimension[1], dimension[1]);
+    BinaryMatrix w(dimension[2], dimension[2]);
 
-    Matrix u1(dimension[0], dimension[0]);
-    Matrix v1(dimension[1], dimension[1]);
-    Matrix w1(dimension[2], dimension[2]);
+    BinaryMatrix u1(dimension[0], dimension[0]);
+    BinaryMatrix v1(dimension[1], dimension[1]);
+    BinaryMatrix w1(dimension[2], dimension[2]);
 
-    do {
-        u.random(0, 1, 1, generator);
-    } while (!u.invertible(u1));
-
-    do {
-        v.random(0, 1, 1, generator);
-    } while (!v.invertible(v1));
-
-    do {
-        w.random(0, 1, 1, generator);
-    } while (!w.invertible(w1));
-
-    if (!u1.toRing(2) || !v1.toRing(2) || !w1.toRing(2))
-        return false;
+    u.randomInvertible(u1, generator);
+    v.randomInvertible(v1, generator);
+    w.randomInvertible(w1, generator);
 
     for (int index = 0; index < rank; index++) {
-        Matrix mu(dimension[0], dimension[1]);
-        Matrix mv(dimension[1], dimension[2]);
-        Matrix mw(dimension[2], dimension[0]);
+        BinaryMatrix mu(dimension[0], dimension[1]);
+        BinaryMatrix mv(dimension[1], dimension[2]);
+        BinaryMatrix mw(dimension[2], dimension[0]);
 
         for (int i = 0; i < elements[0]; i++)
             mu[i] = (uvw[0][index] >> i) & 1;
@@ -336,21 +325,17 @@ bool BinaryScheme<T>::trySandwiching(std::mt19937 &generator) {
         mv.sandwich(v, w1);
         mw.sandwich(w, u1);
 
-        mu.toRing(2);
-        mv.toRing(2);
-        mw.toRing(2);
-
         uvw[0][index] = 0;
         for (int i = 0; i < elements[0]; i++)
-            uvw[0][index] |= T(mu[i].numerator()) << i;
+            uvw[0][index] |= T(mu[i]) << i;
 
         uvw[1][index] = 0;
         for (int i = 0; i < elements[1]; i++)
-            uvw[1][index] |= T(mv[i].numerator()) << i;
+            uvw[1][index] |= T(mv[i]) << i;
 
         uvw[2][index] = 0;
         for (int i = 0; i < elements[2]; i++)
-            uvw[2][index] |= T(mw[i].numerator()) << i;
+            uvw[2][index] |= T(mw[i]) << i;
     }
 
     initFlips();
