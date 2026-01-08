@@ -60,6 +60,9 @@ int runMetaFlipGraph(const ArgParser &parser) {
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
 
+    if (!makeDirectory(outputPath))
+        return -1;
+
     MetaFlipGraph<Scheme<T>> metaFlipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, sandwichingProbability, reduceProbability, resizeProbability, seed, topCount, format);
 
     if (ring == "ZT")

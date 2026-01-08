@@ -105,6 +105,9 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
 
+    if (!makeDirectory(outputPath))
+        return -1;
+
     FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, sandwichingProbability, reduceProbability, copyBestProbability, seed, topCount, maxImprovements, format);
 
     bool valid;
@@ -119,7 +122,7 @@ int runFlipGraph(const ArgParser &parser) {
         return -1;
 
     flipGraph.run(targetRank);
-    return true;
+    return 0;
 }
 
 template <template<typename> typename Scheme>

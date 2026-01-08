@@ -54,6 +54,9 @@ int runComplexityMinimizer(const ArgParser &parser) {
     if (!minimizer.initializeFromFile(inputPath, parser["--multiple"] == "true"))
         return -1;
 
+    if (!makeDirectory(outputPath))
+        return -1;
+
     minimizer.run(maxNoImprovements);
     return true;
 }

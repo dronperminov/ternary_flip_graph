@@ -52,3 +52,15 @@ size_t parseNatural(std::string value) {
 
     return std::stoul(value) * multiplier;
 }
+
+bool makeDirectory(const std::string &path) {
+    std::error_code err;
+    if (std::filesystem::create_directories(path, err))
+        return true;
+
+    if (std::filesystem::exists(path))
+        return true;
+
+    std::cerr << "Unable to create directory \"" << path << "\": " << err.message() << std::endl;
+    return false;
+}

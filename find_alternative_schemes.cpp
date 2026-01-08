@@ -57,6 +57,9 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     if (!scheme.read(inputPath))
         return -1;
 
+    if (!makeDirectory(outputPath))
+        return -1;
+
     int schemeRank = scheme.getRank();
     int targetRank = parser.isSet("--target-rank") ? std::stoi(parser["--target-rank"]) : schemeRank;
 
