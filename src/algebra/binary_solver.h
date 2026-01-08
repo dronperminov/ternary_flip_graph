@@ -26,23 +26,30 @@ void BinarySolver::inverse(int row, int column) {
 }
 
 bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
-    int augmentedColumns = columns + 1;
-    std::vector<uint8_t> augmented(rows * augmentedColumns, 0);
+    int wordsPerRow = (columns + 1 + 63) / 64;
+    std::vector<uint64_t> augmented(rows * wordsPerRow, 0);
     std::vector<int> pivotCol(rows, -1);
+
+    int lastWord = columns / 64;
+    uint64_t lastMask = uint64_t(1) << (columns % 64);
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++)
-            augmented[i * augmentedColumns + j] = values[i * columns + j];
+            augmented[i * wordsPerRow + j / 64] |= uint64_t(values[i * columns + j]) << (j % 64);
 
-        augmented[i * augmentedColumns + columns] = b[i] ? 1 : 0;
+        if (b[i])
+            augmented[i * wordsPerRow + lastWord] |= lastMask;
     }
 
     int rank = 0;
 
     for (int column = 0; column < columns && rank < rows; column++) {
+        int word = column / 64;
+        uint64_t mask = uint64_t(1) << (column % 64);
+
         int pivotRow = -1;
         for (int row = rank; row < rows; row++) {
-            if (augmented[row * augmentedColumns + column]) {
+            if (augmented[row * wordsPerRow + word] & mask) {
                 pivotRow = row;
                 break;
             }
@@ -52,19 +59,19 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
             continue;
 
         if (pivotRow != rank) {
-            int offset1 = rank * augmentedColumns + column;
-            int offset2 = pivotRow * augmentedColumns + column;
+            int offset1 = rank * wordsPerRow + word;
+            int offset2 = pivotRow * wordsPerRow + word;
 
-            for (int j = column; j < augmentedColumns; j++)
+            for (int j = word; j < wordsPerRow; j++)
                 std::swap(augmented[offset1++], augmented[offset2++]);
         }
 
         for (int row = 0; row < rows; row++) {
-            if (row != rank && augmented[row * augmentedColumns + column]) {
-                int offset1 = row * augmentedColumns + column;
-                int offset2 = rank * augmentedColumns + column;
+            if (row != rank && (augmented[row * wordsPerRow + word] & mask)) {
+                int offset1 = row * wordsPerRow + word;
+                int offset2 = rank * wordsPerRow + word;
 
-                for (int j = column; j < augmentedColumns; j++)
+                for (int j = word; j < wordsPerRow; j++)
                     augmented[offset1++] ^= augmented[offset2++];
             }
         }
@@ -73,12 +80,12 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
     }
 
     for (int i = rank; i < rows; i++)
-        if (augmented[i * augmentedColumns + columns] != 0)
+        if (augmented[i * wordsPerRow + lastWord] & lastMask)
             return false;
 
     x.assign(columns, 0);
     for (int i = 0; i < rank; i++)
-        x[pivotCol[i]] = augmented[i * augmentedColumns + columns];
+        x[pivotCol[i]] = augmented[i * wordsPerRow + lastWord] & lastMask ? 1 : 0;
 
     return true;
 }
