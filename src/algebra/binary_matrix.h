@@ -17,6 +17,7 @@ public:
     uint8_t& operator[](int index);
 
     bool invertible(BinaryMatrix &inverse) const;
+    bool solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) const;
 
     void swapRows(int row1, int row2);
     void sandwich(const BinaryMatrix &left, const BinaryMatrix &right);

@@ -26,6 +26,42 @@ bool Fraction::isTernaryInteger() const {
     return den == 1 && -1 <= num && num <= 1;
 }
 
+bool Fraction::reconstruct(int64_t a, int64_t mod, int64_t bound) {
+    a = ((a % mod) + mod) % mod;
+
+    int64_t r0 = mod;
+    int64_t r1 = a;
+    int64_t t0 = 0;
+    int64_t t1 = 1;
+
+    while (r1 != 0 && r1 > bound) {
+        int64_t q = r0 / r1;
+        int64_t r2 = r0 - q * r1;
+        int64_t t2 = t0 - q * t1;
+
+        r0 = r1;
+        r1 = r2;
+        t0 = t1;
+        t1 = t2;
+    }
+
+    if (abs(r1) > bound || abs(t1) > bound || t1 == 0)
+        return false;
+
+    if (t1 < 0) {
+        r1 = -r1;
+        t1 = -t1;
+    }
+
+    if (std::gcd(abs(r1), abs(t1)) != 1)
+        return false;
+
+    num = r1;
+    den = t1;
+    normalize();
+    return true;
+}
+
 Fraction Fraction::operator-() const {
     return Fraction(-num, den);
 }

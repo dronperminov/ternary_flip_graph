@@ -3,7 +3,7 @@
 BinaryMatrix::BinaryMatrix(int rows, int columns) {
     this->rows = rows;
     this->columns = columns;
-    this->values.resize(rows * columns);
+    this->values.assign(rows * columns, 0);
 }
 
 uint8_t BinaryMatrix::operator()(int i, int j) const {
@@ -58,6 +58,59 @@ bool BinaryMatrix::invertible(BinaryMatrix &inverse) const {
     for (int i = 0; i < size; i++)
         for (int j = 0; j < size; j++)
             inverse(i, j) = augmented(i, j + size);
+
+    return true;
+}
+
+bool BinaryMatrix::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) const {
+    if (b.size() != (size_t)rows)
+        throw std::runtime_error("Vector b size must equal number of rows");
+
+    int augmentedColumns = columns + 1;
+    std::vector<uint8_t> augmented(rows * augmentedColumns, 0);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++)
+            augmented[i * augmentedColumns + j] = values[i * columns + j];
+
+        augmented[i * augmentedColumns + columns] = b[i] ? 1 : 0;
+    }
+
+    std::vector<int> pivotCol(rows, -1);
+    int rank = 0;
+
+    for (int col = 0; col < columns && rank < rows; col++) {
+        int pivotRow = -1;
+        for (int row = rank; row < rows; row++) {
+            if (augmented[row * augmentedColumns + col] == 1) {
+                pivotRow = row;
+                break;
+            }
+        }
+
+        if (pivotRow == -1)
+            continue;
+
+        if (pivotRow != rank)
+            for (int j = col; j < augmentedColumns; j++)
+                std::swap(augmented[rank * augmentedColumns + j], augmented[pivotRow * augmentedColumns + j]);
+
+        for (int row = 0; row < rows; row++)
+            if (row != rank && augmented[row * augmentedColumns + col] == 1)
+                for (int j = col; j < augmentedColumns; j++)
+                    augmented[row * augmentedColumns + j] ^= augmented[rank * augmentedColumns + j];
+
+        pivotCol[rank] = col;
+        rank++;
+    }
+
+    for (int i = rank; i < rows; i++)
+        if (augmented[i * augmentedColumns + columns] != 0)
+            return false;
+
+    x.assign(columns, 0);
+    for (int i = 0; i < rank; i++)
+        x[pivotCol[i]] = augmented[i * augmentedColumns + columns];
 
     return true;
 }
