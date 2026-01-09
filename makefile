@@ -1,6 +1,8 @@
 CXX = g++
 FLAGS = -Wall -O3 -std=c++17 -fopenmp
-OBJECTS = src/algebra/fraction.o src/algebra/matrix.o src/algebra/binary_matrix.o src/entities/arg_parser.o src/entities/flip_set.o src/utils.o src/schemes/base_scheme.o
+ALGEBRA_OBJECTS = src/algebra/fraction.o src/algebra/matrix.o src/algebra/binary_matrix.o src/algebra/binary_solver.o
+SCHEMES_OBJECTS = src/schemes/base_scheme.o src/schemes/fractional_scheme.o
+OBJECTS = $(ALGEBRA_OBJECTS) $(SCHEMES_OBJECTS) src/entities/arg_parser.o src/entities/flip_set.o src/utils.o src/lift/binary_lifter.o
 
 all: flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes lift
 

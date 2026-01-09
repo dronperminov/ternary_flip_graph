@@ -10,6 +10,7 @@
 
 #include "../algebra/binary_matrix.h"
 #include "../algebra/binary_solver.h"
+#include "../lift/binary_lifter.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -51,7 +52,8 @@ public:
     void copy(const BinaryScheme &scheme);
 
     bool validate() const;
-    bool lift(int steps, std::vector<uint64_t> &u, std::vector<uint64_t> &v, std::vector<uint64_t> &w);
+
+    BinaryLifter toLift() const;
 private:
     void initFlips();
     void removeZeroes();
@@ -78,8 +80,6 @@ private:
     void saveMatrix(std::ofstream &f, std::string name, const std::vector<T> &vectors, int size) const;
 
     BinarySolver getJakobian() const;
-    void evaluateTensor(const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, std::vector<int64_t> &tensor) const;
-    void updateFactor(std::vector<uint64_t> &f, int size, const std::vector<uint8_t> &x, int offset, int exponent) const;
 };
 
 template <typename T>
@@ -729,14 +729,10 @@ bool BinaryScheme<T>::validate() const {
 }
 
 template <typename T>
-bool BinaryScheme<T>::lift(int steps, std::vector<uint64_t> &u, std::vector<uint64_t> &v, std::vector<uint64_t> &w) {
-    int exponent = 1;
-    int tensorSize = elements[0] * elements[1] * elements[2];
-    int variables = rank * (elements[0] + elements[1] + elements[2]);
-
-    u.resize(rank * elements[0]);
-    v.resize(rank * elements[1]);
-    w.resize(rank * elements[2]);
+BinaryLifter BinaryScheme<T>::toLift() const {
+    std::vector<uint64_t> u(rank * elements[0]);
+    std::vector<uint64_t> v(rank * elements[1]);
+    std::vector<uint64_t> w(rank * elements[2]);
 
     for (int index = 0; index < rank; index++) {
         for (int i = 0; i < elements[0]; i++)
@@ -749,33 +745,7 @@ bool BinaryScheme<T>::lift(int steps, std::vector<uint64_t> &u, std::vector<uint
             w[index * elements[2] + i] = (uvw[2][index] >> i) & 1;
     }
 
-    std::vector<int64_t> T0(tensorSize);
-    std::vector<int64_t> E(tensorSize);
-    evaluateTensor(u, v, w, E);
-
-    for (int i = 0; i < tensorSize; i++)
-        T0[i] = E[i] & 1;
-
-    std::vector<uint8_t> b(tensorSize);
-    std::vector<uint8_t> x(variables);
-
-    BinarySolver jakobian = getJakobian();
-
-    for (int step = 0; step < steps; step++) {
-        for (int i = 0; i < tensorSize; i++)
-            b[i] = ((T0[i] - E[i]) >> exponent) & 1;
-
-        if (!jakobian.solve(b, x))
-            return false;
-
-        updateFactor(u, elements[0], x, 0, exponent);
-        updateFactor(v, elements[1], x, elements[0] * rank, exponent);
-        updateFactor(w, elements[2], x, (elements[0] + elements[1]) * rank, exponent);
-        evaluateTensor(u, v, w, E);
-        exponent++;
-    }
-
-    return true;
+    return BinaryLifter(dimension[0], dimension[1], dimension[2], rank, u, v, w, getJakobian());
 }
 
 template <typename T>
@@ -1151,27 +1121,4 @@ BinarySolver BinaryScheme<T>::getJakobian() const {
     }
 
     return jakobian;
-}
-
-template <typename T>
-void BinaryScheme<T>::evaluateTensor(const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, std::vector<int64_t> &tensor) const {
-    tensor.assign(elements[0] * elements[1] * elements[2], 0);
-
-    for (int index = 0; index < rank; index++)
-        for (int i = 0; i < elements[0]; i++)
-            for (int j = 0; j < elements[1]; j++)
-                for (int k = 0; k < elements[2]; k++)
-                    tensor[(i * elements[1] + j) * elements[2] + k] += u[index * elements[0] + i] * v[index * elements[1] + j] * w[index * elements[2] + k];
-}
-
-template <typename T>
-void BinaryScheme<T>::updateFactor(std::vector<uint64_t> &f, int size, const std::vector<uint8_t> &x, int offset, int exponent) const {
-    uint64_t mask = (uint64_t(1) << (exponent + 1)) - 1;
-
-    for (int i = 0; i < size; i++) {
-        for (int index = 0; index < rank; index++) {
-            f[index * size + i] += uint64_t(x[offset + i * rank + index]) << exponent;
-            f[index * size + i] &= mask;
-        }
-    }
 }

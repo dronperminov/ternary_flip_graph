@@ -8,7 +8,8 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/schemes/binary_scheme.hpp"
-#include "src/schemes/fractional_scheme.hpp"
+#include "src/schemes/fractional_scheme.h"
+#include "src/lift/binary_lifter.h"
 
 bool readSchemes(const std::string &inputPath, std::vector<BinaryScheme<uint64_t>> &schemes, bool multiple) {
     std::ifstream f(inputPath);
@@ -53,7 +54,6 @@ int main(int argc, char *argv[]) {
 
     parser.addSection("Lifting parameters");
     parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");
-    parser.add("--bound", "-b", ArgType::Natural, "Bound of rational reconstruction");
     parser.add("--canonize", "-c", ArgType::Flag, "Canonize reconstructed schemes");
 
     parser.addSection("Run parameters");
@@ -67,8 +67,6 @@ int main(int argc, char *argv[]) {
     std::string outputPath = parser["--output-path"];
 
     int steps = std::stoi(parser["--steps"]);
-    int64_t mod = int64_t(1) << (steps + 1);
-    int64_t bound = parser.isSet("--bound") ? std::stoll(parser["--bound"]) : (int64_t) std::sqrt(mod / 2.0);
     bool canonize = parser.isSet("--canonize");
 
     int threads = std::stoi(parser["--threads"]);
@@ -83,47 +81,44 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
     std::cout << "Start " << steps << " steps Hensel lifting" << std::endl;
-    std::cout << "- mod: " << mod << std::endl;
-    std::cout << "- bound: " << bound << std::endl;
     std::cout << std::endl;
 
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < schemes.size(); i++) {
-        int n1 = schemes[i].getDimension(0);
-        int n2 = schemes[i].getDimension(1);
-        int n3 = schemes[i].getDimension(2);
-        int rank = schemes[i].getRank();
+        FractionalScheme liftedScheme;
+        BinaryLifter lifter = schemes[i].toLift();
 
-        std::vector<uint64_t> u;
-        std::vector<uint64_t> v;
-        std::vector<uint64_t> w;
+        int step = 0;
+        bool reconstructed = false;
 
-        if (!schemes[i].lift(steps, u, v, w)) {
-            std::cout << (i + 1) << ". Unable to lift scheme" << std::endl;
-            continue;
+        while (step < steps && lifter.lift() && !reconstructed) {
+            reconstructed = lifter.reconstruct(liftedScheme);
+            step++;
         }
 
-        FractionalScheme lifted;
-        if (!lifted.reconstruct(n1, n2, n3, rank, u, v, w, mod, bound)) {
-            std::cout << (i + 1) << ". Unable to make rational reconstruction" << std::endl;
-            continue;
+        if (reconstructed) {
+            if (canonize)
+                liftedScheme.canonize();
+
+            if (!liftedScheme.validate()) {
+                std::cout << (i + 1) << ". Reconstructed scheme on step " << step << " is not valid" << std::endl;
+                continue;
+            }
+
+            std::cout << (i + 1) << ". Successfully reconstructed scheme in " << liftedScheme.getRing() << " on step " << step << std::endl;
+            std::string path = getSavePath(liftedScheme, i, outputPath, format);
+
+            if (format == "txt")
+                liftedScheme.saveTxt(path);
+            else
+                liftedScheme.saveJson(path);
         }
-
-        if (canonize)
-            lifted.canonize();
-
-        if (!lifted.validate()) {
-            std::cout << (i + 1) << ". Reconstructed scheme is not valid" << std::endl;
-            continue;
+        else if (step == steps) {
+            std::cout << (i + 1) << ". Unable to make rational reconstruction after " << steps << " steps" << std::endl;
         }
-
-        std::cout << (i + 1) << ". Successfully reconstructed scheme in " << lifted.getRing() << std::endl;
-        std::string path = getSavePath(lifted, i, outputPath, format);
-
-        if (format == "txt")
-            lifted.saveTxt(path);
-        else
-            lifted.saveJson(path);
+        else {
+            std::cout << (i + 1) << ". Unable to lift scheme on step " << (step + 1) << std::endl;
+        }
     }
 
     return 0;
