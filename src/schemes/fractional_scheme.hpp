@@ -2,8 +2,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 #include "../algebra/fraction.h"
 #include "base_scheme.h"
@@ -19,6 +21,7 @@ public:
 
     int getComplexity() const;
     std::string getRing() const;
+    std::string getUniqueValues() const;
 
     void canonize();
     void saveJson(const std::string &path) const;
@@ -107,6 +110,25 @@ std::string FractionalScheme::getRing() const {
         return "Z";
 
     return "Q";
+}
+
+std::string FractionalScheme::getUniqueValues() const {
+    std::unordered_set<std::string> unique;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            unique.insert(uvw[i][j].pretty());
+
+    std::vector<std::string> uniqueValues(unique.begin(), unique.end());
+    std::sort(uniqueValues.begin(), uniqueValues.end());
+    std::stringstream ss;
+
+    ss << "{";
+    for (size_t i = 0; i < uniqueValues.size(); i++)
+        ss << (i > 0 ? ", " : "") << uniqueValues[i];
+    ss << "}";
+
+    return ss.str();
 }
 
 void FractionalScheme::canonize() {

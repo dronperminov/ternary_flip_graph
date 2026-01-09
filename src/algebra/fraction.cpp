@@ -18,6 +18,16 @@ int Fraction::denominator() const {
     return den;
 }
 
+std::string Fraction::pretty() const {
+    std::stringstream ss;
+    ss << num;
+
+    if (den > 1)
+        ss << "/" << den;
+
+    return ss.str();
+}
+
 bool Fraction::isInteger() const {
     return den == 1;
 }

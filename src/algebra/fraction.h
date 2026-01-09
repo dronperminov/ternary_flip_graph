@@ -1,7 +1,9 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <numeric>
+#include <string>
 #include <stdexcept>
 #include <cassert>
 
@@ -13,6 +15,7 @@ public:
 
     int numerator() const;
     int denominator() const;
+    std::string pretty() const;
 
     bool isInteger() const;
     bool isTernaryInteger() const;
