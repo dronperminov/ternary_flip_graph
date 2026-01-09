@@ -1103,18 +1103,13 @@ BinarySolver BinaryScheme<T>::getJakobian() const {
                 int row = (i * elements[1] + j) * elements[2] + k;
 
                 for (int index = 0; index < rank; index++) {
-                    T u = (uvw[0][index] >> i) & 1;
-                    T v = (uvw[1][index] >> j) & 1;
-                    T w = (uvw[2][index] >> k) & 1;
+                    uint8_t u = (uvw[0][index] >> i) & 1;
+                    uint8_t v = (uvw[1][index] >> j) & 1;
+                    uint8_t w = (uvw[2][index] >> k) & 1;
 
-                    if (v & w)
-                        jakobian.inverse(row, i * rank + index);
-
-                    if (u & w)
-                        jakobian.inverse(row, vOffset + j * rank + index);
-
-                    if (u & v)
-                        jakobian.inverse(row, wOffset + k * rank + index);
+                    jakobian.set(row, i * rank + index, v & w);
+                    jakobian.set(row, vOffset + j * rank + index, u & w);
+                    jakobian.set(row, wOffset + k * rank + index, u & v);
                 }
             }
         }

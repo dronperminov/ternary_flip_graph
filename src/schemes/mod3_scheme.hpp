@@ -10,6 +10,7 @@
 
 #include "../entities/mod3_vector.hpp"
 #include "../algebra/matrix.h"
+#include "../lift/mod3_lifter.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -52,6 +53,8 @@ public:
     void copy(const Mod3Scheme &scheme);
 
     bool validate() const;
+
+    Mod3Lifter toLift() const;
 private:
     void initFlips();
     void removeZeroes();
@@ -79,6 +82,8 @@ private:
     bool validateEquation(int i, int j, int k) const;
     void normalize();
     void saveMatrix(std::ofstream &f, std::string name, const std::vector<Mod3Vector<T>> &vectors) const;
+
+    Mod3Solver getJakobian() const;
 };
 
 template <typename T>
@@ -769,6 +774,26 @@ bool Mod3Scheme<T>::validate() const {
 }
 
 template <typename T>
+Mod3Lifter Mod3Scheme<T>::toLift() const {
+    std::vector<uint64_t> u(rank * elements[0]);
+    std::vector<uint64_t> v(rank * elements[1]);
+    std::vector<uint64_t> w(rank * elements[2]);
+
+    for (int index = 0; index < rank; index++) {
+        for (int i = 0; i < elements[0]; i++)
+            u[index * elements[0] + i] = uvw[0][index][i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[index * elements[1] + i] = uvw[1][index][i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[index * elements[2] + i] = uvw[2][index][i];
+    }
+
+    return Mod3Lifter(dimension[0], dimension[1], dimension[2], rank, u, v, w, getJakobian());
+}
+
+template <typename T>
 void Mod3Scheme<T>::initFlips() {
     for (int i = 0; i < 3; i++) {
         flips[i].clear();
@@ -1173,4 +1198,34 @@ void Mod3Scheme<T>::saveMatrix(std::ofstream &f, std::string name, const std::ve
         f << "        [" << vectors[index] << "]" << (index < vectors.size() - 1 ? "," : "") << std::endl;
 
     f << "    ]";
+}
+
+template <typename T>
+Mod3Solver Mod3Scheme<T>::getJakobian() const {
+    int rows = elements[0] * elements[1] * elements[2];
+    int columns = rank * (elements[0] + elements[1] + elements[2]);
+    Mod3Solver jakobian(rows, columns);
+
+    int vOffset = elements[0] * rank;
+    int wOffset = (elements[0] + elements[1]) * rank;
+
+    for (int i = 0; i < elements[0]; i++) {
+        for (int j = 0; j < elements[1]; j++) {
+            for (int k = 0; k < elements[2]; k++) {
+                int row = (i * elements[1] + j) * elements[2] + k;
+
+                for (int index = 0; index < rank; index++) {
+                    uint8_t u = uvw[0][index][i];
+                    uint8_t v = uvw[1][index][j];
+                    uint8_t w = uvw[2][index][k];
+
+                    jakobian.set(row, i * rank + index, v * w);
+                    jakobian.set(row, vOffset + j * rank + index, u * w);
+                    jakobian.set(row, wOffset + k * rank + index, u * v);
+                }
+            }
+        }
+    }
+
+    return jakobian;
 }

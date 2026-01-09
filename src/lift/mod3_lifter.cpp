@@ -1,6 +1,6 @@
-#include "binary_lifter.h"
+#include "mod3_lifter.h"
 
-BinaryLifter::BinaryLifter(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, const BinarySolver &J) : jakobian(J) {
+Mod3Lifter::Mod3Lifter(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, const Mod3Solver &J) : jakobian(J) {
     this->dimension[0] = n1;
     this->dimension[1] = n2;
     this->dimension[2] = n3;
@@ -14,19 +14,19 @@ BinaryLifter::BinaryLifter(int n1, int n2, int n3, int rank, const std::vector<u
     this->v = v;
     this->w = w;
 
-    mod = 2;
+    mod = 3;
     exponent = 1;
     bound = 1;
 
     initTensors();
 }
 
-bool BinaryLifter::lift() {
+bool Mod3Lifter::lift() {
     if (exponent > 1)
         evaluateTensor();
 
     for (int i = 0; i < tensorSize; i++)
-        b[i] = ((T0[i] - E[i]) >> exponent) & 1;
+        b[i] = (((T0[i] - E[i]) / mod) % 3 + 3) % 3;
 
     if (!jakobian.solve(b, x))
         return false;
@@ -36,28 +36,28 @@ bool BinaryLifter::lift() {
     updateFactor(w, elements[2], x, (elements[0] + elements[1]) * rank);
 
     exponent++;
-    mod *= 2;
+    mod *= 3;
     bound = std::sqrt(mod / 2.0);
     return true;
 }
 
-bool BinaryLifter::reconstruct(FractionalScheme &lifted) {
+bool Mod3Lifter::reconstruct(FractionalScheme &lifted) {
     return lifted.reconstruct(dimension[0], dimension[1], dimension[2], rank, u, v, w, mod, bound);
 }
 
-int64_t BinaryLifter::getMod() const {
+int64_t Mod3Lifter::getMod() const {
     return mod;
 }
 
-int64_t BinaryLifter::getBound() const {
+int64_t Mod3Lifter::getBound() const {
     return bound;
 }
 
-int BinaryLifter::getExponent() const {
+int Mod3Lifter::getExponent() const {
     return exponent;
 }
 
-void BinaryLifter::show() const {
+void Mod3Lifter::show() const {
     std::cout << "mod: " << mod;
     std::cout << std::endl << "U:";
     for (int i = 0; i < rank * elements[0]; i++)
@@ -74,7 +74,7 @@ void BinaryLifter::show() const {
     std::cout << std::endl;
 }
 
-void BinaryLifter::initTensors() {
+void Mod3Lifter::initTensors() {
     tensorSize = elements[0] * elements[1] * elements[2];
     variables = rank * (elements[0] + elements[1] + elements[2]);
 
@@ -83,13 +83,13 @@ void BinaryLifter::initTensors() {
     evaluateTensor();
 
     for (int i = 0; i < tensorSize; i++)
-        T0[i] = E[i] & 1;
+        T0[i] = E[i] % 3;
 
     b.resize(tensorSize);
     x.resize(variables);
 }
 
-void BinaryLifter::evaluateTensor() {
+void Mod3Lifter::evaluateTensor() {
     E.assign(tensorSize, 0);
 
     for (int index = 0; index < rank; index++)
@@ -99,13 +99,10 @@ void BinaryLifter::evaluateTensor() {
                     E[(i * elements[1] + j) * elements[2] + k] += u[index * elements[0] + i] * v[index * elements[1] + j] * w[index * elements[2] + k];
 }
 
-void BinaryLifter::updateFactor(std::vector<uint64_t> &f, int size, const std::vector<uint8_t> &x, int offset) {
-    uint64_t mask = (uint64_t(1) << (exponent + 1)) - 1;
+void Mod3Lifter::updateFactor(std::vector<uint64_t> &f, int size, const std::vector<uint8_t> &x, int offset) {
+    uint64_t modNext = mod * 3;
 
-    for (int i = 0; i < size; i++) {
-        for (int index = 0; index < rank; index++) {
-            f[index * size + i] += uint64_t(x[offset + i * rank + index]) << exponent;
-            f[index * size + i] &= mask;
-        }
-    }
+    for (int i = 0; i < size; i++)
+        for (int index = 0; index < rank; index++)
+            f[index * size + i] = (f[index * size + i] + x[offset + i * rank + index] * mod) % modNext;
 }

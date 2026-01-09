@@ -8,10 +8,13 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/schemes/binary_scheme.hpp"
+#include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/fractional_scheme.h"
 #include "src/lift/binary_lifter.h"
+#include "src/lift/mod3_lifter.h"
 
-bool readSchemes(const std::string &inputPath, std::vector<BinaryScheme<uint64_t>> &schemes, bool multiple) {
+template <typename Scheme>
+bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple) {
     std::ifstream f(inputPath);
     if (!f) {
         std::cerr << "Unable to open file \"" << inputPath << "\"" << std::endl;
@@ -44,28 +47,12 @@ std::string getSavePath(const FractionalScheme &scheme, int index, const std::st
     return ss.str();
 }
 
-int main(int argc, char *argv[]) {
-    ArgParser parser("lift", "Lift schemes from Z2/Z3 field to general");
-
-    parser.addSection("Input / output");
-    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
-    parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
-    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
-
-    parser.addSection("Lifting parameters");
-    parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");
-    parser.add("--canonize", "-c", ArgType::Flag, "Canonize reconstructed schemes");
-
-    parser.addSection("Run parameters");
-    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
-    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
-
-    if (!parser.parse(argc, argv))
-        return 0;
-
+template <typename Scheme>
+int runLiftSchemes(const ArgParser &parser) {
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
 
+    std::string ring = parser["--ring"];
     int steps = std::stoi(parser["--steps"]);
     bool canonize = parser.isSet("--canonize");
 
@@ -75,35 +62,38 @@ int main(int argc, char *argv[]) {
     if (!makeDirectory(outputPath))
         return -1;
 
-    std::vector<BinaryScheme<uint64_t>> schemes;
+    std::cout << "Lift schemes from " << ring << " field to general" << std::endl;
+    std::cout << "- input path: " << inputPath << std::endl;
+    std::cout << "- output path: " << outputPath << std::endl;
+    std::cout << "- steps: " << steps << std::endl;
+    std::cout << "- canonize: " << (canonize ? "yes" : "no") << std::endl;
+    std::cout << "- threads: " << threads << std::endl;
+    std::cout << "- format: " << format << std::endl;
+    std::cout << std::endl << std::endl;
+
+    std::vector<Scheme> schemes;
     if (!readSchemes(inputPath, schemes, parser.isSet("--multiple")))
         return -1;
 
     std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
-    std::cout << "Start " << steps << " steps Hensel lifting" << std::endl;
     std::cout << std::endl;
 
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < schemes.size(); i++) {
         FractionalScheme liftedScheme;
-        BinaryLifter lifter = schemes[i].toLift();
+        auto lifter = schemes[i].toLift();
 
         int step = 0;
-        bool reconstructed = false;
+        bool reconstructed = ring == "Z3" ? lifter.reconstruct(liftedScheme) && liftedScheme.validate() : false;
 
         while (step < steps && lifter.lift() && !reconstructed) {
-            reconstructed = lifter.reconstruct(liftedScheme);
+            reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
             step++;
         }
 
         if (reconstructed) {
             if (canonize)
                 liftedScheme.canonize();
-
-            if (!liftedScheme.validate()) {
-                std::cout << (i + 1) << ". Reconstructed scheme on step " << step << " is not valid" << std::endl;
-                continue;
-            }
 
             std::cout << (i + 1) << ". Successfully reconstructed scheme in " << liftedScheme.getRing() << " on step " << step << std::endl;
             std::string path = getSavePath(liftedScheme, i, outputPath, format);
@@ -120,6 +110,35 @@ int main(int argc, char *argv[]) {
             std::cout << (i + 1) << ". Unable to lift scheme on step " << (step + 1) << std::endl;
         }
     }
+
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    ArgParser parser("lift", "Lift schemes from Z2/Z3 field to general");
+
+    parser.addSection("Input / output");
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
+    parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
+    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
+
+    parser.addSection("Lifting parameters");
+    parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2}", {"Z2", "Z3"}, "", true);
+    parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");
+    parser.add("--canonize", "-c", ArgType::Flag, "Canonize reconstructed schemes");
+
+    parser.addSection("Run parameters");
+    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
+    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
+
+    if (!parser.parse(argc, argv))
+        return 0;
+
+    if (parser["--ring"] == "Z2")
+        return runLiftSchemes<BinaryScheme<uint64_t>>(parser);
+
+    if (parser["--ring"] == "Z3")
+        return runLiftSchemes<Mod3Scheme<uint64_t>>(parser);
 
     return 0;
 }

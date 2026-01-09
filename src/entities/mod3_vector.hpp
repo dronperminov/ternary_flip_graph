@@ -21,10 +21,12 @@ struct Mod3Vector {
 
     Mod3Vector operator+(const Mod3Vector &vector) const;
     Mod3Vector operator-(const Mod3Vector &vector) const;
+    Mod3Vector operator*(int value) const;
     Mod3Vector operator-() const;
 
     Mod3Vector& operator+=(const Mod3Vector &vector);
     Mod3Vector& operator-=(const Mod3Vector &vector);
+    Mod3Vector& operator*=(int value);
 
     int nonZeroCount() const;
     bool isCanonized() const;
@@ -141,6 +143,27 @@ Mod3Vector<T> Mod3Vector<T>::operator-(const Mod3Vector<T> &vector) const {
 }
 
 template <typename T>
+Mod3Vector<T> Mod3Vector<T>::operator*(int value) const {
+    Mod3Vector<T> result(n);
+    value %= 3;
+
+    if (value == 0) {
+        result.low = 0;
+        result.high = 0;
+    }
+    else if (value == 1) {
+        result.low = low;
+        result.high = high;
+    }
+    else {
+        result.low = high;
+        result.high = low;
+    }
+
+    return result;
+}
+
+template <typename T>
 Mod3Vector<T> Mod3Vector<T>::operator-() const {
     Mod3Vector<T> result(n);
     result.low = high;
@@ -165,6 +188,21 @@ Mod3Vector<T>& Mod3Vector<T>::operator-=(const Mod3Vector<T> &vector) {
 
     low = (low ^ vector.high) ^ (high & vector.low) ^ mask;
     high = (high ^ vector.low) ^ (tmp & vector.high) ^ mask;
+    return *this;
+}
+
+template <typename T>
+Mod3Vector<T>& Mod3Vector<T>::operator*=(int value) {
+    value %= 3;
+
+    if (value == 0) {
+        low = 0;
+        high = 0;
+    }
+    else if (value == 2) {
+        std::swap(low, high);
+    }
+
     return *this;
 }
 

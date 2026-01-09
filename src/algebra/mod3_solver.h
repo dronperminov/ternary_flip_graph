@@ -2,13 +2,16 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
-class BinarySolver {
+#include "../entities/mod3_vector.hpp"
+
+class Mod3Solver {
     int rows;
     int columns;
     std::vector<uint8_t> values;
 public:
-    BinarySolver(int rows, int columns);
+    Mod3Solver(int rows, int columns);
 
     void set(int row, int column, uint8_t value);
 

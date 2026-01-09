@@ -3,10 +3,10 @@
 #include <iostream>
 #include <vector>
 
-#include "../algebra/binary_solver.h"
+#include "../algebra/mod3_solver.h"
 #include "../schemes/fractional_scheme.h"
 
-class BinaryLifter {
+class Mod3Lifter {
     int dimension[3];
     int elements[3];
     int rank;
@@ -23,11 +23,11 @@ class BinaryLifter {
     std::vector<int64_t> T0;
     std::vector<int64_t> E;
 
-    BinarySolver jakobian;
+    Mod3Solver jakobian;
     std::vector<uint8_t> b;
     std::vector<uint8_t> x;
 public:
-    BinaryLifter(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, const BinarySolver &jakobian);
+    Mod3Lifter(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, const Mod3Solver &jakobian);
 
     bool lift();
     bool reconstruct(FractionalScheme &lifted);
