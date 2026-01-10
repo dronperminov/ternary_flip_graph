@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <vector>
-#include <cassert>
 
 #include "../entities/mod3_vector.hpp"
 
