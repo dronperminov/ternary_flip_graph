@@ -1,15 +1,21 @@
 #include "binary_solver.h"
 #include <cassert>
 
-BinarySolver::BinarySolver(int rows, int columns) {
+BinarySolver::BinarySolver(int rows, int columns) : values(rows * columns, 0), xs(columns, -1) {
     this->rows = rows;
     this->columns = columns;
-
-    values.assign(rows * columns, 0);
 }
 
 void BinarySolver::set(int row, int column, uint8_t value) {
     values[row * columns + column] = value & 1;
+}
+
+void BinarySolver::setVariable(int variable, uint8_t value) {
+    xs[variable] = value;
+}
+
+void BinarySolver::reset() {
+    xs.assign(columns, -1);
 }
 
 bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
@@ -21,16 +27,30 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
     uint64_t lastMask = uint64_t(1) << (columns % 64);
 
     for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++)
-            augmented[i * wordsPerRow + j / 64] |= uint64_t(values[i * columns + j]) << (j % 64);
+        uint8_t bi = b[i];
 
-        if (b[i])
+        for (int j = 0; j < columns; j++) {
+            uint8_t xj = values[i * columns + j];
+            augmented[i * wordsPerRow + j / 64] |= uint64_t(xj) << (j % 64);
+
+            if (xj && xs[j] > -1)
+                bi ^= xs[j];
+        }
+
+        if (bi)
             augmented[i * wordsPerRow + lastWord] |= lastMask;
     }
 
     int rank = 0;
 
+    x.assign(columns, 0);
+
     for (int column = 0; column < columns && rank < rows; column++) {
+        if (xs[column] > -1) {
+            x[column] = xs[column];
+            continue;
+        }
+
         int word = column / 64;
         uint64_t mask = uint64_t(1) << (column % 64);
 
@@ -70,7 +90,6 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
         if (augmented[i * wordsPerRow + lastWord] & lastMask)
             return false;
 
-    x.assign(columns, 0);
     for (int i = 0; i < rank; i++)
         x[pivotCol[i]] = augmented[i * wordsPerRow + lastWord] & lastMask ? 1 : 0;
 

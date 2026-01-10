@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <chrono>
 #include <omp.h>
 
 #include "src/utils.h"
@@ -80,6 +81,8 @@ int runLiftSchemes(const ArgParser &parser) {
 
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < schemes.size(); i++) {
+        auto t1 = std::chrono::high_resolution_clock::now();
+
         FractionalScheme liftedScheme;
         auto lifter = schemes[i].toLift();
 
@@ -91,11 +94,16 @@ int runLiftSchemes(const ArgParser &parser) {
             step++;
         }
 
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double seconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
+
+        std::stringstream ss;
+
         if (reconstructed) {
             if (canonize)
                 liftedScheme.canonize();
 
-            std::cout << (i + 1) << ". Successfully reconstructed scheme in " << liftedScheme.getRing() << " on step " << step << std::endl;
+            ss << (i + 1) << ". Successfully reconstructed scheme in " << liftedScheme.getRing() << " on step " << step;
             std::string path = getSavePath(liftedScheme, i, outputPath, format);
 
             if (format == "txt")
@@ -104,11 +112,14 @@ int runLiftSchemes(const ArgParser &parser) {
                 liftedScheme.saveJson(path);
         }
         else if (step == steps) {
-            std::cout << (i + 1) << ". Unable to make rational reconstruction after " << steps << " steps" << std::endl;
+            ss << (i + 1) << ". Unable to make rational reconstruction after " << steps << " steps";
         }
         else {
-            std::cout << (i + 1) << ". Unable to lift scheme on step " << (step + 1) << std::endl;
+            ss << (i + 1) << ". Unable to lift scheme on step " << (step + 1);
         }
+
+        ss << " (" << prettyTime(seconds) << ")";
+        std::cout << ss.str() << std::endl;
     }
 
     return 0;

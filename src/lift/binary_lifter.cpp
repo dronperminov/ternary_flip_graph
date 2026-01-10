@@ -28,7 +28,7 @@ bool BinaryLifter::lift() {
     for (int i = 0; i < tensorSize; i++)
         b[i] = ((T0[i] - E[i]) >> exponent) & 1;
 
-    if (!jakobian.solve(b, x))
+    if (!solve())
         return false;
 
     updateFactor(u, elements[0], x, 0);
@@ -108,4 +108,62 @@ void BinaryLifter::updateFactor(std::vector<uint64_t> &f, int size, const std::v
             f[index * size + i] &= mask;
         }
     }
+}
+
+bool BinaryLifter::addConstraints(std::vector<uint64_t> &f, int size, int offset) {
+    uint64_t mask = (uint64_t(1) << (exponent + 1)) - 1;
+    int64_t modNext = mod << 1;
+    int64_t boundNext = sqrt(modNext / 2.0);
+
+    for (int i = 0; i < size; i++) {
+        for (int index = 0; index < rank; index++) {
+            uint64_t a0 = f[index * size + i];
+            uint64_t a1 = (a0 + mod) & mask;
+
+            bool r0 = Fraction::canReconstruct(a0, modNext, boundNext);
+            bool r1 = Fraction::canReconstruct(a1, modNext, boundNext);
+
+            if (!r0 && !r1) {
+                jakobian.reset();
+                return false;
+            }
+
+            if (!r1) {
+                jakobian.setVariable(offset + i * rank + index, 0);
+            }
+            else if (!r0) {
+                jakobian.setVariable(offset + i * rank + index, 1);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool BinaryLifter::addConstraints() {
+    jakobian.reset();
+
+    if (!addConstraints(u, elements[0], 0))
+        return false;
+
+    if (!addConstraints(v, elements[1], elements[0] * rank))
+        return false;
+
+    if (!addConstraints(w, elements[2], (elements[0] + elements[1]) * rank))
+        return false;
+
+    return true;
+}
+
+bool BinaryLifter::solve() {
+    bool constrained = addConstraints();
+
+    if (jakobian.solve(b, x))
+        return true;
+
+    if (!constrained)
+        return false;
+
+    jakobian.reset();
+    return jakobian.solve(b, x);
 }

@@ -36,11 +36,9 @@ bool Fraction::isTernaryInteger() const {
     return den == 1 && -1 <= num && num <= 1;
 }
 
-bool Fraction::reconstruct(int64_t a, int64_t mod, int64_t bound) {
-    a = ((a % mod) + mod) % mod;
-
+bool Fraction::reconstruct(uint64_t a, int64_t mod, int64_t bound) {
     int64_t r0 = mod;
-    int64_t r1 = a;
+    int64_t r1 = a % mod;
     int64_t t0 = 0;
     int64_t t1 = 1;
 
@@ -70,6 +68,29 @@ bool Fraction::reconstruct(int64_t a, int64_t mod, int64_t bound) {
     den = t1;
     normalize();
     return true;
+}
+
+bool Fraction::canReconstruct(uint64_t a, int64_t mod, int64_t bound) {
+    int64_t r0 = mod;
+    int64_t r1 = a % mod;
+    int64_t t0 = 0;
+    int64_t t1 = 1;
+
+    while (r1 != 0 && r1 > bound) {
+        int64_t q = r0 / r1;
+        int64_t r2 = r0 - q * r1;
+        int64_t t2 = t0 - q * t1;
+
+        r0 = r1;
+        r1 = r2;
+        t0 = t1;
+        t1 = t2;
+    }
+
+    r1 = abs(r1);
+    t1 = abs(t1);
+
+    return r1 <= bound && t1 <= bound && t1 != 0 && std::gcd(r1, t1) == 1;
 }
 
 Fraction Fraction::operator-() const {

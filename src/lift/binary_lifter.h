@@ -41,4 +41,8 @@ private:
     void initTensors();
     void evaluateTensor();
     void updateFactor(std::vector<uint64_t> &f, int size, const std::vector<uint8_t> &x, int offset);
+
+    bool addConstraints(std::vector<uint64_t> &f, int size, int offset);
+    bool addConstraints();
+    bool solve();
 };

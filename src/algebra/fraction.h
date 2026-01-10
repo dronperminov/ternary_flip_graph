@@ -19,7 +19,8 @@ public:
 
     bool isInteger() const;
     bool isTernaryInteger() const;
-    bool reconstruct(int64_t a, int64_t mod, int64_t bound);
+    bool reconstruct(uint64_t a, int64_t mod, int64_t bound);
+    static bool canReconstruct(uint64_t a, int64_t mod, int64_t bound);
 
     Fraction operator-() const;
     Fraction operator+(const Fraction &fraction) const;
