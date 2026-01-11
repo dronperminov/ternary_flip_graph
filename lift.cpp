@@ -91,7 +91,7 @@ int runLiftSchemes(const ArgParser &parser) {
         if (!reconstructed) {
             auto lifter = schemes[i].toLift();
 
-            while (step < steps && lifter.lift() && !reconstructed) {
+            while (step < steps && !reconstructed && lifter.lift()) {
                 reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
                 step++;
             }
