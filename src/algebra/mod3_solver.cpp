@@ -1,10 +1,8 @@
 #include "mod3_solver.h"
 
-Mod3Solver::Mod3Solver(int rows, int columns) {
+Mod3Solver::Mod3Solver(uint64_t rows, uint64_t columns) : values(rows * columns, 0) {
     this->rows = rows;
     this->columns = columns;
-
-    values.assign(rows * columns, 0);
 }
 
 void Mod3Solver::set(int row, int column, uint8_t value) {
@@ -12,61 +10,57 @@ void Mod3Solver::set(int row, int column, uint8_t value) {
 }
 
 bool Mod3Solver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
-    int wordsPerRow = (columns + 1 + 63) / 64;
+    uint64_t wordsPerRow = (columns + 1 + 63) / 64;
     std::vector<Mod3Vector<uint64_t>> augmented(rows * wordsPerRow, 64);
     std::vector<int> pivotCol(rows, -1);
 
-    int lastWord = columns / 64;
-    int lastBit = columns % 64;
+    uint64_t lastWord = columns / 64;
+    uint64_t lastBit = columns % 64;
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++)
+    for (uint64_t i = 0; i < rows; i++) {
+        for (uint64_t j = 0; j < columns; j++)
             augmented[i * wordsPerRow + j / 64].set(j % 64, values[i * columns + j]);
 
         augmented[i * wordsPerRow + lastWord].set(lastBit, b[i] % 3);
     }
 
-    int rank = 0;
+    uint64_t rank = 0;
 
-    for (int column = 0; column < columns && rank < rows; column++) {
-        int word = column / 64;
-        int bit = column % 64;
+    for (uint64_t column = 0; column < columns && rank < rows; column++) {
+        uint64_t word = column / 64;
+        uint64_t bit = column % 64;
 
-        int pivotRow = -1;
-        for (int row = rank; row < rows; row++) {
-            if (augmented[row * wordsPerRow + word][bit]) {
-                pivotRow = row;
-                break;
-            }
-        }
+        uint64_t pivotRow = rank;
+        while (pivotRow < rows && !augmented[pivotRow * wordsPerRow + word][bit])
+            pivotRow++;
 
-        if (pivotRow == -1)
+        if (pivotRow == rows)
             continue;
 
         if (pivotRow != rank) {
-            int offset1 = rank * wordsPerRow + word;
-            int offset2 = pivotRow * wordsPerRow + word;
+            uint64_t offset1 = rank * wordsPerRow + word;
+            uint64_t offset2 = pivotRow * wordsPerRow + word;
 
-            for (int j = word; j < wordsPerRow; j++)
+            for (uint64_t j = word; j < wordsPerRow; j++)
                 std::swap(augmented[offset1++], augmented[offset2++]);
         }
 
         int pivotValue = augmented[rank * wordsPerRow + word][bit];
         if (pivotValue != 1) {
-            int offset = rank * wordsPerRow + word;
+            uint64_t offset = rank * wordsPerRow + word;
 
-            for (int j = word; j < wordsPerRow; j++)
+            for (uint64_t j = word; j < wordsPerRow; j++)
                 augmented[offset++] *= pivotValue;
         }
 
-        for (int row = 0; row < rows; row++) {
+        for (uint64_t row = 0; row < rows; row++) {
             int pivot = augmented[row * wordsPerRow + word][bit];
 
             if (row != rank && pivot) {
-                int offset1 = row * wordsPerRow + word;
-                int offset2 = rank * wordsPerRow + word;
+                uint64_t offset1 = row * wordsPerRow + word;
+                uint64_t offset2 = rank * wordsPerRow + word;
 
-                for (int j = word; j < wordsPerRow; j++)
+                for (uint64_t j = word; j < wordsPerRow; j++)
                     augmented[offset1++] -= augmented[offset2++] * pivot;
             }
         }
@@ -74,12 +68,12 @@ bool Mod3Solver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
         pivotCol[rank++] = column;
     }
 
-    for (int i = rank; i < rows; i++)
+    for (uint64_t i = rank; i < rows; i++)
         if (augmented[i * wordsPerRow + lastWord][lastBit])
             return false;
 
     x.assign(columns, 0);
-    for (int i = 0; i < rank; i++)
+    for (uint64_t i = 0; i < rank; i++)
         x[pivotCol[i]] = augmented[i * wordsPerRow + lastWord][lastBit];
 
     return true;

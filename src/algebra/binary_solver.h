@@ -4,12 +4,12 @@
 #include <vector>
 
 class BinarySolver {
-    int rows;
-    int columns;
+    uint64_t rows;
+    uint64_t columns;
     std::vector<uint8_t> values;
     std::vector<int8_t> xs;
 public:
-    BinarySolver(int rows, int columns);
+    BinarySolver(uint64_t rows, uint64_t columns);
 
     void set(int row, int column, uint8_t value);
     void setVariable(int variable, uint8_t value);

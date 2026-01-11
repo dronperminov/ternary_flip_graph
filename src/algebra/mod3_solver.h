@@ -6,11 +6,11 @@
 #include "../entities/mod3_vector.hpp"
 
 class Mod3Solver {
-    int rows;
-    int columns;
+    uint64_t rows;
+    uint64_t columns;
     std::vector<uint8_t> values;
 public:
-    Mod3Solver(int rows, int columns);
+    Mod3Solver(uint64_t rows, uint64_t columns);
 
     void set(int row, int column, uint8_t value);
 
