@@ -11,6 +11,7 @@
 #include "../algebra/binary_matrix.h"
 #include "../algebra/binary_solver.h"
 #include "../lift/binary_lifter.h"
+#include "fractional_scheme.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -52,6 +53,7 @@ public:
     void copy(const BinaryScheme &scheme);
 
     bool validate() const;
+    bool reconstruct(FractionalScheme &scheme) const;
 
     BinaryLifter toLift() const;
 private:
@@ -726,6 +728,11 @@ bool BinaryScheme<T>::validate() const {
                     return false;
 
     return true;
+}
+
+template <typename T>
+bool BinaryScheme<T>::reconstruct(FractionalScheme &scheme) const {
+    return false;
 }
 
 template <typename T>

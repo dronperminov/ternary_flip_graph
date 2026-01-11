@@ -84,14 +84,17 @@ int runLiftSchemes(const ArgParser &parser) {
         auto t1 = std::chrono::high_resolution_clock::now();
 
         FractionalScheme liftedScheme;
-        auto lifter = schemes[i].toLift();
 
         int step = 0;
-        bool reconstructed = ring == "Z3" ? lifter.reconstruct(liftedScheme) && liftedScheme.validate() : false;
+        bool reconstructed = schemes[i].reconstruct(liftedScheme) && liftedScheme.validate();
 
-        while (step < steps && lifter.lift() && !reconstructed) {
-            reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
-            step++;
+        if (!reconstructed) {
+            auto lifter = schemes[i].toLift();
+
+            while (step < steps && lifter.lift() && !reconstructed) {
+                reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
+                step++;
+            }
         }
 
         auto t2 = std::chrono::high_resolution_clock::now();

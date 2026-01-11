@@ -11,6 +11,7 @@
 #include "../entities/mod3_vector.hpp"
 #include "../algebra/matrix.h"
 #include "../lift/mod3_lifter.h"
+#include "fractional_scheme.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -53,6 +54,7 @@ public:
     void copy(const Mod3Scheme &scheme);
 
     bool validate() const;
+    bool reconstruct(FractionalScheme &scheme) const;
 
     Mod3Lifter toLift() const;
 private:
@@ -771,6 +773,26 @@ bool Mod3Scheme<T>::validate() const {
                     return false;
 
     return true;
+}
+
+template <typename T>
+bool Mod3Scheme<T>::reconstruct(FractionalScheme &scheme) const {
+    std::vector<uint64_t> u(rank * elements[0]);
+    std::vector<uint64_t> v(rank * elements[1]);
+    std::vector<uint64_t> w(rank * elements[2]);
+
+    for (int index = 0; index < rank; index++) {
+        for (int i = 0; i < elements[0]; i++)
+            u[index * elements[0] + i] = uvw[0][index][i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[index * elements[1] + i] = uvw[1][index][i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[index * elements[2] + i] = uvw[2][index][i];
+    }
+
+    return scheme.reconstruct(dimension[0], dimension[1], dimension[2], rank, u, v, w, 3, 1);
 }
 
 template <typename T>
