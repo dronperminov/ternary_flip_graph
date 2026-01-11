@@ -20,10 +20,12 @@ public:
     bool isInteger() const;
     bool isTernary() const;
 
+    int getFractionsCount() const;
     int getComplexity() const;
     std::string getRing() const;
     std::string getUniqueValues() const;
 
+    void copy(const FractionalScheme &scheme);
     void canonize();
     void saveJson(const std::string &path) const;
     void saveTxt(const std::string &path) const;

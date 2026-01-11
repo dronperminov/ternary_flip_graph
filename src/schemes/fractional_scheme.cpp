@@ -54,6 +54,17 @@ bool FractionalScheme::isTernary() const {
     return true;
 }
 
+int FractionalScheme::getFractionsCount() const {
+    int count = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            if (!uvw[i][j].isInteger())
+                count++;
+
+    return count;
+}
+
 int FractionalScheme::getComplexity() const {
     int complexity = 0;
 
@@ -92,6 +103,19 @@ std::string FractionalScheme::getUniqueValues() const {
     ss << "}";
 
     return ss.str();
+}
+
+void FractionalScheme::copy(const FractionalScheme &scheme) {
+    rank = scheme.rank;
+
+    for (int i = 0; i < 3; i++) {
+        dimension[i] = scheme.dimension[i];
+        elements[i] = scheme.elements[i];
+        uvw[i].assign(rank * elements[i], 0);
+
+        for (int j = 0; j < rank * elements[i]; j++)
+            uvw[i][j] = scheme.uvw[i][j];
+    }
 }
 
 void FractionalScheme::canonize() {
