@@ -1,9 +1,11 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
 #include <chrono>
+#include <algorithm>
 #include <omp.h>
 
 #include "src/utils.h"
@@ -79,6 +81,13 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
     std::cout << std::endl;
 
+    std::cout << "+--------+-----------+------+----------------------------+-------+--------------+" << std::endl;
+    std::cout << "| scheme | dimension | rank |           status           | steps | elapsed time |" << std::endl;
+    std::cout << "+--------+-----------+------+----------------------------+-------+--------------+" << std::endl;
+
+    std::vector<double> elapsedTimes(schemes.size(), 0);
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < schemes.size(); i++) {
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -98,15 +107,14 @@ int runLiftSchemes(const ArgParser &parser) {
         }
 
         auto t2 = std::chrono::high_resolution_clock::now();
-        double seconds = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
-
-        std::stringstream ss;
+        elapsedTimes[i] = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
+        std::string status;
 
         if (reconstructed) {
             if (canonize)
                 liftedScheme.canonize();
 
-            ss << (i + 1) << ". Successfully reconstructed scheme in " << liftedScheme.getRing() << " on step " << step;
+            status = "reconstructed in " + liftedScheme.getRing();
             std::string path = getSavePath(liftedScheme, i, outputPath, format);
 
             if (format == "txt")
@@ -115,16 +123,28 @@ int runLiftSchemes(const ArgParser &parser) {
                 liftedScheme.saveJson(path);
         }
         else if (step == steps) {
-            ss << (i + 1) << ". Unable to make rational reconstruction after " << steps << " steps";
+            status = "no rational reconstruction";
         }
         else {
-            ss << (i + 1) << ". Unable to lift scheme on step " << (step + 1);
+            status = "lifting failed";
         }
 
-        ss << " (" << prettyTime(seconds) << ")";
-        std::cout << ss.str() << std::endl;
+        std::stringstream ss;
+        ss << "| " << std::setw(6) << (i + 1) << " | ";
+        ss << std::setw(9) << schemes[i].getDimension() << " | ";
+        ss << std::setw(4) << schemes[i].getRank() << " | ";
+        ss << std::setw(26) << status << " | ";
+        ss << std::setw(5) << step << " | ";
+        ss << std::setw(12) << prettyTime(elapsedTimes[i]) << " |" << std::endl;
+        std::cout << ss.str();
     }
 
+    auto endTime = std::chrono::high_resolution_clock::now();
+    double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0;
+    double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
+
+    std::cout << "+--------+-----------+------+----------------------------+-------+--------------+" << std::endl;
+    std::cout << "- elapsed time (total / mean): " << prettyTime(elapsedTime) << " / " << prettyTime(meanTime) << std::endl;
     return 0;
 }
 
