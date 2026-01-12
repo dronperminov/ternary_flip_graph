@@ -76,6 +76,16 @@ int FractionalScheme::getComplexity() const {
     return complexity - 2 * rank - elements[2];
 }
 
+int64_t FractionalScheme::getWeight() const {
+    int64_t weight = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            weight += abs(uvw[i][j].numerator()) * uvw[i][j].denominator();
+
+    return weight;
+}
+
 std::string FractionalScheme::getRing() const {
     if (isTernary())
         return "ZT";

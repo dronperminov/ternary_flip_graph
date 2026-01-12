@@ -22,6 +22,7 @@ public:
 
     int getFractionsCount() const;
     int getComplexity() const;
+    int64_t getWeight() const;
     std::string getRing() const;
     std::string getUniqueValues() const;
 
