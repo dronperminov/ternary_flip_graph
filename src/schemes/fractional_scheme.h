@@ -6,9 +6,12 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 
 #include "../algebra/fraction.h"
+#include "../algebra/matrix.h"
+#include "../entities/ranks.h"
 #include "base_scheme.h"
 
 class FractionalScheme : public BaseScheme {
@@ -26,9 +29,11 @@ public:
     std::string getRing() const;
     std::string getUniqueValues() const;
 
+    std::string getTypeInvariant() const;
+
     void copy(const FractionalScheme &scheme);
     void canonize();
-    void saveJson(const std::string &path) const;
+    void saveJson(const std::string &path, bool withInvariants = false) const;
     void saveTxt(const std::string &path) const;
     void save(const std::string &path) const;
 private:

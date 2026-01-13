@@ -56,32 +56,32 @@ bool Matrix::invertible(Matrix &inverse) const {
         }
     }
 
-    for (int col = 0; col < size; col++) {
-        int pivotRow = col;
+    for (int column = 0; column < size; column++) {
+        int pivotRow = column;
 
-        for (int row = col + 1; row < size; row++)
-            if (abs(augmented(row, col)) > abs(augmented(pivotRow, col)))
+        for (int row = column + 1; row < size; row++)
+            if (abs(augmented(row, column)) > abs(augmented(pivotRow, column)))
                 pivotRow = row;
 
-        if (pivotRow != col)
-            augmented.swapRows(col, pivotRow);
+        if (pivotRow != column)
+            augmented.swapRows(column, pivotRow);
 
-        if (augmented(col, col) == 0)
+        if (augmented(column, column) == 0)
             return false;
 
-        Fraction pivot = augmented(col, col);
+        Fraction pivot = augmented(column, column);
 
         for (int j = 0; j < size * 2; j++)
-            augmented(col, j) /= pivot;
+            augmented(column, j) /= pivot;
 
         for (int i = 0; i < size; i++) {
-            if (i == col)
+            if (i == column)
                 continue;
 
-            Fraction factor = augmented(i, col);
+            Fraction factor = augmented(i, column);
 
             for (int j = 0; j < size * 2; j++)
-                augmented(i, j) -= factor * augmented(col, j);
+                augmented(i, j) -= factor * augmented(column, j);
         }
     }
 
@@ -110,9 +110,50 @@ int Matrix::fractionsCount() const {
     return count;
 }
 
-void Matrix::swapRows(int row1, int row2) {
-    for (int i = 0; i < columns; i++)
+int Matrix::rank() const {
+    Matrix tmp(rows, columns);
+    tmp.values = values;
+
+    int rank = 0;
+
+    for (int column = 0; column < columns && rank < rows; column++) {
+        int pivotRow = rank;
+        while (pivotRow < rows && tmp(pivotRow, column) == 0)
+            pivotRow++;
+
+        if (pivotRow == rows)
+            continue;
+
+        if (pivotRow != rank)
+            tmp.swapRows(pivotRow, rank, column);
+
+        Fraction pivot = tmp(rank, column);
+        tmp.divideRow(rank, pivot, column);
+
+        for (int row = rank + 1; row < rows; row++) {
+            Fraction value = tmp(row, column);
+            tmp.subtractRow(row, rank, value, column);
+        }
+
+        rank++;
+    }
+
+    return rank;
+}
+
+void Matrix::swapRows(int row1, int row2, int column) {
+    for (int i = column; i < columns; i++)
         std::swap(values[row1 * columns + i], values[row2 * columns + i]);
+}
+
+void Matrix::divideRow(int row, const Fraction &divider, int column) {
+    for (int i = column; i < columns; i++)
+        values[row * columns + i] /= divider;
+}
+
+void Matrix::subtractRow(int row1, int row2, const Fraction &value, int column) {
+    for (int i = column; i < columns; i++)
+        values[row1 * columns + i] -= values[row2 * columns + i] * value;
 }
 
 void Matrix::sandwich(const Matrix &left, const Matrix &right) {
@@ -185,7 +226,7 @@ std::istream& operator>>(std::istream& is, Matrix &matrix) {
 std::ostream& operator<<(std::ostream& os, const Matrix &matrix) {
     for (int i = 0; i < matrix.rows; i++) {
         for (int j = 0; j < matrix.columns; j++)
-            os << matrix(i, j) << " ";
+            os << matrix(i, j).pretty() << " ";
 
         os << std::endl;
     }

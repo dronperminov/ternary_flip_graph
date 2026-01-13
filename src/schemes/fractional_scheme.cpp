@@ -115,6 +115,60 @@ std::string FractionalScheme::getUniqueValues() const {
     return ss.str();
 }
 
+std::string FractionalScheme::getTypeInvariant() const {
+    std::vector<Ranks> ranks;
+
+    for (int index = 0; index < rank; index++) {
+        Matrix u(dimension[0], dimension[1]);
+        Matrix v(dimension[1], dimension[2]);
+        Matrix w(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            u[i] = uvw[0][index * elements[0] + i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[i] = uvw[1][index * elements[1] + i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[i] = uvw[2][index * elements[2] + i];
+
+        ranks.push_back({u.rank(), v.rank(), w.rank()});
+    }
+
+    std::unordered_map<Ranks, int> powers;
+    for (int index = 0; index < rank; index++) {
+        auto result = powers.find(ranks[index]);
+
+        if (result == powers.end())
+            powers[ranks[index]] = 1;
+        else
+            result->second++;
+    }
+
+    std::vector<std::string> types;
+    for (const auto &power: powers) {
+        std::stringstream type;
+
+        if (power.second > 1)
+            type << power.second;
+
+        type << power.first;
+        types.push_back(type.str());
+    }
+
+    std::sort(types.begin(), types.end());
+    std::stringstream type;
+
+    for (size_t i = 0; i < types.size(); i++) {
+        if (i > 0)
+            type << "+";
+
+        type << types[i];
+    }
+
+    return type.str();
+}
+
 void FractionalScheme::copy(const FractionalScheme &scheme) {
     rank = scheme.rank;
 
@@ -149,7 +203,7 @@ void FractionalScheme::canonize() {
         w /= scaleW;
 }
 
-void FractionalScheme::saveJson(const std::string &path) const {
+void FractionalScheme::saveJson(const std::string &path, bool withInvariants) const {
     std::ofstream f(path);
 
     f << "{" << std::endl;
@@ -163,6 +217,11 @@ void FractionalScheme::saveJson(const std::string &path) const {
     saveMatrix(f, "v", uvw[1], rank, elements[1]);
     f << "," << std::endl;
     saveMatrix(f, "w", uvw[2], rank, elements[2]);
+
+    if (withInvariants) {
+        f << "," << std::endl << "    \"type\": \"" << getTypeInvariant() << "\"";
+    }
+
     f << std::endl;
     f << "}" << std::endl;
 

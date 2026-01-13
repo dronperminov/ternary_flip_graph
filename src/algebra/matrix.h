@@ -26,8 +26,11 @@ public:
     bool isTernary() const;
 
     int fractionsCount() const;
+    int rank() const;
 
-    void swapRows(int row1, int row2);
+    void swapRows(int row1, int row2, int column = 0);
+    void divideRow(int row, const Fraction &divider, int column = 0);
+    void subtractRow(int row1, int row2, const Fraction &value, int column = 0);
     void sandwich(const Matrix &left, const Matrix &right);
     void random(int min, int max, int denominator, std::mt19937 &generator);
     void diagonal(const Fraction &value);
