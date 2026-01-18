@@ -98,7 +98,7 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
     dimension2knownRank = {
         {"2x2x2", 7}, {"2x2x3", 11}, {"2x2x4", 14}, {"2x2x5", 18}, {"2x2x6", 21}, {"2x2x7", 25}, {"2x2x8", 28}, {"2x2x9", 32}, {"2x2x10", 35}, {"2x2x11", 39}, {"2x2x12", 42}, {"2x2x13", 46}, {"2x2x14", 49}, {"2x2x15", 53}, {"2x2x16", 56},
         {"2x3x3", 15}, {"2x3x4", 20}, {"2x3x5", 25}, {"2x3x6", 30}, {"2x3x7", 35}, {"2x3x8", 40}, {"2x3x9", 45}, {"2x3x10", 50}, {"2x3x11", 55}, {"2x3x12", 60}, {"2x3x13", 65}, {"2x3x14", 70}, {"2x3x15", 75}, {"2x3x16", 80},
-        {"2x4x4", 26}, {"2x4x5", 32}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 59}, {"2x4x10", 64}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 83}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
+        {"2x4x4", 26}, {"2x4x5", 32}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 58}, {"2x4x10", 64}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 83}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
         {"2x5x5", 40}, {"2x5x6", 47}, {"2x5x7", 55}, {"2x5x8", 63}, {"2x5x9", 72}, {"2x5x10", 79}, {"2x5x11", 87}, {"2x5x12", 94},
         {"2x6x6", 56}, {"2x6x7", 66}, {"2x6x8", 75}, {"2x6x9", 86}, {"2x6x10", 94},
         {"2x7x7", 76}, {"2x7x8", 88}, {"2x7x9", 99},
@@ -110,7 +110,7 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
         {"3x7x7", 111}, {"3x7x8", 126}, {"3x7x9", 142},
         {"3x8x8", 145},
         {"4x4x4", 48}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 104}, {"4x4x10", 120}, {"4x4x11", 130}, {"4x4x12", 142}, {"4x4x13", 152}, {"4x4x14", 165}, {"4x4x15", 177}, {"4x4x16", 189},
-        {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 136}, {"4x5x10", 151}, {"4x5x11", 165}, {"4x5x12", 179},
+        {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 136}, {"4x5x10", 150}, {"4x5x11", 165}, {"4x5x12", 179},
         {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
         {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 186},
         {"4x8x8", 182},
@@ -185,6 +185,7 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool mul
 template <typename Scheme>
 void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["2x4x5"] = 33;
+    dimension2knownRank["2x4x9"] = 59;
     dimension2knownRank["2x4x10"] = 65;
     dimension2knownRank["2x4x13"] = 84;
     dimension2knownRank["2x5x7"] = 57;
@@ -194,30 +195,23 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["2x6x7"] = 68;
     dimension2knownRank["2x6x8"] = 77;
     dimension2knownRank["2x7x7"] = 77;
-    dimension2knownRank["2x7x8"] = 90;
     dimension2knownRank["2x7x9"] = 102;
-    dimension2knownRank["3x3x6"] = 43;
+    dimension2knownRank["3x3x6"] = 42;
     dimension2knownRank["3x3x7"] = 51;
-    dimension2knownRank["3x3x8"] = 58;
+    dimension2knownRank["3x3x8"] = 57;
     dimension2knownRank["3x3x9"] = 65;
-    dimension2knownRank["3x3x10"] = 72;
-    dimension2knownRank["3x3x11"] = 79;
-    dimension2knownRank["3x3x12"] = 86;
-    dimension2knownRank["3x3x13"] = 94;
-    dimension2knownRank["3x3x14"] = 101;
-    dimension2knownRank["3x3x15"] = 108;
-    dimension2knownRank["3x3x16"] = 115;
-    dimension2knownRank["3x4x6"] = 56;
+    dimension2knownRank["3x3x10"] = 71;
+    dimension2knownRank["3x3x11"] = 78;
+    dimension2knownRank["3x3x12"] = 84;
+    dimension2knownRank["3x3x13"] = 93;
+    dimension2knownRank["3x3x14"] = 99;
+    dimension2knownRank["3x3x15"] = 107;
+    dimension2knownRank["3x3x16"] = 113;
     dimension2knownRank["3x4x7"] = 64;
     dimension2knownRank["3x4x8"] = 74;
-    dimension2knownRank["3x4x9"] = 84;
-    dimension2knownRank["3x4x10"] = 93;
-    dimension2knownRank["3x4x11"] = 102;
-    dimension2knownRank["3x4x12"] = 111;
-    dimension2knownRank["3x4x13"] = 120;
+    dimension2knownRank["3x4x13"] = 118;
     dimension2knownRank["3x4x14"] = 128;
-    dimension2knownRank["3x4x15"] = 138;
-    dimension2knownRank["3x4x16"] = 148;
+    dimension2knownRank["3x4x15"] = 137;
     dimension2knownRank["3x5x6"] = 70;
     dimension2knownRank["3x5x7"] = 83;
     dimension2knownRank["3x5x8"] = 94;
@@ -225,10 +219,9 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["3x5x11"] = 128;
     dimension2knownRank["3x5x12"] = 140;
     dimension2knownRank["3x6x6"] = 83;
-    dimension2knownRank["3x6x7"] = 99;
-    dimension2knownRank["3x6x8"] = 112;
-    dimension2knownRank["3x6x9"] = 126;
-    dimension2knownRank["3x6x10"] = 139;
+    dimension2knownRank["3x6x7"] = 96;
+    dimension2knownRank["3x6x9"] = 124;
+    dimension2knownRank["3x6x10"] = 137;
     dimension2knownRank["3x7x7"] = 115;
     dimension2knownRank["3x7x8"] = 128;
     dimension2knownRank["3x7x9"] = 147;
@@ -243,7 +236,7 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["4x4x15"] = 181;
     dimension2knownRank["4x4x16"] = 192;
     dimension2knownRank["4x5x9"] = 137;
-    dimension2knownRank["4x6x9"] = 160;
+    dimension2knownRank["4x5x10"] = 151;
     dimension2knownRank["4x7x7"] = 145;
     dimension2knownRank["4x7x9"] = 187;
     dimension2knownRank["5x7x8"] = 206;
@@ -259,12 +252,12 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
 template <typename Scheme>
 void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
     dimension2knownRank["2x4x5"] = 33;
+    dimension2knownRank["2x4x9"] = 59;
     dimension2knownRank["2x4x10"] = 65;
     dimension2knownRank["2x4x13"] = 84;
     dimension2knownRank["2x5x10"] = 80;
     dimension2knownRank["2x7x9"] = 100;
     dimension2knownRank["3x3x6"] = 42;
-    dimension2knownRank["3x3x8"] = 56;
     dimension2knownRank["3x3x10"] = 71;
     dimension2knownRank["3x3x11"] = 78;
     dimension2knownRank["3x3x12"] = 84;
