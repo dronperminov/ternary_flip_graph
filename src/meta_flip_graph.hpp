@@ -226,8 +226,7 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["3x7x9"] = 145;
     dimension2knownRank["3x8x8"] = 148;
     dimension2knownRank["4x4x4"] = 49;
-    dimension2knownRank["4x4x9"] = 110;
-    dimension2knownRank["4x4x10"] = 122;
+    dimension2knownRank["4x4x9"] = 108;
     dimension2knownRank["4x4x11"] = 134;
     dimension2knownRank["4x4x12"] = 145;
     dimension2knownRank["4x4x13"] = 157;
