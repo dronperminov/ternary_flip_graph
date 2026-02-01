@@ -36,24 +36,40 @@ Find alternative schemes with the same rank but different coefficient patterns, 
 
 **Use when**: you need multiple valid schemes for the same problem, possibly for hardware-specific optimizations.
 
+### `lift`: Hensel Lifting from Z₂/Z₃ to general ring
+Lifts a scheme from the rings Z₂ or Z₃ to higher-order rings (Z₂ → Z₄ → Z₈ → Z₁₆ ... or Z₃ → Z₉ → Z₂₇ → Z₈₁) using Hensel lifting. The method solves the system `Jx = T - UxVxW` and applies rational reconstruction with subsequent validation to ensure correct lifting.
+
+**Use when**: you need to convert a scheme from Z₂/Z₃ to a general ring (ZT, Z, or Q).
 
 ## Quick Start
 
 ### Installation
 ```bash
-git clone https://github.com/yourusername/ternary_flip_graph
+git clone https://github.com/dronperminov/ternary_flip_graph
 cd ternary_flip_graph
-make
+make -j$(nproc)
 ```
 
-### Basic Discovery (`4x4x4` matrices with ternary coefficients)
+### Basic Discovery
+
+#### `4x4x4` matrices with ternary coefficients
 ```bash
 ./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --count 64 --threads 16
 ```
 
+#### single binary scheme initialization from input.txt
+```bash
+./flip_graph -i input.txt --ring Z2 --count 128
+```
+
+#### multiple Z3 scheme initialization from input.txt
+```bash
+./flip_graph -m -i input.txt --ring Z3 --count 128
+```
+
 ### Meta Search
 ```bash
-./meta_flip_graph -i input_schemes.txt --ring ZT --count 64 --resize-probability 0.1
+./meta_flip_graph -i input.txt --ring ZT --count 64 --resize-probability 0.1
 ```
 
 ### Complexity Minimization
@@ -131,7 +147,8 @@ make
     * `-n1`: number of rows in first matrix (A);
     * `-n2`: number of columns in A / rows in second matrix (B);
     * `-n3`: number of columns in second matrix (B);
-    * `-i`: path to input file with initial schemes.
+    * `-i`: path to input file with initial scheme(s):
+    * `-m`: boolean flag to read multiple schemes from file (first line contains number of schemes).
 
 **Note**: these options are mutually exclusive. You cannot specify both dimension flags and an input file simultaneously.
 
@@ -148,7 +165,8 @@ make
 * `--resize-probability`: probability of resize operation (`0.0` to `1.0`, default: `0`). Controls how often the algorithm attempts to change scheme dimensions.
 
 ### Complexity Minimizer
-* `-i`: path to input file with initial scheme (required);
+* `-i`: path to input file with initial scheme(s) (required);
+* `-m`: boolean flag to read multiple schemes from file (first line contains number of schemes);
 * `--max-no-improvements`: stop after `N` iterations without improvement;
 * `--plus-probability`: chance to attempt "plus" operation for explore alternative schemes.
 
@@ -156,6 +174,44 @@ make
 * `-i`: path to input file with initial scheme (required);
 * `--max-count`: number of alternative schemes to find (default: `10000`).
 
+
+## Input files format
+The tool supports two modes of initialization from files:
+
+* **Single scheme**: the file contains only one scheme;
+* **Multiple schemes**: the file starts with the number of schemes, followed by each scheme sequentially.
+
+### Single scheme format
+The file contains exactly one scheme without any preceding count.
+```txt
+2 2 3 11
+1 0 0 1 1 0 0 0 0 0 0 1 -1 1 0 0 0 1 0 1 1 0 1 0 0 0 1 -1 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+1 0 0 0 1 0 0 1 0 0 1 0 1 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1 -1 0 -1 1 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1
+1 0 0 1 0 0 0 0 1 -1 0 0 -1 1 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1
+```
+
+### Multiple schemes format
+The file begins with an integer specifying the number of schemes, followed by each scheme.
+```txt
+3
+2 2 3 11
+1 0 0 1 1 0 0 0 0 0 0 1 -1 1 0 0 0 1 0 1 1 0 1 0 0 0 1 -1 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+1 0 0 0 1 0 0 1 0 0 1 0 1 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1 -1 0 -1 1 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1
+1 0 0 1 0 0 0 0 1 -1 0 0 -1 1 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1
+2 2 3 11
+0 0 0 1 0 0 0 1 0 0 1 0 0 0 1 1 0 1 0 0 0 1 0 -1 1 0 0 0 1 0 0 0 1 0 0 1 1 0 -1 0 1 1 0 0
+0 0 0 0 0 1 0 -1 0 0 1 0 0 0 1 0 0 0 0 -1 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0 0 1 0 0 0 1 0 0 -1 0 0 0 1 0 1 0 0 -1 -1 0 0 0 0 0 0 0 1 0 0
+0 0 0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 -1 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 1 1 0 0 0 0 1 0 0 0 0 1 0 -1 0 0 0
+2 2 3 11
+0 0 1 0 0 0 1 1 0 1 1 0 0 1 0 0 1 1 0 0 1 0 -1 0 1 0 0 0 0 1 0 -1 0 0 1 -1 0 1 0 0 0 0 0 1
+0 1 0 0 -1 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 1 0 0 -1 0 0 1 0 0 0 0 1 1 0 0 0 1 0 -1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 1 -1 0 0 1 0 0 1 0 0
+0 0 1 1 0 0 0 0 0 1 0 -1 0 0 1 0 0 1 0 0 0 0 -1 -1 1 0 -1 0 1 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 -1 0 1 0 0 0 0 -1 0 0 0 0 0 0 1 0 0 0 0
+```
+
+For correct run flip graph with this file you need use `-m` flag:
+```bash
+./flip_graph -i input.txt -m --count 128
+```
 
 ## Understanding the Approach
 
