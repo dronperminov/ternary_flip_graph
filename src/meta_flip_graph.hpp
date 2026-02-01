@@ -109,7 +109,7 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
         {"3x6x6", 80}, {"3x6x7", 94}, {"3x6x8", 108}, {"3x6x9", 120}, {"3x6x10", 134},
         {"3x7x7", 111}, {"3x7x8", 126}, {"3x7x9", 142},
         {"3x8x8", 145},
-        {"4x4x4", 48}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 104}, {"4x4x10", 120}, {"4x4x11", 130}, {"4x4x12", 142}, {"4x4x13", 152}, {"4x4x14", 165}, {"4x4x15", 177}, {"4x4x16", 189},
+        {"4x4x4", 48}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 104}, {"4x4x10", 115}, {"4x4x11", 130}, {"4x4x12", 141}, {"4x4x13", 152}, {"4x4x14", 163}, {"4x4x15", 176}, {"4x4x16", 188},
         {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 136}, {"4x5x10", 150}, {"4x5x11", 165}, {"4x5x12", 179},
         {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
         {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 186},
@@ -226,13 +226,10 @@ void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
     dimension2knownRank["3x7x9"] = 145;
     dimension2knownRank["3x8x8"] = 148;
     dimension2knownRank["4x4x4"] = 49;
-    dimension2knownRank["4x4x9"] = 108;
-    dimension2knownRank["4x4x11"] = 134;
-    dimension2knownRank["4x4x12"] = 145;
-    dimension2knownRank["4x4x13"] = 157;
-    dimension2knownRank["4x4x14"] = 169;
-    dimension2knownRank["4x4x15"] = 181;
-    dimension2knownRank["4x4x16"] = 192;
+    dimension2knownRank["4x4x9"] = 107;
+    dimension2knownRank["4x4x11"] = 131;
+    dimension2knownRank["4x4x13"] = 153;
+    dimension2knownRank["4x4x14"] = 164;
     dimension2knownRank["4x5x9"] = 137;
     dimension2knownRank["4x5x10"] = 151;
     dimension2knownRank["4x7x7"] = 145;
@@ -277,12 +274,9 @@ void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
     dimension2knownRank["4x4x5"] = 60;
     dimension2knownRank["4x4x8"] = 94;
     dimension2knownRank["4x4x9"] = 107;
-    dimension2knownRank["4x4x11"] = 132;
-    dimension2knownRank["4x4x12"] = 141;
-    dimension2knownRank["4x4x13"] = 154;
-    dimension2knownRank["4x4x14"] = 167;
-    dimension2knownRank["4x4x15"] = 179;
-    dimension2knownRank["4x4x16"] = 188;
+    dimension2knownRank["4x4x11"] = 131;
+    dimension2knownRank["4x4x13"] = 153;
+    dimension2knownRank["4x4x14"] = 164;
     dimension2knownRank["4x5x5"] = 73;
     dimension2knownRank["4x5x6"] = 89;
     dimension2knownRank["4x5x9"] = 133;
