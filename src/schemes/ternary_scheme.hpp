@@ -14,6 +14,7 @@
 
 template <typename T>
 class TernaryScheme : public BaseScheme {
+protected:
     std::vector<TernaryVector<T>> uvw[3];
     std::vector<int> indices;
 public:
@@ -52,7 +53,7 @@ public:
     void copy(const TernaryScheme<T> &scheme);
 
     bool validate() const;
-private:
+protected:
     void initFlips();
     void removeZeroes();
     void removeAt(int index);

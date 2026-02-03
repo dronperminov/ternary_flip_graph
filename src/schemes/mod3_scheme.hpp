@@ -16,7 +16,9 @@
 
 template <typename T>
 class Mod3Scheme : public BaseScheme {
+protected:
     std::vector<Mod3Vector<T>> uvw[3];
+private:
     FlipSet flipsNeg[3];
 public:
     Mod3Scheme();

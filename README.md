@@ -163,6 +163,7 @@ make -j$(nproc)
 
 ### Meta Flip Graph Additional Parameters
 * `--resize-probability`: probability of resize operation (`0.0` to `1.0`, default: `0`). Controls how often the algorithm attempts to change scheme dimensions.
+* `--int-width`: integer bit width controlling maximum matrix dimensions (`16|32|64|128`, default: `64`). Smaller values improve performance but limit matrix size.
 
 ### Complexity Minimizer
 * `-i`: path to input file with initial scheme(s) (required);

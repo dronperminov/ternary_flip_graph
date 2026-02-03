@@ -15,6 +15,7 @@
 #include "base_scheme.h"
 
 class FractionalScheme : public BaseScheme {
+protected:
     std::vector<Fraction> uvw[3];
 public:
     bool reconstruct(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, int64_t mod, int64_t bound);

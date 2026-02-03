@@ -62,6 +62,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
     std::cout << "- top count: " << topCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- format: " << format << std::endl;
+    std::cout << "- max matrix elements: " << (sizeof(T) * 8) << " (uint" << (sizeof(T) * 8) << "_t)" << std::endl;
     std::cout << std::endl;
 
     if (!makeDirectory(outputPath))
@@ -83,6 +84,30 @@ int runMetaFlipGraph(const ArgParser &parser) {
 
     metaFlipGraph.run();
     return 0;
+}
+
+template <template<typename> typename Scheme>
+int runMetaFlipGraphSizes(const ArgParser &parser) {
+    int maxMatrixElements = std::stoi(parser["--int-width"]);
+
+    if (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3")) {
+        int n1 = std::stoi(parser["-n1"]);
+        int n2 = std::stoi(parser["-n2"]);
+        int n3 = std::stoi(parser["-n3"]);
+
+        maxMatrixElements = std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
+    }
+
+    if (maxMatrixElements <= 16)
+        return runMetaFlipGraph<Scheme, uint16_t>(parser);
+
+    if (maxMatrixElements <= 32)
+        return runMetaFlipGraph<Scheme, uint32_t>(parser);
+
+    if (maxMatrixElements <= 64)
+        return runMetaFlipGraph<Scheme, uint64_t>(parser);
+
+    return runMetaFlipGraph<Scheme, __uint128_t>(parser);
 }
 
 int main(int argc, char **argv) {
@@ -116,6 +141,7 @@ int main(int argc, char **argv) {
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
+    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
 
     if (!parser.parse(argc, argv))
         return 0;
@@ -136,10 +162,10 @@ int main(int argc, char **argv) {
     }
 
     if (parser["--ring"] == "Z2")
-        return runMetaFlipGraph<BinaryScheme, uint64_t>(parser);
+        return runMetaFlipGraphSizes<BinaryScheme>(parser);
 
     if (parser["--ring"] == "Z3")
-        return runMetaFlipGraph<Mod3Scheme, uint64_t>(parser);
+        return runMetaFlipGraphSizes<Mod3Scheme>(parser);
 
-    return runMetaFlipGraph<TernaryScheme, uint64_t>(parser);
+    return runMetaFlipGraphSizes<TernaryScheme>(parser);
 }

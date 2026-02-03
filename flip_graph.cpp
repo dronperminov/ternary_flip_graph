@@ -46,7 +46,7 @@ int getMaxMatrixElements(const ArgParser &parser) {
         return 0;
     }
 
-    if (nn > 64) {
+    if (nn > 128) {
         std::cerr << "input matrix sizes too big: " << n1 << "x" << n2 << "x" << n3 << std::endl;
         return 0;
     }
@@ -103,6 +103,7 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- top count: " << topCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- format: " << format << std::endl;
+    std::cout << "- max matrix elements: " << (sizeof(T) * 8) << " (uint" << (sizeof(T) * 8) << "_t)" << std::endl;
     std::cout << std::endl;
 
     if (!makeDirectory(outputPath))
@@ -133,7 +134,10 @@ int runFlipGraphSizes(const ArgParser &parser, int nn) {
     if (nn <= 32)
         return runFlipGraph<Scheme, uint32_t>(parser);
 
-    return runFlipGraph<Scheme, uint64_t>(parser);
+    if (nn <= 64)
+        return runFlipGraph<Scheme, uint64_t>(parser);
+
+    return runFlipGraph<Scheme, __uint128_t>(parser);
 }
 
 int main(int argc, char **argv) {

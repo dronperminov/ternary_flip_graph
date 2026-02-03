@@ -16,6 +16,7 @@
 
 template <typename T>
 class BinaryScheme : public BaseScheme {
+protected:
     std::vector<T> uvw[3];
 public:
     BinaryScheme();
@@ -56,7 +57,7 @@ public:
     bool reconstruct(FractionalScheme &scheme) const;
 
     BinaryLifter toLift() const;
-private:
+protected:
     void initFlips();
     void removeZeroes();
     void removeAt(int index);
@@ -695,7 +696,7 @@ void BinaryScheme<T>::saveTxt(const std::string &path) const {
     for (int i = 0; i < 3; i++) {
         for (int index = 0; index < rank; index++)
             for (int j = 0; j < elements[i]; j++)
-                f << ((uvw[i][index] >> j) & 1) << " ";
+                f << (int)((uvw[i][index] >> j) & 1) << " ";
 
         f << std::endl;
     }
@@ -1087,7 +1088,7 @@ void BinaryScheme<T>::saveMatrix(std::ofstream &f, std::string name, const std::
         f << "        [";
 
         for (int i = 0; i < size; i++)
-            f << (i > 0 ? ", " : "") << ((vectors[index] >> i) & 1);
+            f << (i > 0 ? ", " : "") << (int)((vectors[index] >> i) & 1);
 
         f << "]" << (index < vectors.size() - 1 ? "," : "") << std::endl;
     }
