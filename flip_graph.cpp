@@ -27,7 +27,7 @@ int getMaxMatrixElements(const ArgParser &parser) {
 
         int count = 1;
 
-        if (parser["--multiple"] == "true")
+        if (parser.isSet("--multiple"))
             f >> count;
 
         f >> n1 >> n2 >> n3;
@@ -112,7 +112,7 @@ int runFlipGraph(const ArgParser &parser) {
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = flipGraph.initializeFromFile(parser["--input-path"], parser["--multiple"] == "true");
+        valid = flipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"));
     }
     else {
         valid = flipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
