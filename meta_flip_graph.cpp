@@ -18,6 +18,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
     std::string outputPath = parser["--output-path"];
 
     std::string ring = parser["--ring"];
+    std::string improveRing = parser["--improve-ring"];
     size_t flipIterations = parseNatural(parser["--flip-iterations"]);
     size_t minPlusIterations = parseNatural(parser["--min-plus-iterations"]);
     size_t maxPlusIterations = parseNatural(parser["--max-plus-iterations"]);
@@ -52,6 +53,9 @@ int runMetaFlipGraph(const ArgParser &parser) {
     std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << "- reduce probability: " << reduceProbability << std::endl;
     std::cout << "- resize probability: " << resizeProbability << std::endl;
+    if (improveRing != "")
+        std::cout << "- improve ring: " << improveRing << std::endl;
+
     std::cout << std::endl;
     std::cout << "- count: " << count << std::endl;
     std::cout << "- threads: " << threads << std::endl;
@@ -64,15 +68,11 @@ int runMetaFlipGraph(const ArgParser &parser) {
         return -1;
 
     MetaFlipGraph<Scheme<T>> metaFlipGraph(count, outputPath, threads, flipIterations, minPlusIterations, maxPlusIterations, resetIterations, plusDiff, sandwichingProbability, reduceProbability, resizeProbability, seed, topCount, format);
-
-    if (ring == "ZT")
-        metaFlipGraph.initializeBestTernaryRanks();
-    else if (ring == "Z2")
-        metaFlipGraph.initializeBestBinaryRanks();
+    metaFlipGraph.initializeKnownRanks(improveRing);
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser["--multiple"] == "true");
+        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"));
     }
     else {
         valid = metaFlipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
     parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
     parser.add("--resize-probability", ArgType::Real, "Probability of resize operation, from 0.0 to 1.0", "0");
+    parser.addChoices("--improve-ring", ArgType::String, "Only save schemes that improve known rank for this ring (empty saves all)", {"Z2", "ZT", "Q", ""}, "");
 
     parser.addSection("Run parameters");
     parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");

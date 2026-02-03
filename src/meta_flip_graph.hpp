@@ -48,12 +48,14 @@ public:
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple);
-    void initializeBestTernaryRanks();
-    void initializeBestBinaryRanks();
 
+    void initializeKnownRanks(const std::string &ring);
     void run();
 private:
     void initialize();
+    void initializeKnownRationalRanks();
+    void initializeKnownTernaryRanks();
+    void initializeKnownBinaryRanks();
     void runIteration();
     void resizeIteration();
     void updateBest(size_t iteration);
@@ -94,37 +96,6 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
     flips.resize(count);
     iterations.resize(count);
     plusIterations.resize(count);
-
-    dimension2knownRank = {
-        {"2x2x2", 7}, {"2x2x3", 11}, {"2x2x4", 14}, {"2x2x5", 18}, {"2x2x6", 21}, {"2x2x7", 25}, {"2x2x8", 28}, {"2x2x9", 32}, {"2x2x10", 35}, {"2x2x11", 39}, {"2x2x12", 42}, {"2x2x13", 46}, {"2x2x14", 49}, {"2x2x15", 53}, {"2x2x16", 56},
-        {"2x3x3", 15}, {"2x3x4", 20}, {"2x3x5", 25}, {"2x3x6", 30}, {"2x3x7", 35}, {"2x3x8", 40}, {"2x3x9", 45}, {"2x3x10", 50}, {"2x3x11", 55}, {"2x3x12", 60}, {"2x3x13", 65}, {"2x3x14", 70}, {"2x3x15", 75}, {"2x3x16", 80},
-        {"2x4x4", 26}, {"2x4x5", 32}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 58}, {"2x4x10", 64}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 83}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
-        {"2x5x5", 40}, {"2x5x6", 47}, {"2x5x7", 55}, {"2x5x8", 63}, {"2x5x9", 72}, {"2x5x10", 79}, {"2x5x11", 87}, {"2x5x12", 94},
-        {"2x6x6", 56}, {"2x6x7", 66}, {"2x6x8", 75}, {"2x6x9", 86}, {"2x6x10", 94},
-        {"2x7x7", 76}, {"2x7x8", 88}, {"2x7x9", 99},
-        {"2x8x8", 100},
-        {"3x3x3", 23}, {"3x3x4", 29}, {"3x3x5", 36}, {"3x3x6", 40}, {"3x3x7", 49}, {"3x3x8", 55}, {"3x3x9", 63}, {"3x3x10", 69}, {"3x3x11", 76}, {"3x3x12", 80}, {"3x3x13", 89}, {"3x3x14", 95}, {"3x3x15", 103}, {"3x3x16", 109},
-        {"3x4x4", 38}, {"3x4x5", 47}, {"3x4x6", 54}, {"3x4x7", 63}, {"3x4x8", 73}, {"3x4x9", 83}, {"3x4x10", 92}, {"3x4x11", 101}, {"3x4x12", 108}, {"3x4x13", 117}, {"3x4x14", 126}, {"3x4x15", 136}, {"3x4x16", 146},
-        {"3x5x5", 58}, {"3x5x6", 68}, {"3x5x7", 79}, {"3x5x8", 90}, {"3x5x9", 104}, {"3x5x10", 115}, {"3x5x11", 126}, {"3x5x12", 136},
-        {"3x6x6", 80}, {"3x6x7", 94}, {"3x6x8", 108}, {"3x6x9", 120}, {"3x6x10", 134},
-        {"3x7x7", 111}, {"3x7x8", 126}, {"3x7x9", 142},
-        {"3x8x8", 145},
-        {"4x4x4", 48}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 104}, {"4x4x10", 115}, {"4x4x11", 130}, {"4x4x12", 141}, {"4x4x13", 152}, {"4x4x14", 163}, {"4x4x15", 176}, {"4x4x16", 188},
-        {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 136}, {"4x5x10", 150}, {"4x5x11", 165}, {"4x5x12", 179},
-        {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
-        {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 186},
-        {"4x8x8", 182},
-        {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 167}, {"5x5x10", 184}, {"5x5x11", 202}, {"5x5x12", 220},
-        {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217},
-        {"5x7x7", 176}, {"5x7x8", 205}, {"5x7x9", 229},
-        {"5x8x8", 230},
-        {"6x6x6", 153}, {"6x6x7", 183}, {"6x6x8", 203}, {"6x6x9", 225}, {"6x6x10", 247},
-        {"6x7x7", 215}, {"6x7x8", 239}, {"6x7x9", 268},
-        {"6x8x8", 266},
-        {"7x7x7", 249}, {"7x7x8", 277}, {"7x7x9", 315},
-        {"7x8x8", 306},
-        {"8x8x8", 336}
-    };
 }
 
 template <typename Scheme>
@@ -183,117 +154,16 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool mul
 }
 
 template <typename Scheme>
-void MetaFlipGraph<Scheme>::initializeBestTernaryRanks() {
-    dimension2knownRank["2x4x5"] = 33;
-    dimension2knownRank["2x4x9"] = 59;
-    dimension2knownRank["2x4x10"] = 65;
-    dimension2knownRank["2x4x13"] = 84;
-    dimension2knownRank["2x5x7"] = 57;
-    dimension2knownRank["2x5x8"] = 65;
-    dimension2knownRank["2x5x10"] = 80;
-    dimension2knownRank["2x6x6"] = 57;
-    dimension2knownRank["2x6x7"] = 68;
-    dimension2knownRank["2x6x8"] = 77;
-    dimension2knownRank["2x7x7"] = 77;
-    dimension2knownRank["2x7x9"] = 102;
-    dimension2knownRank["3x3x6"] = 42;
-    dimension2knownRank["3x3x8"] = 57;
-    dimension2knownRank["3x3x9"] = 64;
-    dimension2knownRank["3x3x10"] = 71;
-    dimension2knownRank["3x3x11"] = 78;
-    dimension2knownRank["3x3x12"] = 84;
-    dimension2knownRank["3x3x13"] = 91;
-    dimension2knownRank["3x3x14"] = 98;
-    dimension2knownRank["3x3x15"] = 106;
-    dimension2knownRank["3x3x16"] = 113;
-    dimension2knownRank["3x4x7"] = 64;
-    dimension2knownRank["3x4x8"] = 74;
-    dimension2knownRank["3x4x13"] = 118;
-    dimension2knownRank["3x4x14"] = 128;
-    dimension2knownRank["3x4x15"] = 137;
-    dimension2knownRank["3x5x6"] = 70;
-    dimension2knownRank["3x5x7"] = 83;
-    dimension2knownRank["3x5x8"] = 94;
-    dimension2knownRank["3x5x9"] = 105;
-    dimension2knownRank["3x5x11"] = 128;
-    dimension2knownRank["3x5x12"] = 140;
-    dimension2knownRank["3x6x6"] = 83;
-    dimension2knownRank["3x6x7"] = 96;
-    dimension2knownRank["3x6x9"] = 124;
-    dimension2knownRank["3x6x10"] = 137;
-    dimension2knownRank["3x7x7"] = 113;
-    dimension2knownRank["3x7x8"] = 128;
-    dimension2knownRank["3x7x9"] = 145;
-    dimension2knownRank["3x8x8"] = 148;
-    dimension2knownRank["4x4x4"] = 49;
-    dimension2knownRank["4x4x9"] = 107;
-    dimension2knownRank["4x4x11"] = 131;
-    dimension2knownRank["4x4x13"] = 153;
-    dimension2knownRank["4x4x14"] = 164;
-    dimension2knownRank["4x5x9"] = 137;
-    dimension2knownRank["4x5x10"] = 151;
-    dimension2knownRank["4x7x7"] = 145;
-    dimension2knownRank["4x7x9"] = 187;
-    dimension2knownRank["5x7x8"] = 206;
-    dimension2knownRank["5x7x9"] = 231;
-    dimension2knownRank["6x6x10"] = 252;
-    dimension2knownRank["7x7x7"] = 250;
-    dimension2knownRank["7x7x8"] = 279;
-    dimension2knownRank["7x7x9"] = 316;
-    dimension2knownRank["7x8x8"] = 310;
-    dimension2knownRank["8x8x8"] = 343;
-}
-
-template <typename Scheme>
-void MetaFlipGraph<Scheme>::initializeBestBinaryRanks() {
-    dimension2knownRank["2x4x5"] = 33;
-    dimension2knownRank["2x4x9"] = 59;
-    dimension2knownRank["2x4x10"] = 65;
-    dimension2knownRank["2x4x13"] = 84;
-    dimension2knownRank["2x5x10"] = 80;
-    dimension2knownRank["2x7x9"] = 100;
-    dimension2knownRank["3x3x6"] = 42;
-    dimension2knownRank["3x3x10"] = 71;
-    dimension2knownRank["3x3x11"] = 78;
-    dimension2knownRank["3x3x12"] = 84;
-    dimension2knownRank["3x3x13"] = 91;
-    dimension2knownRank["3x3x14"] = 98;
-    dimension2knownRank["3x3x15"] = 105;
-    dimension2knownRank["3x3x16"] = 112;
-    dimension2knownRank["3x4x7"] = 64;
-    dimension2knownRank["3x4x13"] = 118;
-    dimension2knownRank["3x4x14"] = 127;
-    dimension2knownRank["3x4x15"] = 137;
-    dimension2knownRank["3x6x6"] = 83;
-    dimension2knownRank["3x6x7"] = 96;
-    dimension2knownRank["3x6x9"] = 122;
-    dimension2knownRank["3x6x10"] = 136;
-    dimension2knownRank["3x7x8"] = 128;
-    dimension2knownRank["3x7x9"] = 143;
-    dimension2knownRank["4x4x4"] = 47;
-    dimension2knownRank["4x4x5"] = 60;
-    dimension2knownRank["4x4x8"] = 94;
-    dimension2knownRank["4x4x9"] = 107;
-    dimension2knownRank["4x4x11"] = 131;
-    dimension2knownRank["4x4x13"] = 153;
-    dimension2knownRank["4x4x14"] = 164;
-    dimension2knownRank["4x5x5"] = 73;
-    dimension2knownRank["4x5x6"] = 89;
-    dimension2knownRank["4x5x9"] = 133;
-    dimension2knownRank["4x5x10"] = 146;
-    dimension2knownRank["4x5x11"] = 162;
-    dimension2knownRank["4x5x12"] = 177;
-    dimension2knownRank["4x7x9"] = 187;
-    dimension2knownRank["5x5x9"] = 166;
-    dimension2knownRank["5x5x10"] = 183;
-    dimension2knownRank["5x5x11"] = 200;
-    dimension2knownRank["5x5x12"] = 217;
-    dimension2knownRank["6x6x10"] = 252;
-    dimension2knownRank["7x7x7"] = 248;
-    dimension2knownRank["7x7x8"] = 273;
-    dimension2knownRank["7x7x9"] = 313;
-    dimension2knownRank["7x8x8"] = 302;
-    dimension2knownRank["8x8x8"] = 329;
+void MetaFlipGraph<Scheme>::initializeKnownRanks(const std::string &ring) {
+    if (ring == "Q") {
+        initializeKnownRationalRanks();
+    }
+    else if (ring == "ZT") {
+        initializeKnownTernaryRanks();
+    }
+    else if (ring == "Z2") {
+        initializeKnownBinaryRanks();
+    }
 }
 
 template <typename Scheme>
@@ -340,6 +210,114 @@ void MetaFlipGraph<Scheme>::initialize() {
 }
 
 template <typename Scheme>
+void MetaFlipGraph<Scheme>::initializeKnownRationalRanks() {
+    dimension2knownRank = {
+        {"2x2x2", 7}, {"2x2x3", 11}, {"2x2x4", 14}, {"2x2x5", 18}, {"2x2x6", 21}, {"2x2x7", 25}, {"2x2x8", 28}, {"2x2x9", 32}, {"2x2x10", 35}, {"2x2x11", 39}, {"2x2x12", 42}, {"2x2x13", 46}, {"2x2x14", 49}, {"2x2x15", 53}, {"2x2x16", 56},
+        {"2x3x3", 15}, {"2x3x4", 20}, {"2x3x5", 25}, {"2x3x6", 30}, {"2x3x7", 35}, {"2x3x8", 40}, {"2x3x9", 45}, {"2x3x10", 50}, {"2x3x11", 55}, {"2x3x12", 60}, {"2x3x13", 65}, {"2x3x14", 70}, {"2x3x15", 75}, {"2x3x16", 80},
+        {"2x4x4", 26}, {"2x4x5", 32}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 58}, {"2x4x10", 64}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 83}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
+        {"2x5x5", 40}, {"2x5x6", 47}, {"2x5x7", 55}, {"2x5x8", 63}, {"2x5x9", 72}, {"2x5x10", 79}, {"2x5x11", 87}, {"2x5x12", 94},
+        {"2x6x6", 56}, {"2x6x7", 66}, {"2x6x8", 75}, {"2x6x9", 86}, {"2x6x10", 94},
+        {"2x7x7", 76}, {"2x7x8", 88}, {"2x7x9", 99},
+        {"2x8x8", 100},
+        {"3x3x3", 23}, {"3x3x4", 29}, {"3x3x5", 36}, {"3x3x6", 40}, {"3x3x7", 49}, {"3x3x8", 55}, {"3x3x9", 63}, {"3x3x10", 69}, {"3x3x11", 76}, {"3x3x12", 80}, {"3x3x13", 89}, {"3x3x14", 95}, {"3x3x15", 103}, {"3x3x16", 109},
+        {"3x4x4", 38}, {"3x4x5", 47}, {"3x4x6", 54}, {"3x4x7", 63}, {"3x4x8", 73}, {"3x4x9", 83}, {"3x4x10", 92}, {"3x4x11", 101}, {"3x4x12", 108}, {"3x4x13", 117}, {"3x4x14", 126}, {"3x4x15", 136}, {"3x4x16", 146},
+        {"3x5x5", 58}, {"3x5x6", 68}, {"3x5x7", 79}, {"3x5x8", 90}, {"3x5x9", 104}, {"3x5x10", 115}, {"3x5x11", 126}, {"3x5x12", 136},
+        {"3x6x6", 80}, {"3x6x7", 94}, {"3x6x8", 108}, {"3x6x9", 120}, {"3x6x10", 134},
+        {"3x7x7", 111}, {"3x7x8", 126}, {"3x7x9", 142},
+        {"3x8x8", 145},
+        {"4x4x4", 48}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 104}, {"4x4x10", 115}, {"4x4x11", 130}, {"4x4x12", 141}, {"4x4x13", 152}, {"4x4x14", 163}, {"4x4x15", 176}, {"4x4x16", 188},
+        {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 136}, {"4x5x10", 150}, {"4x5x11", 165}, {"4x5x12", 179},
+        {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
+        {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 186},
+        {"4x8x8", 182},
+        {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 167}, {"5x5x10", 184}, {"5x5x11", 202}, {"5x5x12", 220},
+        {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217},
+        {"5x7x7", 176}, {"5x7x8", 205}, {"5x7x9", 229},
+        {"5x8x8", 230},
+        {"6x6x6", 153}, {"6x6x7", 183}, {"6x6x8", 203}, {"6x6x9", 225}, {"6x6x10", 247},
+        {"6x7x7", 215}, {"6x7x8", 239}, {"6x7x9", 268},
+        {"6x8x8", 266},
+        {"7x7x7", 249}, {"7x7x8", 277}, {"7x7x9", 315},
+        {"7x8x8", 306},
+        {"8x8x8", 336}
+    };
+
+    std::cout << "Initialized known Q ranks" << std::endl;
+}
+
+template <typename Scheme>
+void MetaFlipGraph<Scheme>::initializeKnownTernaryRanks() {
+    dimension2knownRank = {
+        {"2x2x2", 7}, {"2x2x3", 11}, {"2x2x4", 14}, {"2x2x5", 18}, {"2x2x6", 21}, {"2x2x7", 25}, {"2x2x8", 28}, {"2x2x9", 32}, {"2x2x10", 35}, {"2x2x11", 39}, {"2x2x12", 42}, {"2x2x13", 46}, {"2x2x14", 49}, {"2x2x15", 53}, {"2x2x16", 56},
+        {"2x3x3", 15}, {"2x3x4", 20}, {"2x3x5", 25}, {"2x3x6", 30}, {"2x3x7", 35}, {"2x3x8", 40}, {"2x3x9", 45}, {"2x3x10", 50}, {"2x3x11", 55}, {"2x3x12", 60}, {"2x3x13", 65}, {"2x3x14", 70}, {"2x3x15", 75}, {"2x3x16", 80},
+        {"2x4x4", 26}, {"2x4x5", 33}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 59}, {"2x4x10", 65}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 84}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
+        {"2x5x5", 40}, {"2x5x6", 47}, {"2x5x7", 57}, {"2x5x8", 65}, {"2x5x9", 72}, {"2x5x10", 80}, {"2x5x11", 87}, {"2x5x12", 94},
+        {"2x6x6", 57}, {"2x6x7", 68}, {"2x6x8", 77}, {"2x6x9", 86}, {"2x6x10", 94},
+        {"2x7x7", 77}, {"2x7x8", 88}, {"2x7x9", 102},
+        {"2x8x8", 100},
+        {"3x3x3", 23}, {"3x3x4", 29}, {"3x3x5", 36}, {"3x3x6", 42}, {"3x3x7", 49}, {"3x3x8", 56}, {"3x3x9", 63}, {"3x3x10", 71}, {"3x3x11", 78}, {"3x3x12", 84}, {"3x3x13", 91}, {"3x3x14", 98}, {"3x3x15", 105}, {"3x3x16", 112},
+        {"3x4x4", 38}, {"3x4x5", 47}, {"3x4x6", 54}, {"3x4x7", 64}, {"3x4x8", 74}, {"3x4x9", 83}, {"3x4x10", 92}, {"3x4x11", 101}, {"3x4x12", 108}, {"3x4x13", 118}, {"3x4x14", 128}, {"3x4x15", 137}, {"3x4x16", 146},
+        {"3x5x5", 58}, {"3x5x6", 70}, {"3x5x7", 83}, {"3x5x8", 94}, {"3x5x9", 105}, {"3x5x10", 115}, {"3x5x11", 128}, {"3x5x12", 140},
+        {"3x6x6", 83}, {"3x6x7", 96}, {"3x6x8", 108}, {"3x6x9", 124}, {"3x6x10", 137},
+        {"3x7x7", 113}, {"3x7x8", 128}, {"3x7x9", 145},
+        {"3x8x8", 148},
+        {"4x4x4", 49}, {"4x4x5", 61}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 96}, {"4x4x9", 107}, {"4x4x10", 115}, {"4x4x11", 130}, {"4x4x12", 141}, {"4x4x13", 153}, {"4x4x14", 164}, {"4x4x15", 176}, {"4x4x16", 188},
+        {"4x5x5", 76}, {"4x5x6", 90}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 137}, {"4x5x10", 151}, {"4x5x11", 165}, {"4x5x12", 179},
+        {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
+        {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 187},
+        {"4x8x8", 182},
+        {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 167}, {"5x5x10", 184}, {"5x5x11", 202}, {"5x5x12", 220},
+        {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217},
+        {"5x7x7", 176}, {"5x7x8", 206}, {"5x7x9", 231},
+        {"5x8x8", 230},
+        {"6x6x6", 153}, {"6x6x7", 183}, {"6x6x8", 203}, {"6x6x9", 225}, {"6x6x10", 252},
+        {"6x7x7", 215}, {"6x7x8", 239}, {"6x7x9", 268},
+        {"6x8x8", 266},
+        {"7x7x7", 250}, {"7x7x8", 279}, {"7x7x9", 316},
+        {"7x8x8", 310},
+        {"8x8x8", 343}
+    };
+
+    std::cout << "Initialized known ZT ranks" << std::endl;
+}
+
+template <typename Scheme>
+void MetaFlipGraph<Scheme>::initializeKnownBinaryRanks() {
+    dimension2knownRank = {
+        {"2x2x2", 7}, {"2x2x3", 11}, {"2x2x4", 14}, {"2x2x5", 18}, {"2x2x6", 21}, {"2x2x7", 25}, {"2x2x8", 28}, {"2x2x9", 32}, {"2x2x10", 35}, {"2x2x11", 39}, {"2x2x12", 42}, {"2x2x13", 46}, {"2x2x14", 49}, {"2x2x15", 53}, {"2x2x16", 56},
+        {"2x3x3", 15}, {"2x3x4", 20}, {"2x3x5", 25}, {"2x3x6", 30}, {"2x3x7", 35}, {"2x3x8", 40}, {"2x3x9", 45}, {"2x3x10", 50}, {"2x3x11", 55}, {"2x3x12", 60}, {"2x3x13", 65}, {"2x3x14", 70}, {"2x3x15", 75}, {"2x3x16", 80},
+        {"2x4x4", 26}, {"2x4x5", 33}, {"2x4x6", 39}, {"2x4x7", 45}, {"2x4x8", 51}, {"2x4x9", 59}, {"2x4x10", 65}, {"2x4x11", 71}, {"2x4x12", 77}, {"2x4x13", 84}, {"2x4x14", 90}, {"2x4x15", 96}, {"2x4x16", 102},
+        {"2x5x5", 40}, {"2x5x6", 47}, {"2x5x7", 55}, {"2x5x8", 63}, {"2x5x9", 72}, {"2x5x10", 80}, {"2x5x11", 87}, {"2x5x12", 94},
+        {"2x6x6", 56}, {"2x6x7", 66}, {"2x6x8", 75}, {"2x6x9", 86}, {"2x6x10", 94},
+        {"2x7x7", 76}, {"2x7x8", 88}, {"2x7x9", 100},
+        {"2x8x8", 100},
+        {"3x3x3", 23}, {"3x3x4", 29}, {"3x3x5", 36}, {"3x3x6", 42}, {"3x3x7", 49}, {"3x3x8", 55}, {"3x3x9", 63}, {"3x3x10", 71}, {"3x3x11", 78}, {"3x3x12", 84}, {"3x3x13", 91}, {"3x3x14", 98}, {"3x3x15", 105}, {"3x3x16", 112},
+        {"3x4x4", 38}, {"3x4x5", 47}, {"3x4x6", 54}, {"3x4x7", 64}, {"3x4x8", 73}, {"3x4x9", 83}, {"3x4x10", 92}, {"3x4x11", 101}, {"3x4x12", 108}, {"3x4x13", 118}, {"3x4x14", 127}, {"3x4x15", 137}, {"3x4x16", 146},
+        {"3x5x5", 58}, {"3x5x6", 68}, {"3x5x7", 79}, {"3x5x8", 90}, {"3x5x9", 104}, {"3x5x10", 115}, {"3x5x11", 126}, {"3x5x12", 136},
+        {"3x6x6", 83}, {"3x6x7", 96}, {"3x6x8", 108}, {"3x6x9", 122}, {"3x6x10", 136},
+        {"3x7x7", 111}, {"3x7x8", 128}, {"3x7x9", 143},
+        {"3x8x8", 145},
+        {"4x4x4", 47}, {"4x4x5", 60}, {"4x4x6", 73}, {"4x4x7", 85}, {"4x4x8", 94}, {"4x4x9", 107}, {"4x4x10", 115}, {"4x4x11", 130}, {"4x4x12", 141}, {"4x4x13", 153}, {"4x4x14", 164}, {"4x4x15", 176}, {"4x4x16", 188},
+        {"4x5x5", 73}, {"4x5x6", 89}, {"4x5x7", 104}, {"4x5x8", 118}, {"4x5x9", 133}, {"4x5x10", 146}, {"4x5x11", 162}, {"4x5x12", 177},
+        {"4x6x6", 105}, {"4x6x7", 123}, {"4x6x8", 140}, {"4x6x9", 159}, {"4x6x10", 175},
+        {"4x7x7", 144}, {"4x7x8", 164}, {"4x7x9", 187},
+        {"4x8x8", 182},
+        {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 166}, {"5x5x10", 183}, {"5x5x11", 200}, {"5x5x12", 217},
+        {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217},
+        {"5x7x7", 176}, {"5x7x8", 205}, {"5x7x9", 229},
+        {"5x8x8", 230},
+        {"6x6x6", 153}, {"6x6x7", 183}, {"6x6x8", 203}, {"6x6x9", 225}, {"6x6x10", 252},
+        {"6x7x7", 215}, {"6x7x8", 239}, {"6x7x9", 268},
+        {"6x8x8", 266},
+        {"7x7x7", 248}, {"7x7x8", 273}, {"7x7x9", 313},
+        {"7x8x8", 302},
+        {"8x8x8", 329}
+    };
+
+    std::cout << "Initialized known Z2 ranks" << std::endl;
+}
+
+template <typename Scheme>
 void MetaFlipGraph<Scheme>::runIteration()  {
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < count; i++)
@@ -350,7 +328,7 @@ template <typename Scheme>
 void MetaFlipGraph<Scheme>::resizeIteration() {
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < count; i++)
-        resize(schemes[i], flips[i], iterations[i], plusIterations[i], generators[omp_get_thread_num()]);    
+        resize(schemes[i], flips[i], iterations[i], plusIterations[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
