@@ -143,8 +143,15 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool mul
         return false;
 
     dimension2improvements.clear();
-    for (size_t i = 0; i < count && i < schemesCount; i++)
-        dimension2improvements[sortedDimension(schemes[i])].push_back(Scheme(schemes[i]));
+    bool unknown = dimension2knownRank.empty();
+
+    for (size_t i = 0; i < count && i < schemesCount; i++) {
+        std::string dimension = sortedDimension(schemes[i]);
+        dimension2improvements[dimension].push_back(Scheme(schemes[i]));
+
+        if (dimension2knownRank.find(dimension) == dimension2knownRank.end() || (unknown && schemes[i].getRank() < dimension2knownRank.at(dimension)))
+            dimension2knownRank[dimension] = schemes[i].getRank();
+    }
 
     #pragma omp parallel for num_threads(threads)
     for (size_t i = schemesCount; i < count; i++)
@@ -257,7 +264,7 @@ void MetaFlipGraph<Scheme>::initializeKnownTernaryRanks() {
         {"2x8x8", 100},
         {"3x3x3", 23}, {"3x3x4", 29}, {"3x3x5", 36}, {"3x3x6", 42}, {"3x3x7", 49}, {"3x3x8", 56}, {"3x3x9", 63}, {"3x3x10", 71}, {"3x3x11", 78}, {"3x3x12", 84}, {"3x3x13", 91}, {"3x3x14", 98}, {"3x3x15", 105}, {"3x3x16", 112},
         {"3x4x4", 38}, {"3x4x5", 47}, {"3x4x6", 54}, {"3x4x7", 64}, {"3x4x8", 74}, {"3x4x9", 83}, {"3x4x10", 92}, {"3x4x11", 101}, {"3x4x12", 108}, {"3x4x13", 118}, {"3x4x14", 128}, {"3x4x15", 137}, {"3x4x16", 146},
-        {"3x5x5", 58}, {"3x5x6", 70}, {"3x5x7", 83}, {"3x5x8", 94}, {"3x5x9", 105}, {"3x5x10", 115}, {"3x5x11", 128}, {"3x5x12", 140},
+        {"3x5x5", 58}, {"3x5x6", 70}, {"3x5x7", 82}, {"3x5x8", 94}, {"3x5x9", 105}, {"3x5x10", 115}, {"3x5x11", 128}, {"3x5x12", 140},
         {"3x6x6", 83}, {"3x6x7", 96}, {"3x6x8", 108}, {"3x6x9", 124}, {"3x6x10", 137},
         {"3x7x7", 113}, {"3x7x8", 128}, {"3x7x9", 145},
         {"3x8x8", 148},
