@@ -11,18 +11,16 @@
 #include <omp.h>
 
 #include "utils.h"
+#include "entities/flip_parameters.h"
+#include "entities/meta_parameters.h"
 
 template <typename Scheme>
 class MetaFlipGraph {
     size_t count;
     std::string outputPath;
     int threads;
-    size_t flipIterations;
-    size_t resetIterations;
-    int plusDiff;
-    double sandwichingProbability;
-    double reduceProbability;
-    double resizeProbability;
+    FlipParameters flipParameters;
+    MetaParameters metaParameters;
     int seed;
     size_t topCount;
     std::string format;
@@ -44,7 +42,7 @@ class MetaFlipGraph {
     std::unordered_map<std::string, std::vector<int>> dimension2indices;
     std::vector<std::string> dimensions;
 public:
-    MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format);
+    MetaFlipGraph(size_t count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetaParameters &metaParameters, int seed, size_t topCount, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple);
@@ -56,13 +54,15 @@ private:
     void initializeKnownRationalRanks();
     void initializeKnownTernaryRanks();
     void initializeKnownBinaryRanks();
-    void runIteration();
-    void resizeIteration();
+
+    void flipIteration();
+    void metaIteration();
+
     void updateBest(size_t iteration);
     void updateRanks(int iteration, bool save);
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
     void randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator);
-    void resize(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::mt19937 &generator);
+    void meta(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::mt19937 &generator);
 
     void updateIndices();
     bool compare(int index1, int index2) const;
@@ -73,16 +73,14 @@ private:
 };
 
 template <typename Scheme>
-MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double resizeProbability, int seed, size_t topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetaParameters &metaParameters, int seed, size_t topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, (int) count);
-    this->flipIterations = flipIterations;
-    this->plusDiff = plusDiff;
-    this->sandwichingProbability = sandwichingProbability;
-    this->resetIterations = resetIterations;
-    this->reduceProbability = reduceProbability;
-    this->resizeProbability = resizeProbability;
+
+    this->flipParameters = flipParameters;
+    this->metaParameters = metaParameters;
+
     this->seed = seed;
     this->topCount = std::min(topCount, count);
     this->format = format;
@@ -182,7 +180,7 @@ void MetaFlipGraph<Scheme>::run() {
     std::vector<double> elapsedTimes;
 
     for (size_t iteration = 0; 1; iteration++) {
-        runIteration();
+        flipIteration();
         updateBest(iteration);
         auto t2 = std::chrono::high_resolution_clock::now();
         elapsedTimes.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0);
@@ -191,8 +189,8 @@ void MetaFlipGraph<Scheme>::run() {
 
         t1 = std::chrono::high_resolution_clock::now();
 
-        if (resizeProbability > 0) {
-            resizeIteration();
+        if (metaParameters.probability > 0) {
+            metaIteration();
             updateRanks(iteration, true);
         }
     }
@@ -325,17 +323,17 @@ void MetaFlipGraph<Scheme>::initializeKnownBinaryRanks() {
 }
 
 template <typename Scheme>
-void MetaFlipGraph<Scheme>::runIteration()  {
+void MetaFlipGraph<Scheme>::flipIteration()  {
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < count; i++)
         randomWalk(schemes[i], schemesBest[i], flips[i], iterations[i], plusIterations[i], bestRanks[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
-void MetaFlipGraph<Scheme>::resizeIteration() {
+void MetaFlipGraph<Scheme>::metaIteration() {
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < count; i++)
-        resize(schemes[i], flips[i], iterations[i], plusIterations[i], generators[omp_get_thread_num()]);
+        meta(schemes[i], flips[i], iterations[i], plusIterations[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
@@ -498,7 +496,7 @@ template <typename Scheme>
 void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator) {
     plusIterations = plusDistribution(generator);
 
-    for (size_t iteration = 0; iteration < flipIterations; iteration++) {
+    for (size_t iteration = 0; iteration < flipParameters.flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 
         if (!scheme.tryFlip(generator)) {
@@ -508,17 +506,15 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
             continue;
         }
 
-        if (reduceProbability && uniform(generator) < reduceProbability && scheme.tryReduce())
+        if (flipParameters.reduceProbability && uniform(generator) < flipParameters.reduceProbability && scheme.tryReduce())
             flipsCount = 0;
 
-        if (sandwichingProbability && uniform(generator) < sandwichingProbability)
+        if (flipParameters.sandwichingProbability && uniform(generator) < flipParameters.sandwichingProbability)
             scheme.trySandwiching(generator);
 
         int rank = scheme.getRank();
-        if (rank < prevRank) {
+        if (rank < prevRank)
             flipsCount = 0;
-            iterationsCount = 0;
-        }
 
         flipsCount++;
         iterationsCount++;
@@ -526,12 +522,13 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
         if (rank < bestRank) {
             schemeBest.copy(scheme);
             bestRank = rank;
+            iterationsCount = 0;
         }
 
-        if (flipsCount >= plusIterations && rank < bestRank + plusDiff && scheme.tryExpand(generator))
+        if (flipsCount >= plusIterations && rank < bestRank + flipParameters.plusDiff && scheme.tryExpand(generator))
             flipsCount = 0;
 
-        if (iterationsCount >= resetIterations) {
+        if (iterationsCount >= flipParameters.resetIterations) {
             std::string dimension = sortedDimension(scheme);
             Scheme &initial = dimension2improvements[dimension][generator() % dimension2improvements[dimension].size()];
 
@@ -546,27 +543,24 @@ void MetaFlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_
 }
 
 template <typename Scheme>
-void MetaFlipGraph<Scheme>::resize(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::mt19937 &generator) {
-    if (uniform(generator) > resizeProbability)
+void MetaFlipGraph<Scheme>::meta(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::mt19937 &generator) {
+    if (uniform(generator) > metaParameters.probability)
         return;
 
     if (uniform(generator) < 0.5)
         scheme.swapSizes(generator);
 
     int index = generator() % schemesBest.size();
-    int minN = 3;
-    int maxN = 16;
-    int maxRank = 345;
     bool resized = true;
 
-    if (!scheme.tryMerge(schemesBest[index], generator, maxN, maxRank)) {
+    if (!scheme.tryMerge(schemesBest[index], generator, metaParameters.maxDimension, metaParameters.maxRank)) {
         double p = uniform(generator);
 
         if (p < 0.5) {
-            resized = scheme.tryProject(generator, minN);
+            resized = scheme.tryProject(generator, metaParameters.minDimension);
         }
         else {
-            resized = scheme.tryExtend(generator, maxN, maxRank);
+            resized = scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank);
         }
     }
 

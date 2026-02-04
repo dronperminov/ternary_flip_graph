@@ -162,7 +162,10 @@ make -j$(nproc)
 **Note about plus iterations**: the plus operator is called every `plus_iterations` iterations, where `plus_iterations` is randomly chosen between `--min-plus-iterations` and `--max-plus-iterations`.
 
 ### Meta Flip Graph Additional Parameters
-* `--resize-probability`: probability of resize operation (`0.0` to `1.0`, default: `0`). Controls how often the algorithm attempts to change scheme dimensions.
+* `--meta-probability`: probability of meta operations (`0.0` to `1.0`, default: `0`). Controls how often the algorithm attempts to change scheme dimensions.
+* `--meta-min-dimension`: min dimension for project meta operation (default: `2`);
+* `--meta-max-dimension`: max dimension for merge/extend meta operations (default: `16`);
+* `--meta-max-rank`: max rank for merge/extend meta operations (default: `350`);
 * `--int-width`: integer bit width controlling maximum matrix dimensions (`16|32|64|128`, default: `64`). Smaller values improve performance but limit matrix size.
 
 ### Complexity Minimizer

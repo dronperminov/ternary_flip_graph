@@ -10,17 +10,14 @@
 #include <omp.h>
 
 #include "utils.h"
+#include "entities/flip_parameters.h"
 
 template <typename Scheme>
 class FlipGraph {
     int count;
     std::string outputPath;
     int threads;
-    size_t flipIterations;
-    size_t resetIterations;
-    int plusDiff;
-    double sandwichingProbability;
-    double reduceProbability;
+    FlipParameters flipParameters;
     double copyBestProbability;
     int seed;
     int topCount;
@@ -42,7 +39,7 @@ class FlipGraph {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
+    FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple);
@@ -65,15 +62,11 @@ private:
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, size_t flipIterations, size_t minPlusIterations, size_t maxPlusIterations, size_t resetIterations, int plusDiff, double sandwichingProbability, double reduceProbability, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(minPlusIterations, maxPlusIterations) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
-    this->flipIterations = flipIterations;
-    this->plusDiff = plusDiff;
-    this->resetIterations = resetIterations;
-    this->sandwichingProbability = sandwichingProbability;
-    this->reduceProbability = reduceProbability;
+    this->flipParameters = flipParameters;
     this->copyBestProbability = copyBestProbability;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
@@ -260,19 +253,19 @@ void FlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolution_cl
 
     std::cout << "| " << std::left;
     std::cout << "threads: " << std::setw(16) << threads << "   ";
-    std::cout << "flip iters: " << std::setw(14) << prettyInt(flipIterations) << "   ";
+    std::cout << "flip iters: " << std::setw(14) << prettyInt(flipParameters.flipIterations) << "   ";
     std::cout << std::right << std::setw(24) << ("iteration: " + std::to_string(iteration));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
     std::cout << "count: " << std::setw(18) << count << "   ";
-    std::cout << "reset iters: " << std::setw(13) << prettyInt(resetIterations) << "   ";
+    std::cout << "reset iters: " << std::setw(13) << prettyInt(flipParameters.resetIterations) << "   ";
     std::cout << std::right << std::setw(24) << ("elapsed: " + prettyTime(elapsed));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
     std::cout << "ring: " << std::setw(19) << schemes[0].getRing() << "   ";
-    std::cout << "plus diff: " << std::setw(15) << plusDiff << "   ";
+    std::cout << "plus diff: " << std::setw(15) << flipParameters.plusDiff << "   ";
     std::cout << std::right << std::setw(24) << ("improvements: " + std::to_string(improvements.size()) + " / " + std::to_string(maxImprovements));
     std::cout << " |" << std::endl;
 
@@ -305,7 +298,7 @@ template <typename Scheme>
 void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator) {
     plusIterations = plusDistribution(generator);
 
-    for (size_t iteration = 0; iteration < flipIterations; iteration++) {
+    for (size_t iteration = 0; iteration < flipParameters.flipIterations; iteration++) {
         int prevRank = scheme.getRank();
 
         if (!scheme.tryFlip(generator)) {
@@ -315,10 +308,10 @@ void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &f
             continue;
         }
 
-        if (reduceProbability && uniform(generator) < reduceProbability && scheme.tryReduce())
+        if (flipParameters.reduceProbability && uniform(generator) < flipParameters.reduceProbability && scheme.tryReduce())
             flipsCount = 0;
 
-        if (sandwichingProbability && uniform(generator) < sandwichingProbability)
+        if (flipParameters.sandwichingProbability && uniform(generator) < flipParameters.sandwichingProbability)
             scheme.trySandwiching(generator);
 
         int rank = scheme.getRank();
@@ -334,11 +327,12 @@ void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &f
             iterationsCount = 0;
         }
 
-        if (flipsCount >= plusIterations && rank < bestRank + plusDiff && scheme.tryExpand(generator))
+        if (flipsCount >= plusIterations && rank < bestRank + flipParameters.plusDiff && scheme.tryExpand(generator))
             flipsCount = 0;
 
-        if (iterationsCount >= resetIterations) {
+        if (iterationsCount >= flipParameters.resetIterations) {
             Scheme &initial = improvements[generator() % improvements.size()];
+
             scheme.copy(initial);
             schemeBest.copy(initial);
             bestRank = initial.getRank();
