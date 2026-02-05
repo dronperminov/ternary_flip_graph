@@ -203,7 +203,7 @@ std::string BinaryScheme<T>::getHash() const {
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < elements[i]; j++)
-                ss << ((uvw[i][index] >> j) & 1);
+                ss << (int)((uvw[i][index] >> j) & 1);
 
         lines.push_back(ss.str());
     }
