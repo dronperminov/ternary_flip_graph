@@ -40,6 +40,7 @@ class MetaFlipGraph {
     std::unordered_map<std::string, int> dimension2bestRank;
     std::unordered_map<std::string, int> dimension2knownRank;
     std::unordered_map<std::string, std::vector<int>> dimension2indices;
+    std::vector<std::string> dimensionsInitial;
     std::vector<std::string> dimensions;
 public:
     MetaFlipGraph(size_t count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetaParameters &metaParameters, int seed, size_t topCount, const std::string &format);
@@ -64,12 +65,17 @@ private:
     void randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, int &bestRank, std::mt19937 &generator);
     void meta(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::mt19937 &generator);
 
+    bool metaDefault(Scheme &scheme, std::mt19937 &generator);
+    bool metaProjections(Scheme &scheme, std::mt19937 &generator);
+    bool metaExtensions(Scheme &scheme, std::mt19937 &generator);
+
     void updateIndices();
     bool compare(int index1, int index2) const;
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
     std::string sortedDimension(const Scheme &scheme) const;
 
     void saveScheme(const Scheme &scheme, const std::string &path) const;
+    bool resetToNormalScheme(Scheme &scheme, std::mt19937 &generator);
 };
 
 template <typename Scheme>
@@ -107,8 +113,10 @@ bool MetaFlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
     for (size_t i = 1; i < count; i++)
         schemes[i].initializeNaive(n1, n2, n3);
 
+    std::string dimension = sortedDimension(schemes[0]);
     dimension2improvements.clear();
-    dimension2improvements[sortedDimension(schemes[0])].push_back(Scheme(schemes[0]));
+    dimension2improvements[dimension].push_back(Scheme(schemes[0]));
+    dimensionsInitial.push_back(dimension);
     return true;
 }
 
@@ -141,14 +149,19 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool mul
         return false;
 
     dimension2improvements.clear();
-    bool unknown = dimension2knownRank.empty();
+    dimensionsInitial.clear();
 
     for (size_t i = 0; i < count && i < schemesCount; i++) {
         std::string dimension = sortedDimension(schemes[i]);
         dimension2improvements[dimension].push_back(Scheme(schemes[i]));
 
-        if (dimension2knownRank.find(dimension) == dimension2knownRank.end() || (unknown && schemes[i].getRank() < dimension2knownRank.at(dimension)))
+        if (dimension2knownRank.find(dimension) == dimension2knownRank.end() || schemes[i].getRank() < dimension2knownRank.at(dimension))
             dimension2knownRank[dimension] = schemes[i].getRank();
+    }
+
+    for (auto &pair : dimension2improvements) {
+        std::sort(pair.second.begin(), pair.second.end(), [](const Scheme& s1, const Scheme &s2) { return s1.getRank() > s2.getRank(); });
+        dimensionsInitial.push_back(pair.first);
     }
 
     #pragma omp parallel for num_threads(threads)
@@ -501,17 +514,17 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
     double maxTime = *std::max_element(elapsedTimes.begin(), elapsedTimes.end());
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
 
-    std::cout << "+-----------------------------------------------------------------------------------------------------+" << std::endl;
+    std::cout << "+---------------------------------------------------------------------------------------------------------+" << std::endl;
     std::cout << "| " << std::left;
     std::cout << "ring: " << std::setw(21) << schemes[0].getRing() << "   ";
     std::cout << "count: " << std::setw(20) << count << "   ";
-    std::cout << std::right << std::setw(39) << ("iteration: " + std::to_string(iteration));
+    std::cout << std::right << std::setw(43) << ("iteration: " + std::to_string(iteration));
     std::cout << " |" << std::endl;
 
     std::cout << "| " << std::left;
     std::cout << "seed: " << std::setw(21) << seed << "   ";
     std::cout << "threads: " << std::setw(18) << threads << "   ";
-    std::cout << std::right << std::setw(39) << ("elapsed: " + prettyTime(elapsed));
+    std::cout << std::right << std::setw(43) << ("elapsed: " + prettyTime(elapsed));
     std::cout << " |" << std::endl;
 
     bool improved = false;
@@ -524,26 +537,26 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
             continue;
 
         if (!improved) {
-            std::cout << "+=====================================================================================================+" << std::endl;
-            std::cout << "| Improvements:                                                                                       |" << std::endl;
-            std::cout << "| +-----------+------------+---------------+                                                          |" << std::endl;
-            std::cout << "| | dimension | known rank | improved rank |                                                          |" << std::endl;
-            std::cout << "| +-----------+------------+---------------+                                                          |" << std::endl;
+            std::cout << "+=========================================================================================================+" << std::endl;
+            std::cout << "| Improvements:                                                                                           |" << std::endl;
+            std::cout << "| +-----------+------------+---------------+                                                              |" << std::endl;
+            std::cout << "| | dimension | known rank | improved rank |                                                              |" << std::endl;
+            std::cout << "| +-----------+------------+---------------+                                                              |" << std::endl;
             improved = true;
         }
 
-        std::cout << "| | " << std::setw(9) << dimension << " | " << std::setw(10) << known->second << " | " << std::setw(13) << rank << " |                                                          |" << std::endl;
+        std::cout << "| | " << std::setw(9) << dimension << " | " << std::setw(10) << known->second << " | " << std::setw(17) << rank << " |                                                          |" << std::endl;
     }
 
     if (improved) {
-        std::cout << "| +-----------+------------+---------------+                                                          |" << std::endl;
-        std::cout << "|                                                                                                     |" << std::endl;
+        std::cout << "| +-----------+------------+---------------+                                                              |" << std::endl;
+        std::cout << "|                                                                                                         |" << std::endl;
     }
 
-    std::cout << "+=====================================================================================================+" << std::endl;
-    std::cout << "| runner |   scheme size   | scheme rank |   naive    |            |        flips        |    plus    |" << std::endl;
-    std::cout << "|   id   | sorted |  real  | best | curr | complexity | iterations |  count  | available | iterations |" << std::endl;
-    std::cout << "+--------+--------+--------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
+    std::cout << "+=========================================================================================================+" << std::endl;
+    std::cout << "| runner |     scheme size     | scheme rank |   naive    |            |        flips        |    plus    |" << std::endl;
+    std::cout << "|   id   |  sorted  |   real   | best | curr | complexity | iterations |  count  | available | iterations |" << std::endl;
+    std::cout << "+--------+----------+----------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
     std::cout << std::right;
 
     for (const auto &dimension : dimensions) {
@@ -554,8 +567,8 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
 
             std::cout << "| ";
             std::cout << std::setw(6) << runner << " | ";
-            std::cout << std::setw(6) << dimension << " | ";
-            std::cout << std::setw(6) << schemes[runner].getDimension() << " | ";
+            std::cout << std::setw(8) << dimension << " | ";
+            std::cout << std::setw(8) << schemes[runner].getDimension() << " | ";
             std::cout << std::setw(4) << bestRanks[runner] << " | ";
             std::cout << std::setw(4) << schemes[runner].getRank() << " | ";
             std::cout << std::setw(10) << schemes[runner].getComplexity() << " | ";
@@ -566,7 +579,7 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
             std::cout << std::endl;
         }
 
-        std::cout << "+--------+--------+--------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
+        std::cout << "+--------+----------+----------+------+------+------------+------------+---------+-----------+------------+" << std::endl;
     }
 
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
@@ -628,21 +641,16 @@ void MetaFlipGraph<Scheme>::meta(Scheme &scheme, size_t &flipsCount, size_t &ite
     if (uniform(generator) > metaParameters.probability)
         return;
 
-    if (uniform(generator) < 0.5)
-        scheme.swapSizes(generator);
+    bool resized = false;
 
-    int index = generator() % schemesBest.size();
-    bool resized = true;
-
-    if (!scheme.tryMerge(schemesBest[index], generator, metaParameters.maxDimension, metaParameters.maxRank)) {
-        double p = uniform(generator);
-
-        if (p < 0.5) {
-            resized = scheme.tryProject(generator, metaParameters.minDimension);
-        }
-        else {
-            resized = scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank);
-        }
+    if (metaParameters.strategy == "default") {
+        resized = metaDefault(scheme, generator);
+    }
+    else if (metaParameters.strategy == "proj") {
+        resized = metaProjections(scheme, generator);
+    }
+    else if (metaParameters.strategy == "ext") {
+        resized = metaExtensions(scheme, generator);
     }
 
     if (!resized)
@@ -651,6 +659,36 @@ void MetaFlipGraph<Scheme>::meta(Scheme &scheme, size_t &flipsCount, size_t &ite
     flipsCount = 0;
     iterationsCount = 0;
     plusIterations = plusDistribution(generator);
+}
+
+template <typename Scheme>
+bool MetaFlipGraph<Scheme>::metaDefault(Scheme &scheme, std::mt19937 &generator) {
+    bool reset = resetToNormalScheme(scheme, generator);
+
+    if (uniform(generator) < 0.5)
+        scheme.swapSizes(generator);
+
+    int index = generator() % schemesBest.size();
+
+    if (scheme.tryMerge(schemesBest[index], generator, metaParameters.maxDimension, metaParameters.maxRank))
+        return true;
+
+    if (uniform(generator) < 0.5)
+        return scheme.tryProject(generator, metaParameters.minDimension) || reset;
+
+    return scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank) || reset;
+}
+
+template <typename Scheme>
+bool MetaFlipGraph<Scheme>::metaProjections(Scheme &scheme, std::mt19937 &generator) {
+    bool reset = resetToNormalScheme(scheme, generator);
+    return scheme.tryProject(generator, metaParameters.minDimension) || reset;
+}
+
+template <typename Scheme>
+bool MetaFlipGraph<Scheme>::metaExtensions(Scheme &scheme, std::mt19937 &generator) {
+    bool reset = resetToNormalScheme(scheme, generator);
+    return scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank) || reset;
 }
 
 template <typename Scheme>
@@ -747,4 +785,18 @@ void MetaFlipGraph<Scheme>::saveScheme(const Scheme &scheme, const std::string &
     else if (format == "txt") {
         scheme.saveTxt(path + ".txt");
     }
+}
+
+template <typename Scheme>
+bool MetaFlipGraph<Scheme>::resetToNormalScheme(Scheme &scheme, std::mt19937 &generator) {
+    auto rank = dimension2knownRank.find(sortedDimension(scheme));
+
+    if (rank == dimension2knownRank.end() || scheme.getRank() > rank->second + metaParameters.maxRankDiff) {
+        std::string dimension = dimensionsInitial[generator() % dimensionsInitial.size()];
+        Scheme &initial = dimension2improvements[dimension][generator() % dimension2improvements[dimension].size()];
+        scheme.copy(initial);
+        return true;
+    }
+
+    return false;
 }
