@@ -6,7 +6,8 @@
 class BinarySolver {
     uint64_t rows;
     uint64_t columns;
-    std::vector<uint8_t> values;
+    uint64_t wordsPerRow;
+    std::vector<uint64_t> values;
     std::vector<int8_t> xs;
 public:
     BinarySolver(uint64_t rows, uint64_t columns);

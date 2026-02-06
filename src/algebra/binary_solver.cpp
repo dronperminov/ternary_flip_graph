@@ -1,13 +1,18 @@
 #include "binary_solver.h"
 #include <cassert>
 
-BinarySolver::BinarySolver(uint64_t rows, uint64_t columns) : values(rows * columns, 0), xs(columns, -1) {
+BinarySolver::BinarySolver(uint64_t rows, uint64_t columns) : wordsPerRow(columns / 64 + 1), values(rows * wordsPerRow, 0), xs(columns, -1) {
     this->rows = rows;
     this->columns = columns;
 }
 
 void BinarySolver::set(int row, int column, uint8_t value) {
-    values[row * columns + column] = value & 1;
+    uint64_t mask = uint64_t(1) << (column % 64);
+
+    if (value & 1)
+        values[row * wordsPerRow + column / 64] |= mask;
+    else
+        values[row * wordsPerRow + column / 64] &= ~mask;
 }
 
 void BinarySolver::setVariable(int variable, uint8_t value) {
@@ -19,7 +24,6 @@ void BinarySolver::reset() {
 }
 
 bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
-    uint64_t wordsPerRow = (columns + 1 + 63) / 64;
     std::vector<uint64_t> augmented(rows * wordsPerRow, 0);
     std::vector<int> pivotCol(rows, -1);
 
@@ -30,7 +34,7 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
         uint8_t bi = b[i];
 
         for (uint64_t j = 0; j < columns; j++) {
-            uint8_t xj = values[i * columns + j];
+            uint8_t xj = (values[i * wordsPerRow + j / 64] >> (j % 64)) & 1;
             augmented[i * wordsPerRow + j / 64] |= uint64_t(xj) << (j % 64);
 
             if (xj && xs[j] > -1)
