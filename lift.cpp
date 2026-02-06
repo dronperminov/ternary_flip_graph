@@ -148,8 +148,27 @@ int runLiftSchemes(const ArgParser &parser) {
     return 0;
 }
 
+template <template<typename> typename Scheme>
+int runLiftSchemesSizes(const ArgParser &parser) {
+    int maxMatrixElements = std::stoi(parser["--int-width"]);
+
+    if (maxMatrixElements <= 16)
+        return runLiftSchemes<Scheme<uint16_t>>(parser);
+
+    if (maxMatrixElements <= 32)
+        return runLiftSchemes<Scheme<uint32_t>>(parser);
+
+    if (maxMatrixElements <= 64)
+        return runLiftSchemes<Scheme<uint64_t>>(parser);
+
+    return runLiftSchemes<Scheme<__uint128_t>>(parser);
+}
+
 int main(int argc, char *argv[]) {
     ArgParser parser("lift", "Lift schemes from Z2/Z3 field to general");
+    parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2}", {"Z2", "Z3"}, "", true);
+    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
+    parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
@@ -157,22 +176,20 @@ int main(int argc, char *argv[]) {
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
 
     parser.addSection("Lifting parameters");
-    parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2}", {"Z2", "Z3"}, "", true);
     parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");
     parser.add("--canonize", "-c", ArgType::Flag, "Canonize reconstructed schemes");
 
-    parser.addSection("Run parameters");
-    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
-    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
+    parser.addSection("Other parameters");
+    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
 
     if (!parser.parse(argc, argv))
         return 0;
 
     if (parser["--ring"] == "Z2")
-        return runLiftSchemes<BinaryScheme<uint64_t>>(parser);
+        return runLiftSchemesSizes<BinaryScheme>(parser);
 
     if (parser["--ring"] == "Z3")
-        return runLiftSchemes<Mod3Scheme<uint64_t>>(parser);
+        return runLiftSchemesSizes<Mod3Scheme>(parser);
 
     return 0;
 }
