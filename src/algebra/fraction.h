@@ -6,6 +6,7 @@
 #include <string>
 #include <stdexcept>
 #include <cassert>
+#include <cstdint>
 
 class Fraction {
     int64_t num;

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <cstdint>
 
 class BinaryMatrix {
     int rows;

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdint>
 
 #include "../entities/mod3_vector.hpp"
 
