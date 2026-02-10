@@ -36,6 +36,44 @@ bool FractionalScheme::validate() const {
     return true;
 }
 
+bool FractionalScheme::read(const std::string &path) {
+    std::ifstream f(path);
+
+    if (!f) {
+        std::cout << "Unable open file \"" << path << "\"" << std::endl;
+        return false;
+    }
+
+    bool valid = read(f);
+    f.close();
+
+    if (!valid) {
+        std::cout << "Invalid scheme in the file \"" << path << "\"" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool FractionalScheme::read(std::istream &is) {
+    is >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
+
+    for (int i = 0; i < 3; i++)
+        elements[i] = dimension[i] * dimension[(i + 1) % 3];
+
+    for (int i = 0; i < 3; i++) {
+        uvw[i].resize(rank * elements[i]);
+
+        for (int j = 0; j < rank * elements[i]; j++)
+            is >> uvw[i][j];
+    }
+
+    if (!validate())
+        return false;
+
+    return true;
+}
+
 bool FractionalScheme::isInteger() const {
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < rank * elements[i]; j++)

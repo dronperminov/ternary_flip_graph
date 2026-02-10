@@ -21,6 +21,9 @@ public:
     bool reconstruct(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, int64_t mod, int64_t bound);
     bool validate() const;
 
+    bool read(const std::string &path);
+    bool read(std::istream &is);
+
     bool isInteger() const;
     bool isTernary() const;
 
