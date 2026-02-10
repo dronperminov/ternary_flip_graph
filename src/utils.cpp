@@ -64,3 +64,28 @@ bool makeDirectory(const std::string &path) {
     std::cerr << "Unable to create directory \"" << path << "\": " << err.message() << std::endl;
     return false;
 }
+
+int getMaxMatrixElements(const std::string &path, bool multiple) {
+    std::ifstream f(path);
+    if (!f) {
+        std::cerr << "Unable to open file \"" << path << "\"" << std::endl;
+        return -1;
+    }
+
+    int count = 1;
+    if (multiple)
+        f >> count;
+
+    int n1, n2, n3;
+    f >> n1 >> n2 >> n3;
+    f.close();
+
+    int maxMatrixElements = std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
+
+    if (maxMatrixElements > 128) {
+        std::cerr << "Max matrix elements too big (> 128): " << n1 << "x" << n2 << "x" << n3 << std::endl;
+        return -1;
+    }
+
+    return maxMatrixElements;
+}

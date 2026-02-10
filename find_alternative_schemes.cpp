@@ -36,11 +36,13 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     size_t maxCount = parseNatural(parser["--max-count"]);
     int seed = std::stoi(parser["--seed"]);
     std::string format = parser["--format"];
+    int maxMatrixElements = sizeof(T) * 8;
 
     if (seed == 0)
         seed = time(0);
 
     std::cout << "Start finding alternative schemes" << std::endl;
+    std::cout << "- ring: " << ring << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
@@ -51,6 +53,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- max count: " << maxCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- format: " << format << std::endl;
+    std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl << std::endl;
 
     Scheme<T> scheme;
@@ -64,7 +67,6 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     int targetRank = parser.isSet("--target-rank") ? std::stoi(parser["--target-rank"]) : schemeRank;
 
     std::cout << "Readed scheme parameters:" << std::endl;
-    std::cout << "- ring: " << ring << std::endl;
     std::cout << "- dimension: " << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2) << std::endl;
     std::cout << "- rank: " << scheme.getRank();
 
@@ -117,37 +119,55 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
         hashes.insert(hash);
     }
 
-    std::cout << "+-----------+-------------+------------+" << std::endl;
+    std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
     return 0;
+}
+
+template <template<typename> typename Scheme>
+int runFindAlternativeSchemesSizes(const ArgParser &parser) {
+    int maxMatrixElements = getMaxMatrixElements(parser["--input-path"], false);
+    if (maxMatrixElements < 0)
+        return -1;
+
+    if (maxMatrixElements <= 16)
+        return runFindAlternativeSchemes<Scheme, uint16_t>(parser);
+
+    if (maxMatrixElements <= 32)
+        return runFindAlternativeSchemes<Scheme, uint32_t>(parser);
+
+    if (maxMatrixElements <= 64)
+        return runFindAlternativeSchemes<Scheme, uint64_t>(parser);
+
+    return runFindAlternativeSchemes<Scheme, __uint128_t>(parser);
 }
 
 int main(int argc, char **argv) {
     ArgParser parser("find_alternative_schemes", "Find alternative fast matrix multiplication schemes using flip graph");
+    parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
+    parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
+    parser.add("--max-count", "-n", ArgType::Natural, "Number of alternative schemes", "10K");
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for alternative schemes", "schemes");
 
-    parser.addSection("Find algorithm parameters");
-    parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
-    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.5");
+    parser.addSection("Flip graph parameters");
+    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.0");
     parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.2");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
-    parser.add("--target-rank", ArgType::Natural, "Rank of alternative schemes");
 
-    parser.addSection("Run parameters");
-    parser.add("--max-count", ArgType::Natural, "Number of alternative schemes", "10000");
+    parser.addSection("Other parameters");
+    parser.add("--target-rank", ArgType::Natural, "Rank of alternative schemes");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
-    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
     if (!parser.parse(argc, argv))
         return 0;
 
     if (parser["--ring"] == "Z2")
-        return runFindAlternativeSchemes<BinaryScheme, uint64_t>(parser);
+        return runFindAlternativeSchemesSizes<BinaryScheme>(parser);
 
     if (parser["--ring"] == "Z3")
-        return runFindAlternativeSchemes<Mod3Scheme, uint64_t>(parser);
+        return runFindAlternativeSchemesSizes<Mod3Scheme>(parser);
 
-    return runFindAlternativeSchemes<TernaryScheme, uint64_t>(parser);
+    return runFindAlternativeSchemesSizes<TernaryScheme>(parser);
 }

@@ -16,44 +16,13 @@
 #include "src/flip_graph.hpp"
 
 int getMaxMatrixElements(const ArgParser &parser) {
-    int n1, n2, n3;
+    if (parser.isSet("--input-path"))
+        return getMaxMatrixElements(parser["--input-path"], parser.isSet("--multiple"));
 
-    if (parser.isSet("--input-path")) {
-        std::string path = parser["--input-path"];
-        std::ifstream f(path);
-
-        if (!f) {
-            std::cerr << "Unable to open file \"" << path << "\"" << std::endl;
-            return 0;
-        }
-
-        int count = 1;
-
-        if (parser.isSet("--multiple"))
-            f >> count;
-
-        f >> n1 >> n2 >> n3;
-        f.close();
-    }
-    else {
-        n1 = std::stoi(parser["-n1"]);
-        n2 = std::stoi(parser["-n2"]);
-        n3 = std::stoi(parser["-n3"]);
-    }
-
-    int nn = std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
-
-    if (nn < 1) {
-        std::cerr << "input matrix sizes is not valid: " << n1 << "x" << n2 << "x" << n3 << std::endl;
-        return 0;
-    }
-
-    if (nn > 128) {
-        std::cerr << "input matrix sizes too big: " << n1 << "x" << n2 << "x" << n3 << std::endl;
-        return 0;
-    }
-
-    return nn;
+    int n1 = std::stoi(parser["-n1"]);
+    int n2 = std::stoi(parser["-n2"]);
+    int n3 = std::stoi(parser["-n3"]);
+    return std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
 }
 
 template <template<typename> typename Scheme, typename T>
@@ -124,7 +93,11 @@ int runFlipGraph(const ArgParser &parser) {
 }
 
 template <template<typename> typename Scheme>
-int runFlipGraphSizes(const ArgParser &parser, int maxMatrixElements) {
+int runFlipGraphSizes(const ArgParser &parser) {
+    int maxMatrixElements = getMaxMatrixElements(parser);
+    if (maxMatrixElements < 0)
+        return -1;
+
     if (maxMatrixElements <= 16)
         return runFlipGraph<Scheme, uint16_t>(parser);
 
@@ -189,15 +162,11 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int maxMatrixElements = getMaxMatrixElements(parser);
-    if (!maxMatrixElements)
-        return -1;
-
     if (parser["--ring"] == "Z2")
-        return runFlipGraphSizes<BinaryScheme>(parser, maxMatrixElements);
+        return runFlipGraphSizes<BinaryScheme>(parser);
 
     if (parser["--ring"] == "Z3")
-        return runFlipGraphSizes<Mod3Scheme>(parser, maxMatrixElements);
+        return runFlipGraphSizes<Mod3Scheme>(parser);
 
-    return runFlipGraphSizes<TernaryScheme>(parser, maxMatrixElements);
+    return runFlipGraphSizes<TernaryScheme>(parser);
 }
