@@ -36,7 +36,7 @@ bool FractionalScheme::validate() const {
     return true;
 }
 
-bool FractionalScheme::read(const std::string &path) {
+bool FractionalScheme::read(const std::string &path, bool integer) {
     std::ifstream f(path);
 
     if (!f) {
@@ -44,7 +44,7 @@ bool FractionalScheme::read(const std::string &path) {
         return false;
     }
 
-    bool valid = read(f);
+    bool valid = read(f, integer);
     f.close();
 
     if (!valid) {
@@ -55,17 +55,25 @@ bool FractionalScheme::read(const std::string &path) {
     return true;
 }
 
-bool FractionalScheme::read(std::istream &is) {
+bool FractionalScheme::read(std::istream &is, bool integer) {
     is >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
 
     for (int i = 0; i < 3; i++)
         elements[i] = dimension[i] * dimension[(i + 1) % 3];
 
+    int numerator;
+    int denominator = 1;
+
     for (int i = 0; i < 3; i++) {
         uvw[i].resize(rank * elements[i]);
 
-        for (int j = 0; j < rank * elements[i]; j++)
-            is >> uvw[i][j];
+        for (int j = 0; j < rank * elements[i]; j++) {
+            is >> numerator;
+            if (!integer)
+                is >> denominator;
+
+            uvw[i][j] = Fraction(numerator, denominator);
+        }
     }
 
     if (!validate())
