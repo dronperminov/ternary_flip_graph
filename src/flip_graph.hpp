@@ -42,7 +42,7 @@ public:
     FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
-    bool initializeFromFile(const std::string &path, bool multiple);
+    bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
 
     void run(int targetRank);
 private:
@@ -104,7 +104,7 @@ bool FlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
 }
 
 template <typename Scheme>
-bool FlipGraph<Scheme>::initializeFromFile(const std::string &path, bool multiple) {
+bool FlipGraph<Scheme>::initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness) {
     std::ifstream f(path);
 
     if (!f) {
@@ -120,7 +120,7 @@ bool FlipGraph<Scheme>::initializeFromFile(const std::string &path, bool multipl
 
     bool valid = true;
     for (int i = 0; i < schemesCount && i < count && valid; i++)
-        valid = schemes[i].read(f);
+        valid = schemes[i].read(f, checkCorrectness);
 
     f.close();
 

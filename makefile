@@ -30,4 +30,4 @@ lift: $(OBJECTS)
 	$(CXX) $(FLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJECTS) flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes
+	rm -rf $(OBJECTS) flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes validate_schemes lift

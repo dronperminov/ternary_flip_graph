@@ -17,7 +17,7 @@
 #include "src/lift/mod3_lifter.h"
 
 template <typename Scheme>
-bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple) {
+bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
     std::ifstream f(inputPath);
     if (!f) {
         std::cerr << "Unable to open file \"" << inputPath << "\"" << std::endl;
@@ -33,7 +33,7 @@ bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, boo
 
     bool valid = true;
     for (int i = 0; i < count && valid; i++)
-        valid = schemes[i].read(f);
+        valid = schemes[i].read(f, checkCorrectness);
 
     f.close();
     return valid;
@@ -75,7 +75,7 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << std::endl << std::endl;
 
     std::vector<Scheme> schemes;
-    if (!readSchemes(inputPath, schemes, parser.isSet("--multiple")))
+    if (!readSchemes(inputPath, schemes, parser.isSet("--multiple"), parser.isSet("--check-correctness")))
         return -1;
 
     std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
@@ -174,6 +174,7 @@ int main(int argc, char *argv[]) {
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
+    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
 
     parser.addSection("Lifting parameters");
     parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");

@@ -79,7 +79,7 @@ int runFlipGraph(const ArgParser &parser) {
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = flipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"));
+        valid = flipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), parser.isSet("--check-correctness"));
     }
     else {
         valid = flipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)");
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
+    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
 
     parser.addSection("Random walk parameters");
     parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "1M");

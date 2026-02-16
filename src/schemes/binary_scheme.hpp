@@ -23,8 +23,8 @@ public:
     BinaryScheme(const BinaryScheme<T> &scheme);
 
     bool initializeNaive(int n1, int n2, int n3);
-    bool read(const std::string &path);
-    bool read(std::istream &is);
+    bool read(const std::string &path, bool checkCorrectness);
+    bool read(std::istream &is, bool checkCorrectness);
 
     int getComplexity() const;
     std::string getRing() const;
@@ -129,7 +129,7 @@ bool BinaryScheme<T>::initializeNaive(int n1, int n2, int n3) {
 }
 
 template <typename T>
-bool BinaryScheme<T>::read(const std::string &path) {
+bool BinaryScheme<T>::read(const std::string &path, bool checkCorrectness) {
     std::ifstream f(path);
 
     if (!f) {
@@ -137,7 +137,7 @@ bool BinaryScheme<T>::read(const std::string &path) {
         return false;
     }
 
-    bool valid = read(f);
+    bool valid = read(f, checkCorrectness);
     f.close();
 
     if (!valid) {
@@ -149,7 +149,7 @@ bool BinaryScheme<T>::read(const std::string &path) {
 }
 
 template <typename T>
-bool BinaryScheme<T>::read(std::istream &is) {
+bool BinaryScheme<T>::read(std::istream &is, bool checkCorrectness) {
     is >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
 
     for (int i = 0; i < 3; i++)
@@ -171,7 +171,7 @@ bool BinaryScheme<T>::read(std::istream &is) {
         }
     }
 
-    if (!validate())
+    if (checkCorrectness && !validate())
         return false;
 
     initFlips();

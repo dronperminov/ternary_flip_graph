@@ -139,6 +139,7 @@ make -j$(nproc)
 * `--count`: number of parallel search processes;
 * `--threads`: OpenMP threads per process;
 * `--seed`: random seed (`0` for time-based).
+* `--check-correctness`: boolean flag to validate Brent equations after reading input scheme(s)from file.
 
 ### Flip Graph Specific
 * Initial scheme specification: two mutually exclusive approaches:
@@ -147,7 +148,7 @@ make -j$(nproc)
     * `-n1`: number of rows in first matrix (A);
     * `-n2`: number of columns in A / rows in second matrix (B);
     * `-n3`: number of columns in second matrix (B);
-    * `-i`: path to input file with initial scheme(s):
+    * `-i`: path to input file with initial scheme(s);
     * `-m`: boolean flag to read multiple schemes from file (first line contains number of schemes).
 
 **Note**: these options are mutually exclusive. You cannot specify both dimension flags and an input file simultaneously.

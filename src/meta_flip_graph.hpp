@@ -46,7 +46,7 @@ public:
     MetaFlipGraph(size_t count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetaParameters &metaParameters, int seed, size_t topCount, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
-    bool initializeFromFile(const std::string &path, bool multiple);
+    bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
 
     void initializeKnownRanks(const std::string &ring);
     void run();
@@ -121,7 +121,7 @@ bool MetaFlipGraph<Scheme>::initializeNaive(int n1, int n2, int n3) {
 }
 
 template <typename Scheme>
-bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool multiple) {
+bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness) {
     std::ifstream f(path);
     if (!f) {
         std::cout << "error: unable to open file \"" << path << "\"" << std::endl;
@@ -137,7 +137,7 @@ bool MetaFlipGraph<Scheme>::initializeFromFile(const std::string &path, bool mul
     std::cout << "Start reading " << std::min(count, schemesCount) << " / " << schemesCount << " schemes from \"" << path << "\"" << std::endl;
 
     for (size_t i = 0; i < count && i < schemesCount && valid; i++) {
-        valid = schemes[i].read(f);
+        valid = schemes[i].read(f, checkCorrectness);
 
         if (!valid)
             std::cout << "error: invalid scheme " << (i + 1) << " in the file \"" << path << "\"" << std::endl;
@@ -276,11 +276,11 @@ void MetaFlipGraph<Scheme>::initializeKnownRationalRanks() {
         {"7x10x10", 478}, {"7x10x11", 526}, {"7x10x12", 564},
         {"7x11x11", 577},
         {"8x8x8", 336}, {"8x8x9", 388}, {"8x8x10", 427}, {"8x8x11", 475}, {"8x8x12", 504}, {"8x8x13", 559}, {"8x8x14", 595}, {"8x8x15", 635}, {"8x8x16", 671},
-        {"8x9x9", 430}, {"8x9x10", 487}, {"8x9x11", 533}, {"8x9x12", 560}, {"8x9x13", 624}, {"8x9x14", 666},
+        {"8x9x9", 430}, {"8x9x10", 487}, {"8x9x11", 532}, {"8x9x12", 560}, {"8x9x13", 624}, {"8x9x14", 666},
         {"8x10x10", 532}, {"8x10x11", 588}, {"8x10x12", 630},
         {"8x11x11", 641},
         {"9x9x9", 498}, {"9x9x10", 534}, {"9x9x11", 576}, {"9x9x12", 600}, {"9x9x13", 681}, {"9x9x14", 726},
-        {"9x10x10", 599}, {"9x10x11", 651}, {"9x10x12", 684},
+        {"9x10x10", 598}, {"9x10x11", 651}, {"9x10x12", 684},
         {"9x11x11", 715},
         {"10x10x10", 651}, {"10x10x11", 719}, {"10x10x12", 770},
         {"10x11x11", 793},
@@ -322,7 +322,7 @@ void MetaFlipGraph<Scheme>::initializeKnownTernaryRanks() {
         {"4x11x11", 342},
         {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 163}, {"5x5x10", 184}, {"5x5x11", 202}, {"5x5x12", 220}, {"5x5x13", 237}, {"5x5x14", 254}, {"5x5x15", 271}, {"5x5x16", 288},
         {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217}, {"5x6x11", 240}, {"5x6x12", 258}, {"5x6x13", 280}, {"5x6x14", 300}, {"5x6x15", 320}, {"5x6x16", 340},
-        {"5x7x7", 176}, {"5x7x8", 204}, {"5x7x9", 231}, {"5x7x10", 254}, {"5x7x11", 277}, {"5x7x12", 300}, {"5x7x13", 326}, {"5x7x14", 351}, {"5x7x15", 379}, {"5x7x16", 402},
+        {"5x7x7", 176}, {"5x7x8", 204}, {"5x7x9", 231}, {"5x7x10", 254}, {"5x7x11", 277}, {"5x7x12", 300}, {"5x7x13", 325}, {"5x7x14", 351}, {"5x7x15", 379}, {"5x7x16", 402},
         {"5x8x8", 230}, {"5x8x9", 262}, {"5x8x10", 287}, {"5x8x11", 313}, {"5x8x12", 333}, {"5x8x13", 365}, {"5x8x14", 391}, {"5x8x15", 423}, {"5x8x16", 449},
         {"5x9x9", 295}, {"5x9x10", 323}, {"5x9x11", 355}, {"5x9x12", 381}, {"5x9x13", 417}, {"5x9x14", 448},
         {"5x10x10", 352}, {"5x10x11", 390}, {"5x10x12", 421},
@@ -339,11 +339,11 @@ void MetaFlipGraph<Scheme>::initializeKnownTernaryRanks() {
         {"7x10x10", 478}, {"7x10x11", 530}, {"7x10x12", 570},
         {"7x11x11", 584},
         {"8x8x8", 343}, {"8x8x9", 391}, {"8x8x10", 427}, {"8x8x11", 475}, {"8x8x12", 511}, {"8x8x13", 559}, {"8x8x14", 595}, {"8x8x15", 639}, {"8x8x16", 672},
-        {"8x9x9", 435}, {"8x9x10", 487}, {"8x9x11", 533}, {"8x9x12", 570}, {"8x9x13", 624}, {"8x9x14", 666},
+        {"8x9x9", 435}, {"8x9x10", 487}, {"8x9x11", 532}, {"8x9x12", 570}, {"8x9x13", 624}, {"8x9x14", 666},
         {"8x10x10", 532}, {"8x10x11", 588}, {"8x10x12", 630},
         {"8x11x11", 646},
         {"9x9x9", 498}, {"9x9x10", 540}, {"9x9x11", 594}, {"9x9x12", 630}, {"9x9x13", 693}, {"9x9x14", 735},
-        {"9x10x10", 599}, {"9x10x11", 661}, {"9x10x12", 702},
+        {"9x10x10", 598}, {"9x10x11", 661}, {"9x10x12", 702},
         {"9x11x11", 721},
         {"10x10x10", 651}, {"10x10x11", 719}, {"10x10x12", 770},
         {"10x11x11", 793},
@@ -385,7 +385,7 @@ void MetaFlipGraph<Scheme>::initializeKnownBinaryRanks() {
         {"4x11x11", 340},
         {"5x5x5", 93}, {"5x5x6", 110}, {"5x5x7", 127}, {"5x5x8", 144}, {"5x5x9", 163}, {"5x5x10", 183}, {"5x5x11", 200}, {"5x5x12", 217}, {"5x5x13", 237}, {"5x5x14", 254}, {"5x5x15", 271}, {"5x5x16", 288},
         {"5x6x6", 130}, {"5x6x7", 150}, {"5x6x8", 170}, {"5x6x9", 197}, {"5x6x10", 217}, {"5x6x11", 238}, {"5x6x12", 258}, {"5x6x13", 280}, {"5x6x14", 300}, {"5x6x15", 320}, {"5x6x16", 340},
-        {"5x7x7", 176}, {"5x7x8", 204}, {"5x7x9", 229}, {"5x7x10", 254}, {"5x7x11", 277}, {"5x7x12", 300}, {"5x7x13", 326}, {"5x7x14", 351}, {"5x7x15", 378}, {"5x7x16", 400},
+        {"5x7x7", 176}, {"5x7x8", 204}, {"5x7x9", 229}, {"5x7x10", 254}, {"5x7x11", 277}, {"5x7x12", 300}, {"5x7x13", 325}, {"5x7x14", 351}, {"5x7x15", 378}, {"5x7x16", 400},
         {"5x8x8", 230}, {"5x8x9", 260}, {"5x8x10", 287}, {"5x8x11", 313}, {"5x8x12", 333}, {"5x8x13", 365}, {"5x8x14", 391}, {"5x8x15", 421}, {"5x8x16", 445},
         {"5x9x9", 295}, {"5x9x10", 323}, {"5x9x11", 353}, {"5x9x12", 377}, {"5x9x13", 412}, {"5x9x14", 441},
         {"5x10x10", 352}, {"5x10x11", 386}, {"5x10x12", 413},
@@ -402,11 +402,11 @@ void MetaFlipGraph<Scheme>::initializeKnownBinaryRanks() {
         {"7x10x10", 478}, {"7x10x11", 526}, {"7x10x12", 564},
         {"7x11x11", 580},
         {"8x8x8", 329}, {"8x8x9", 391}, {"8x8x10", 427}, {"8x8x11", 475}, {"8x8x12", 511}, {"8x8x13", 559}, {"8x8x14", 595}, {"8x8x15", 639}, {"8x8x16", 672},
-        {"8x9x9", 435}, {"8x9x10", 487}, {"8x9x11", 533}, {"8x9x12", 570}, {"8x9x13", 624}, {"8x9x14", 666},
+        {"8x9x9", 435}, {"8x9x10", 487}, {"8x9x11", 532}, {"8x9x12", 570}, {"8x9x13", 624}, {"8x9x14", 666},
         {"8x10x10", 532}, {"8x10x11", 588}, {"8x10x12", 630},
         {"8x11x11", 646},
         {"9x9x9", 498}, {"9x9x10", 540}, {"9x9x11", 594}, {"9x9x12", 630}, {"9x9x13", 693}, {"9x9x14", 735},
-        {"9x10x10", 599}, {"9x10x11", 661}, {"9x10x12", 702},
+        {"9x10x10", 598}, {"9x10x11", 661}, {"9x10x12", 702},
         {"9x11x11", 721},
         {"10x10x10", 651}, {"10x10x11", 719}, {"10x10x12", 770},
         {"10x11x11", 793},
