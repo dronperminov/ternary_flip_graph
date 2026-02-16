@@ -17,6 +17,7 @@ std::ostream& operator<<(std::ostream& os, const MetaParameters &metaParameters)
     os << "- meta probability: " << metaParameters.probability << std::endl;
     os << "- meta strategy: " << metaParameters.strategy << std::endl;
     os << "- meta dimensions: " << metaParameters.minDimension << " .. " << metaParameters.maxDimension << std::endl;
+    os << "- meta max rank: " << metaParameters.maxRank << std::endl;
     os << "- meta max rank diff: " << metaParameters.maxRankDiff << std::endl;
     return os;
 }
