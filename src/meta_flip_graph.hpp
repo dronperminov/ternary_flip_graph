@@ -545,7 +545,7 @@ void MetaFlipGraph<Scheme>::report(size_t iteration, std::chrono::high_resolutio
             improved = true;
         }
 
-        std::cout << "| | " << std::setw(9) << dimension << " | " << std::setw(10) << known->second << " | " << std::setw(17) << rank << " |                                                          |" << std::endl;
+        std::cout << "| | " << std::setw(9) << dimension << " | " << std::setw(10) << known->second << " | " << std::setw(14) << rank << " |                                                          |" << std::endl;
     }
 
     if (improved) {
