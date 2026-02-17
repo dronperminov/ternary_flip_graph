@@ -64,25 +64,26 @@ int runComplexityMinimizer(const ArgParser &parser) {
 int main(int argc, char **argv) {
     ArgParser parser("complexity_minimizer", "Find fast matrix multiplication scheme with lowest naive complexity using flip graph");
 
+    parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
+    parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");
+    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
+    parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
+
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for minimized schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
-    parser.addSection("Complexity minimizer parameters");
-    parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
-    parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting ", "100K");
+    parser.addSection("Random walk parameters");
+    parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "100K");
     parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0");
 
     parser.addSection("Run parameters");
-    parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");
-    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--maximize", ArgType::Flag, "Maximize complexity instead of minimizing", "false");
     parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without complexity improvement before termination", "3");
-    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
     if (!parser.parse(argc, argv))
         return 0;

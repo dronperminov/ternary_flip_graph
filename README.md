@@ -3,206 +3,344 @@
 [![arXiv:2511.20317](https://img.shields.io/badge/arXiv-2511.20317-b31b1b.svg)](https://arxiv.org/abs/2511.20317)
 [![arXiv:2512.13365](https://img.shields.io/badge/arXiv-2512.21980-b31b1b.svg)](https://arxiv.org/abs/2512.21980)
 
-A comprehensive toolkit for discovering fast matrix multiplication algorithms using flip graph exploration with support for Z₂, Z₃ and ternary coefficient sets.
+A collection of C++ tools for discovering and transforming fast matrix multiplication schemes using the *flip graph* approach. The repository supports searches
+over multiple coefficient rings, with a particular focus on integer ternary coefficients `ZT`, which allows schemes to be valid over the general ring
+automatically, without any lifting step.
 
+All tools are implemented in pure C++, require only a standard `g++` compiler, have no external dependencies, and support parallel execution via OpenMP.
 
-## Key Features
-* Multi-ring support: works with Z₂ (`{0, 1}`), Z₃ (`{0, 1, 2}`) and ternary coefficient sets (`{-1, 0, 1}`);
-* No lifting required: ternary coefficients (`{-1, 0, 1}`) produce schemes valid over any ring automatically;
-* Parallel exploration: multi-threaded search with configurable parallel runners;
-* Multiple optimization strategies: rank minimization, naive complexity minimization and alternative scheme discovery;
-* Flexible operations: support for `flip`, `plus`, `split`, `reduce`, `extend`, `merge`, `product`, and `project` operations.
+---
 
+## Key features
 
-## Tools Overview
-### `flip_graph`: single dimension discovery
+- **Multiple coefficient rings**: `Z2` binary coefficients `{0, 1}`, `Z3` ternary modular coefficients `{0, 1, 2}`,
+  and `ZT` integer ternary coefficients `{-1, 0, 1}`;
+- **No lifting required for `ZT`**: Schemes over `ZT` are immediately valid over the general ring, avoiding Hensel lifting and rational reconstruction entirely;
+- **Flip graph–based search**: local transformations of schemes using `flip`, `plus`, `split`, `reduce`, and related operations, supporting both fixed-dimension
+  and variable-dimension searches;
+- **Meta-operations**: `extend`, `project` and `merge`, and `product` operations allow exploration across different matrix sizes;
+- **Parallel and reproducible**: multi-runner architecture combined with OpenMP threading and fully controllable random seeds;
+- **Validation and post-processing**: automatic verification of Brent equations, lifting from modular rings when needed, and naive additive complexity
+  minimization;
 
-Discover optimal matrix multiplication schemes for specific dimensions. This tool performs random walks through the flip graph space to find low-rank decompositions.
+## Installation
 
-**Use when**: you need to find the best scheme for a specific matrix multiplication problem (e.g., 3×3×3, 2x4x5).
-
-### `meta_flip_graph`: multi-dimensional meta search
-Discover schemes using higher-level operations that transform schemes between dimensions. Supports extension, merging, product, and projection operations.
-
-**Use when**: you want to discover schemes for various matrix dimensions or explore how optimal decompositions can be transformed between different problem sizes.
-
-### `complexity_minimizer`: naive complexity optimization
-Given a fixed-rank scheme, find variants with minimal "naive complexity" (number of non-zero coefficients in the decomposition).
-
-**Use when**: you have a rank-optimal scheme and want to minimize its practical implementation cost without using common subexpression elimination (CSE). For optimizing real addition complexity with CSE, please use the companion repository [ternary_addition_reducer](https://github.com/dronperminov/ternary_addition_reducer).
-
-### `find_alternative_schemes`: alternative solution discovery
-Find alternative schemes with the same rank but different coefficient patterns, providing implementation choices.
-
-**Use when**: you need multiple valid schemes for the same problem, possibly for hardware-specific optimizations.
-
-### `lift`: Hensel Lifting from Z₂/Z₃ to general ring
-Lifts a scheme from the rings Z₂ or Z₃ to higher-order rings (Z₂ → Z₄ → Z₈ → Z₁₆ ... or Z₃ → Z₉ → Z₂₇ → Z₈₁) using Hensel lifting. The method solves the system `Jx = T - UxVxW` and applies rational reconstruction with subsequent validation to ensure correct lifting.
-
-**Use when**: you need to convert a scheme from Z₂/Z₃ to a general ring (ZT, Z, or Q).
-
-## Quick Start
-
-### Installation
 ```bash
 git clone https://github.com/dronperminov/ternary_flip_graph
 cd ternary_flip_graph
 make -j$(nproc)
 ```
 
-### Basic Discovery
+The build produces standalone binaries for all tools.
 
-#### `4x4x4` matrices with ternary coefficients
+
+## Tools overview
+The repository provides the following command-line tools:
+
+- `flip_graph` — random walk search in the flip graph for fixed dimensions.
+- `meta_flip_graph` — flip graph search augmented with dimension-changing meta operations.
+- `find_alternative_schemes` — generation of distinct schemes of the same size.
+- `lift` — Hensel lifting and rational reconstruction from modular rings (`Z2` / `Z3`).
+- `validate_schemes` — verification of Brent equations.
+- `complexity_minimizer` — minimization (or maximization) of naive additive complexity.
+
+Each tool is described in detail below.
+
+
+## Core search tools
+
+### flip_graph
+`flip_graph` performs random-walk search in the flip graph for schemes of a fixed dimension `(n1, n2, n3)`. The dimension never changes during execution.
+Initialization can be done either from a naive matrix multiplication scheme (via dimensions), or from one or more schemes loaded from file. These modes
+are mutually exclusive.
+
+#### Main parameters
+- `--ring {ZT, Z2, Z3}` — coefficient ring (default: `ZT`);
+- `--count INT` — number of parallel runners (default: `8`);
+- `--threads INT` — number of OpenMP threads;
+- `--format {txt, json}` — output format (default: `txt`);
+- `--output-path PATH` — output directory for discovered schemes (default: `schemes`).
+
+#### Initialization parameters
+- `-n1 INT` — rows in matrix A;
+- `-n2 INT` — columns in A / rows in B;
+- `-n3 INT` — columns in matrix B;
+- `--input-path PATH` — path to input file with initial scheme(s);
+- `--multiple` — input file contains multiple schemes (read multiple schemes from file, with total count on first line);
+- `--no-verify` — skip checking Brent equations for correctness.
+
+#### Random walk parameters
+* `--flip-iterations INT` — flips performed before reporting (default: `1M`);
+* `--min-plus-iterations INT` — minimal period for `plus` / `split` operations (default: `5K`);
+* `--max-plus-iterations INT` — maximal period for `plus` / `split` operations (default: `100K`);
+* `--reset-iterations INT` — iterations before reset (default: `10B`);
+* `--plus-diff INT` — allowed rank difference for `plus` operation (default: `4`);
+* `--sandwiching-probability REAL` — probability of `sandwiching` operation (default: `0`);
+* `--reduce-probability REAL` — probability of `reduce` operation (default: `0`).
+
+#### Other parameters
+- `--seed INT` — random seed, 0 uses time-based seed (default: `0`);
+- `--top-count INT` — number of best schemes displayed (default: `10`);
+- `--target-rank INT` — stop search when this rank is found, 0 searches for minimum (default: `0`);
+- `--copy-best-probability REAL` — probability to replace scheme with best scheme after improvement (default: `0.5`);
+- `--max-improvements INT` — maximum saved recent improvements for reset sampling (default: `10`).
+
+#### Examples
+Start search from naive `4x4x4` scheme with ternary coefficients, using `128` parallel runners and `16` threads:
 ```bash
-./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --count 64 --threads 16
+./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --count 128 --threads 16
 ```
 
-#### single binary scheme initialization from input.txt
+Search binary schemes loaded from file:
 ```bash
 ./flip_graph -i input.txt --ring Z2 --count 128
 ```
 
-#### multiple Z3 scheme initialization from input.txt
+Search ternary modular schemes from multiple-scheme file:
 ```bash
-./flip_graph -m -i input.txt --ring Z3 --count 128
+/flip_graph -i input.txt -m --ring Z3 --count 128
 ```
 
-### Meta Search
-```bash
-./meta_flip_graph -i input.txt --ring ZT --count 64 --resize-probability 0.1
-```
-
-### Complexity Minimization
-```bash
-./complexity_minimizer -i input_scheme.txt --ring Z2 --count 32 --threads 12
-```
-
-## Understanding the Output
-
-### Flip Graph Progress Table
+#### Example output
 ```text
 +-----------------------------------------------------------------------------------+
-| dimension: 4x4x4            seed: 1766925187                        best rank: 52 |
-| threads: 24                 flip iters: 1.0M                        iteration: 64 |
-| count: 256                  reset iters: 100.0M                 elapsed: 00:18:34 |
-| ring: ZT                    plus diff: 4                     improvements: 6 / 10 |
+| dimension: 4x4x4            seed: 1771326467                        best rank: 52 |
+| threads: 12                 flip iters: 1.0M                        iteration: 33 |
+| count: 256                  reset iters: 10.0B                  elapsed: 00:10:30 |
+| ring: ZT                    plus diff: 4                     improvements: 9 / 10 |
 +===================================================================================+
 | runner | scheme rank |   naive    |            |        flips        |    plus    |
 |   id   | best | curr | complexity | iterations |  count  | available | iterations |
 +--------+------+------+------------+------------+---------+-----------+------------+
-|    108 |   52 |   52 |        685 |          0 |   6.20K |         4 |     12.75K |
-|    159 |   54 |   52 |        685 |          0 |  16.87K |         4 |     25.07K |
-|     93 |   54 |   54 |        650 |       3.0M |   4.71K |         6 |      6.77K |
+|    155 |   52 |   52 |        362 |   1000.00K |   3.92K |        13 |      6.14K |
+|     27 |   52 |   52 |        363 |   1000.00K |  89.09K |        11 |     91.07K |
+|     31 |   52 |   52 |        363 |   1000.00K |     703 |        12 |     90.82K |
 +--------+------+------+------------+------------+---------+-----------+------------+
-- iteration time (last / min / max / mean): 17.97 / 16.30 / 19.07 / 17.25
+- iteration time (last / min / max / mean): 19.68 / 12.85 / 27.88 / 19.09
 ```
 
-#### Key metrics:
 
-* `best rank`: lowest rank discovered so far;
-* `naive complexity`: number of non-zero coefficients in current scheme;
-* `iterations`: number of iterations since last rank improvement for this runner;
-* `flips count`: number of successful flip operations since last rank improvement;
-* `flips available`: number of currently possible flips for the current scheme;
-* `plus iterations`: period (in iterations) between calls to the plus operator for this runner.
+### meta_flip_graph
+
+`meta_flip_graph` extends flip_graph with meta-operations that can modify scheme dimensions during search. Supports all flip_graph operations plus `projection`,
+`extension`, `merge` and `product` operations.
+
+After every random walk phase, each runner may invoke a meta operation with probability `--meta-probability`. Before executing a meta operation, the current
+rank is compared with known best ranks. If the gap exceeds `--meta-max-rank-diff`, the runner resets to an initial scheme (not necessarily of the same size).
+
+#### Meta operation strategies
+Three strategies are available:
+- `default`: with probability `0.5`, permute dimensions and attempt merge with random best scheme. If merge fails, with probability `0.5` attempt `projection`
+  to random dimension, otherwise perform `extension`.
+- `proj`: performs only random projection operations.
+- `ext`: performs only random extension operations.
+
+#### Main parameters
+Same as flip_graph.
+
+#### Meta parameters
+- `--meta-probability REAL` — probability of call meta operations (default: `0`);
+- `--meta-strategy {default, proj, ext}` — strategy of meta operations (default: `default`);
+- `--meta-min-dimension INT` — minimum dimension for projection (default: `2`);
+- `--meta-max-dimension INT` — maximum dimension for merge/extend (default: `16`);
+- `--meta-max-rank INT` — maximum rank for merge/extend (default: `350`);
+- `--meta-max-rank-diff INT` — reset threshold relative to known rank (default: `10`).
+
+#### Additional parameters
+- `--improve-ring {Z2, ZT, Q}` — save only schemes improving known rank (saves all by default);
+- `--int-width {16, 32, 64, 128}` — integer bit width, determines maximum matrix elements (default: `64`).
+
+#### Example
+Search binary schemes with meta-operations, dimensions varying from 4 to 10, rank limit 400:
+```bash
+./meta_flip_graph -i input.txt -m --ring Z2 --meta-probability 0.5 --meta-strategy default \
+  --meta-min-dimension 4 --meta-max-dimension 10 --meta-max-rank 400
+```
 
 
-### Complexity Minimizer Table
+## Supporting tools
+
+### find_alternative_schemes
+Generates alternative schemes of the same dimensions as the input scheme using `flip` / `plus` / `split` / `sandwiching` operations. Useful for expanding
+existing schemes for independent analysis or as broader initialization for new searches.
+
+#### Parameters
+- `--ring {ZT, Z2, Z3}` — coefficient ring (default: `ZT`);
+- `--max-count INT` — number of alternatives to generate (default: `10K`);
+- `--input-path PATH` — path to file with input scheme (required);
+- `--output-path PATH` — output directory for alternative schemes (default: `schemes`);
+- `--target-rank INT` — keep only schemes with this rank, if not specified, the rank of the input scheme is used as the target;
+- `--plus-probability REAL` — probability of plus (default: `0.2`);
+- `--plus-diff INT` — rank difference allowed for plus (default: `4`);
+- `--sandwiching-probability REAL` — sandwiching probability (default: `0`);
+- `--seed INT` — random seed (default: `0`).
+
+The tool expects a single scheme in the input file. If `--target-rank` is specified, only schemes with that rank are saved (can be higher or lower than
+initial rank).
+
+#### Example
+Find 128 alternative ternary schemes for `3x3x8` with rank `56`:
+```bash
+./find_alternative_schemes -i inputs/3x3x8_m56_ZT.txt --max-count 128 --ring ZT
+```
+
+#### Example output
+```text
++-----------+-------------+------------+-----------------+
+| iteration | alternative | complexity | available flips |
++-----------+-------------+------------+-----------------+
+|         1 |           1 |        510 |              15 |
+|         2 |           2 |        503 |              15 |
+|         3 |           3 |        517 |              15 |
+...
+```
+
+
+### lift
+Attempts to lift schemes from modular rings (`Z₂` / `Z₃`) to general rings (`ZT` / `Z` / `Q`) using Hensel lifting followed by rational reconstruction. For `Z₂`
+schemes, lifts through `Z₄ → Z₈ → Z₁₆ → ...`; for `Z₃` schemes, through `Z₉ → Z₂₇ → Z₈₁ → ...`. After each lifting step, attempts rational reconstruction to
+obtain rational/integer coefficients.
+
+#### Parameters
+- `--ring {Z2, Z3}` — source ring (required);
+- `--input-path PATH` — path to file with input scheme(s);
+- `--output-path PATH` — output directory for lifted schemes (default: `schemes`);
+- `--multiple` — input file contains multiple schemes;
+- `--steps INT` — number of lifting steps; (default: `10`)
+- `--canonize` — canonize reconstructed schemes;
+- `--threads INT` — OpenMP threads;
+- `--int-width {16, 32, 64, 128}` — integer width (default: `64`).
+
+#### Example
+Lift multiple binary schemes:
+```bash
+./lift -i input.txt -m --ring Z2 --threads 1 --steps 10
+```
+
+Example output lifting 10 binary schemes:
+```text
++--------+-----------+------+----------------------------+-------+--------------+
+| scheme | dimension | rank |           status           | steps | elapsed time |
++--------+-----------+------+----------------------------+-------+--------------+
+|      1 |    4x5x10 |  148 |        reconstructed in ZT |     1 |         3.88 |
+|      2 |     6x6x6 |  153 |        reconstructed in ZT |     1 |         4.77 |
+|      3 |     4x7x7 |  144 |         reconstructed in Z |     6 |        27.02 |
+|      4 |     5x6x7 |  150 |        reconstructed in ZT |     1 |         4.07 |
+|      5 |     6x7x8 |  239 |         reconstructed in Q |     8 |     00:06:46 |
+|      7 |     5x5x7 |  127 |        reconstructed in ZT |     1 |         2.32 |
+|      8 |     4x6x7 |  123 |        reconstructed in ZT |     1 |         2.10 |
+|      9 |     4x5x7 |  104 |        reconstructed in ZT |     1 |         0.86 |
+|     10 |     6x6x7 |  183 |         reconstructed in Q |     6 |     00:02:54 |
++--------+-----------+------+----------------------------+-------+--------------+
+- elapsed time (total / mean): 00:07:25 / 00:01.02
+```
+
+
+### validate_schemes
+Verifies that schemes satisfy Brent equations, determining whether they are valid matrix multiplication schemes.
+Supports both integer and fractional coefficients.
+
+#### Parameters
+- `--input-path PATH` — path to input file with scheme(s) (required)
+- `--multiple` — input file contains multiple schemes;
+- `--format {int, frac}` — integer or rational input format (required);
+- `--show-ring` — show detected ring;
+- `--show-coefficients` — show unique coefficient values.
+
+#### Example
+
+```bash
+./validate_schemes -i input.txt -m --format frac --shor-ring --show-coefficients
+```
+
+Example output:
+```text
+Start checking 10 schemes in "input.txt"
+- correct scheme 1 / 10 (4, 4, 7: 85), ring: ZT, values: {-1, 0, 1}
+- correct scheme 2 / 10 (2, 2, 12: 42), ring: ZT, values: {-1, 0, 1}
+- correct scheme 3 / 10 (2, 2, 4: 14), ring: ZT, values: {-1, 0, 1}
+- correct scheme 4 / 10 (2, 4, 7: 45), ring: ZT, values: {-1, 0, 1}
+- correct scheme 5 / 10 (3, 3, 8: 56), ring: ZT, values: {-1, 0, 1}
+- correct scheme 6 / 10 (3, 4, 7: 64), ring: ZT, values: {-1, 0, 1}
+- correct scheme 7 / 10 (3, 3, 9: 63), ring: Z, values: {-1, -2, -3, -4, 0, 1, 2, 3}
+- correct scheme 8 / 10 (3, 4, 6: 54), ring: Q, values: {-1, -1/2, 0, 1, 1/2, 2}
+- correct scheme 9 / 10 (2, 2, 8: 28), ring: Z, values: {-1, -2, 0, 1, 2}
+- correct scheme 10 / 10 (4, 5, 6: 90), ring: Z, values: {-1, -2, 0, 1, 2}
+
+All 10 schemes are correct
+```
+
+### complexity_minimizer
+Uses flip operations to find schemes with maximal number of zero coefficients, minimizing naive additive complexity.
+
+#### Parameters
+- `--ring {ZT, Z2, Z3}` — coefficient ring (default: `ZT`);
+- `--input-path PATH` — path to input file with scheme(s) (required);
+- `--output-path PATH` — output directory for minimized schemes (default: `schemes`);
+- `--multiple` — input file contains multiple schemes;
+- `--count INT` — number of runners (default: `8`);
+- `--threads INT` — OpenMP threads;
+- `--format {txt, json}` — output format (default: `txt`);
+- `--flip-iterations INT` — flips per report (default: `100K`);
+- `--plus-probability REAL` — probability of `plus` operation (default: `0`);
+- `--maximize` — maximize instead of minimize;
+- `--max-no-improvements INT` — termination threshold (default: `3`).
+
+#### Example
+Minimizing a `3x3x8` rank `56` ternary scheme:
+```bash
+./complexity_minimizer -c 16 -i inputs/3x3x8_m56_ZT.txt --top-count 3
+```
+
+Example output minimizing a `3x3x8` rank `56` ternary scheme:
 ```text
 +----------------------------------+
 | dimension       rank        ring |
-|     5x5x5         93          Z2 |
+|     3x3x8         56          ZT |
 +----------------------------------+
-| count: 32 (12 threads)           |
-| seed: 1766927866                 |
-| best complexity: 843             |
-| iteration: 3                     |
-| elapsed: 10.11                   |
+| count: 16 (12 threads)           |
+| seed: 1771334776                 |
+| best complexity: 439             |
+| iteration: 4                     |
+| elapsed: 1.81                    |
 +==================================+
 | runner | naive scheme complexity |
 |   id   |    best    |    curr    |
 +--------+------------+------------+
-| 4      | 843        | 1013       |
-| 1      | 843        | 1023       |
-| 3      | 843        | 1013       |
+| 5      | 439        | 527        |
+| 2      | 440        | 439        |
+| 1      | 440        | 439        |
 +--------+------------+------------+
-- iteration time (last / min / max / mean): 1.38 / 0.86 / 1.95 / 1.40
+- iteration time (last / min / max / mean): 0.52 / 0.42 / 0.52 / 0.45
 ```
 
 
-## Key Parameters Guide
+## File Formats
+### Single Scheme Format
 
-### Common Parameters
-* `-o`: output directory for discovered schemes (default: `schemes`);
-* `--format`: output format for saved schemes: `txt` or `json` (default: `json`);
-* `--ring`: coefficient ring (`Z2`, `Z3`, or `ZT` for `{-1, 0, 1}`);
-* `--count`: number of parallel search processes;
-* `--threads`: OpenMP threads per process;
-* `--seed`: random seed (`0` for time-based).
-* `--check-correctness`: boolean flag to validate Brent equations after reading input scheme(s)from file.
+- First line: dimensions and rank: `n1 n2 n3 rank`;
+- Second line: `U` coefficients;
+- Third line: `V` coefficients;
+- Fourth line: `W` coefficients.
 
-### Flip Graph Specific
-* Initial scheme specification: two mutually exclusive approaches:
-    * Start from naive scheme: use `-n1 -n2 -n3` to begin exploration from the naive matrix multiplication scheme of dimension n₁×n₂×n₃;
-    * Start from existing schemes: use `-i` to load schemes from file for further optimization;
-    * `-n1`: number of rows in first matrix (A);
-    * `-n2`: number of columns in A / rows in second matrix (B);
-    * `-n3`: number of columns in second matrix (B);
-    * `-i`: path to input file with initial scheme(s);
-    * `-m`: boolean flag to read multiple schemes from file (first line contains number of schemes).
-
-**Note**: these options are mutually exclusive. You cannot specify both dimension flags and an input file simultaneously.
-
-* `--flip-iterations`: flip operations between progress reports;
-* `--min-plus-iterations`: minimum period for plus operator calls (default: `5K`)
-* `--max-plus-iterations`: maximum period for plus operator calls (default: `100K`)
-* `--plus-diff`: maximum rank difference for plus operations (default: `4`);
-* `--reset-iterations`: total operations before resetting search (default: `100M`);
-* `--target-rank`: stop when this rank is found (`0` = find minimum).
-
-**Note about plus iterations**: the plus operator is called every `plus_iterations` iterations, where `plus_iterations` is randomly chosen between `--min-plus-iterations` and `--max-plus-iterations`.
-
-### Meta Flip Graph Additional Parameters
-* `--meta-probability`: probability of meta operations (`0.0` to `1.0`, default: `0`). Controls how often the algorithm attempts to change scheme dimensions.
-* `--meta-min-dimension`: min dimension for project meta operation (default: `2`);
-* `--meta-max-dimension`: max dimension for merge/extend meta operations (default: `16`);
-* `--meta-max-rank`: max rank for merge/extend meta operations (default: `350`);
-* `--int-width`: integer bit width controlling maximum matrix dimensions (`16|32|64|128`, default: `64`). Smaller values improve performance but limit matrix size.
-
-### Complexity Minimizer
-* `-i`: path to input file with initial scheme(s) (required);
-* `-m`: boolean flag to read multiple schemes from file (first line contains number of schemes);
-* `--max-no-improvements`: stop after `N` iterations without improvement;
-* `--plus-probability`: chance to attempt "plus" operation for explore alternative schemes.
-
-### Find Alternative Schemes
-* `-i`: path to input file with initial scheme (required);
-* `--max-count`: number of alternative schemes to find (default: `10000`).
-
-
-## Input files format
-The tool supports two modes of initialization from files:
-
-* **Single scheme**: the file contains only one scheme;
-* **Multiple schemes**: the file starts with the number of schemes, followed by each scheme sequentially.
-
-### Single scheme format
-The file contains exactly one scheme without any preceding count.
-```txt
+Example file with `2x2x3` scheme with `11` multiplications:
+```text
 2 2 3 11
 1 0 0 1 1 0 0 0 0 0 0 1 -1 1 0 0 0 1 0 1 1 0 1 0 0 0 1 -1 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
 1 0 0 0 1 0 0 1 0 0 1 0 1 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1 -1 0 -1 1 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1
 1 0 0 1 0 0 0 0 1 -1 0 0 -1 1 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1
 ```
 
-### Multiple schemes format
-The file begins with an integer specifying the number of schemes, followed by each scheme.
-```txt
+### Multiple Schemes Format
+First line contains the number of schemes, followed by that many schemes in single scheme format.
+
+Example with three schemes:
+```text
 3
-2 2 3 11
-1 0 0 1 1 0 0 0 0 0 0 1 -1 1 0 0 0 1 0 1 1 0 1 0 0 0 1 -1 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
-1 0 0 0 1 0 0 1 0 0 1 0 1 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1 -1 0 -1 1 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1
-1 0 0 1 0 0 0 0 1 -1 0 0 -1 1 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 1
+2 2 2 7
+1 0 0 1 1 0 0 0 0 1 0 -1 -1 0 1 0 0 0 0 1 1 1 0 0 0 0 1 1
+1 0 0 1 0 1 0 -1 0 0 1 1 1 1 0 0 -1 0 1 0 0 0 0 1 1 0 0 0
+1 0 0 1 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 0 -1 0 1 0 0 1 0 -1
 2 2 3 11
 0 0 0 1 0 0 0 1 0 0 1 0 0 0 1 1 0 1 0 0 0 1 0 -1 1 0 0 0 1 0 0 0 1 0 0 1 1 0 -1 0 1 1 0 0
 0 0 0 0 0 1 0 -1 0 0 1 0 0 0 1 0 0 0 0 -1 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0 0 1 0 0 0 1 0 0 -1 0 0 0 1 0 1 0 0 -1 -1 0 0 0 0 0 0 0 1 0 0
@@ -213,27 +351,14 @@ The file begins with an integer specifying the number of schemes, followed by ea
 0 0 1 1 0 0 0 0 0 1 0 -1 0 0 1 0 0 1 0 0 0 0 -1 -1 1 0 -1 0 1 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 -1 0 1 0 0 0 0 -1 0 0 0 0 0 0 1 0 0 0 0
 ```
 
-For correct run flip graph with this file you need use `-m` flag:
-```bash
-./flip_graph -i input.txt -m --count 128
-```
+When reading multiple schemes, use the `-m` flag with tools that support it.
 
-## Understanding the Approach
+## Important Notes
 
-### Why Ternary Coefficients?
-Traditional approaches using Z₂ or Z₃ require "lifting" - converting schemes to work over arbitrary fields. Ternary coefficient set `{-1, 0, 1}` produces schemes that are automatically valid over any ring, eliminating the lifting step entirely.
-
-### What are Flip Graphs?
-Flip graphs represent the space of possible matrix multiplication schemes, where nodes are schemes and edges are transformations ("flips") between them. Introduced by Kauers and Moosbauer in ["Flip Graphs for Matrix Multiplication"](https://arxiv.org/abs/2212.01175), this graph-based approach models matrix multiplication algorithms as tensor decompositions and uses flips to swap components while preserving correctness. By exploring this graph via random walks, optimal decompositions can be discovered.
-
-### What is "Naive Complexity"?
-The number of non-zero coefficients in a scheme. Lower naive complexity means fewer operations in practical implementations, even if the theoretical rank is the same. Do not confuse with CSE-optimized complexity - this metric counts all non-zero coefficients without common subexpression elimination. For optimizing real addition complexity with CSE, please see the companion repository [ternary_addition_reducer](https://github.com/dronperminov/ternary_addition_reducer).
-
-### How Does Naive Complexity Minimizer Work?
-The complexity_minimizer tool performs a specialized random walk on the flip graph where all schemes have the same fixed rank, but differ in their naive complexity. It explores the neighborhood of the input scheme by applying flips and plus operations, always accepting moves that reduce the number of non-zero coefficients. This process continues until no improvements are found for a specified number of iterations, yielding a scheme with minimal naive complexity for that particular rank.
-
-### How Does Alternative Scheme Discovery Work?
-The find_alternative_schemes tool explores the space of schemes with the same rank as the input scheme. Using random flips, it generates structurally different schemes that maintain the same theoretical rank. The tool identifies "alternative" schemes by comparing sorted rows of coefficients - two schemes are considered different if their sorted coefficient patterns don't match exactly. This allows discovery of multiple valid decompositions with the same efficiency, providing options for hardware-specific optimizations or further refinement.
+- When reading `Z₂` / `Z₃` schemes from files, coefficients are automatically reduced modulo 2 or 3.
+- For ternary schemes, input coefficients must already be in `{-1, 0, 1}` — automatic conversion is not possible.
+- Cannot specify both naive dimensions (`-n1`, `-n2`, `-n3`) and input file (`--input-path`) simultaneously.
+- All tools verify scheme correctness by default unless `--no-verify` is specified.
 
 
 ## Citation
