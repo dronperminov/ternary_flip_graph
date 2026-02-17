@@ -75,7 +75,7 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << std::endl << std::endl;
 
     std::vector<Scheme> schemes;
-    if (!readSchemes(inputPath, schemes, parser.isSet("--multiple"), parser.isSet("--check-correctness")))
+    if (!readSchemes(inputPath, schemes, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
 
     std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
-    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
+    parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     parser.addSection("Lifting parameters");
     parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");

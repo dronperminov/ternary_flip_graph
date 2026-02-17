@@ -51,7 +51,7 @@ int runComplexityMinimizer(const ArgParser &parser) {
 
     ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, seed, maximize, topCount, format);
 
-    if (!minimizer.initializeFromFile(inputPath, parser.isSet("--multiple"), parser.isSet("--check-correctness")))
+    if (!minimizer.initializeFromFile(inputPath, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
 
     if (!makeDirectory(outputPath))
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for minimized schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
-    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
+    parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     parser.addSection("Complexity minimizer parameters");
     parser.addChoices("--ring", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");

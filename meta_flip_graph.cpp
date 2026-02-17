@@ -70,7 +70,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
 
     bool valid;
     if (parser.isSet("--input-path")) {
-        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), parser.isSet("--check-correctness"));
+        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), !parser.isSet("--no-verify"));
     }
     else {
         valid = metaFlipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)");
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for discovered schemes", "schemes");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
-    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
+    parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     parser.addSection("Random walk parameters");
     parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "1M");
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
-    parser.addChoices("--improve-ring", ArgType::String, "Only save schemes that improve known rank for this ring (saves all by default)", {"Z2", "ZT", "Q", ""}, "");
+    parser.addChoices("--improve-ring", ArgType::String, "Only save schemes that improve known rank for this ring (saves all by default)", {"Z2", "ZT", "Q"}, "");
     parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
 
     if (!parser.parse(argc, argv))

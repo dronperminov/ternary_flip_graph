@@ -57,7 +57,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << std::endl << std::endl;
 
     Scheme<T> scheme;
-    if (!scheme.read(inputPath, parser.isSet("--check-correctness")))
+    if (!scheme.read(inputPath, !parser.isSet("--no-verify")))
         return -1;
 
     if (!makeDirectory(outputPath))
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for alternative schemes", "schemes");
-    parser.add("--check-correctness", ArgType::Flag, "Validate Brent equations after reading");
+    parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     parser.addSection("Flip graph parameters");
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.0");
