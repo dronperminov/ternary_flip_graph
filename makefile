@@ -6,7 +6,7 @@ LIFT_OBJECTS = src/lift/binary_lifter.o src/lift/mod3_lifter.o
 SCHEMES_OBJECTS = src/schemes/base_scheme.o src/schemes/fractional_scheme.o
 OBJECTS = $(ALGEBRA_OBJECTS) ${ENTITIES_OBJECTS} $(LIFT_OBJECTS) $(SCHEMES_OBJECTS) src/utils.o
 
-all: flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes lift
+all: flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes validate_schemes lift
 
 flip_graph: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) flip_graph.cpp -o flip_graph
