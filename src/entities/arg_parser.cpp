@@ -85,7 +85,7 @@ size_t Argument::getWidth() const {
 
 bool Argument::validate(const std::string &parsedName) const {
     if (type != ArgType::Flag && !isValidChoice(value)) {
-        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not valid choice. Valid choices are: ";
+        std::cerr << "Invalid value for argument \"" << parsedName << "\": " << value << " is not valid choice. Valid choices are: ";
 
         for (size_t i = 0; i < choices.size(); i++)
             std::cerr << (i > 0 ? ", " : "") << choices[i];
@@ -98,12 +98,12 @@ bool Argument::validate(const std::string &parsedName) const {
         return true;
 
     if (type == ArgType::Natural && !isNatural(value)) {
-        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not natural" << std::endl;
+        std::cerr << "Invalid value for argument \"" << parsedName << "\": " << value << " is not natural" << std::endl;
         return false;
     }
 
     if (type == ArgType::Real && !isReal(value)) {
-        std::cerr << "Invalid value for argument " << parsedName << ": " << value << " is not real" << std::endl;
+        std::cerr << "Invalid value for argument \"" << parsedName << "\": " << value << " is not real" << std::endl;
         return false;
     }
 
@@ -210,11 +210,16 @@ bool ArgParser::parse(int argc, char *argv[]) {
 
         auto it = arg2index.find(arg);
         if (it == arg2index.end()) {
-            std::cerr << "Unknown argument: " << arg << std::endl;
+            std::cerr << "Unknown argument \"" << arg << "\"" << std::endl;
             return false;
         }
 
         Argument& argument = arguments[it->second];
+        if (argument.isSet) {
+            std::cerr << "Argument \"" << arg << "\" has already been set" << std::endl;
+            return false;
+        }
+
         argument.isSet = true;
 
         if (argument.type == ArgType::Flag) {
@@ -223,7 +228,7 @@ bool ArgParser::parse(int argc, char *argv[]) {
         }
 
         if (i + 1 >= argc) {
-            std::cerr << "Missing value for argument: " << arg << std::endl;
+            std::cerr << "Missing value for argument \"" << arg << "\"" << std::endl;
             return false;
         }
 
@@ -234,7 +239,7 @@ bool ArgParser::parse(int argc, char *argv[]) {
 
     for (const auto& argument : arguments) {
         if (argument.required && !argument.isSet) {
-            std::cerr << "Required argument missing: " << (argument.longName.empty() ? argument.shortName : argument.longName) << std::endl;
+            std::cerr << "Required argument \"" << (argument.longName.empty() ? argument.shortName : argument.longName) << "\" is missing" << std::endl;
             return false;
         }
     }
