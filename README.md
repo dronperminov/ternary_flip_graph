@@ -288,8 +288,10 @@ Uses flip operations to find schemes with maximal number of zero coefficients, m
 - `--threads INT` — OpenMP threads;
 - `--format {txt, json}` — output format (default: `txt`);
 - `--flip-iterations INT` — flips per report (default: `100K`);
-- `--plus-probability REAL` — probability of `plus` operation (default: `0`);
+- `--plus-probability REAL` — probability of `plus` operation (default: `0.01`);
+* `--plus-diff INT` — allowed rank difference for `plus` operation (default: `2`);
 - `--maximize` — maximize instead of minimize;
+- `--copy-best-probability REAL` — probability to replace scheme with best scheme after improvement (default: `0.5`);
 - `--max-no-improvements INT` — termination threshold (default: `3`).
 
 #### Example

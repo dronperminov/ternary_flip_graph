@@ -15,41 +15,49 @@
 
 template <template<typename> typename Scheme, typename T>
 int runComplexityMinimizer(const ArgParser &parser) {
+    std::string ring = parser["--ring"];
+    int count = std::stoi(parser["--count"]);
+    int threads = std::stoi(parser["--threads"]);
+    std::string format = parser["--format"];
+
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
 
-    std::string ring = parser["--ring"];
     size_t flipIterations = parseNatural(parser["--flip-iterations"]);
     double plusProbability = std::stod(parser["--plus-probability"]);
+    int plusDiff = std::stoi(parser["--plus-diff"]);
 
-    int count = std::stoi(parser["--count"]);
-    int threads = std::stoi(parser["--threads"]);
     int topCount = std::stoi(parser["--top-count"]);
     int seed = std::stoi(parser["--seed"]);
     bool maximize = parser.isSet("--maximize");
+    double copyBestProbability = std::stod(parser["--copy-best-probability"]);
     int maxNoImprovements = std::stoi(parser["--max-no-improvements"]);
-    std::string format = parser["--format"];
+    int maxMatrixElements = sizeof(T) * 8;
 
     if (seed == 0)
         seed = time(0);
 
     std::cout << "Parsed parameters of the complexity " << (maximize ? "maximizer" : "minimizer") << " algorithm:" << std::endl;
+    std::cout << "- ring: " << ring << std::endl;
+    std::cout << "- count: " << count << std::endl;
+    std::cout << "- threads: " << threads << std::endl;
+    std::cout << "- format: " << format << std::endl;
+    std::cout << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
-    std::cout << "- ring: " << ring << std::endl;
     std::cout << "- flip iterations: " << flipIterations << std::endl;
     std::cout << "- plus probability: " << plusProbability << std::endl;
+    std::cout << "- plus diff: " << plusDiff << std::endl;
     std::cout << std::endl;
-    std::cout << "- count: " << count << std::endl;
-    std::cout << "- threads: " << threads << std::endl;
     std::cout << "- top count: " << topCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
+    std::cout << "- copy best probability: " << copyBestProbability << std::endl;
     std::cout << "- max no improvements: " << maxNoImprovements << std::endl;
-    std::cout << "- format: " << format << std::endl;
+    std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl;
 
-    ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, seed, maximize, topCount, format);
+    ComplexityMinimizer<Scheme<T>> minimizer(count, outputPath, threads, flipIterations, plusProbability, plusDiff, seed, copyBestProbability, maximize, topCount, format);
 
     if (!minimizer.initializeFromFile(inputPath, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
@@ -59,6 +67,24 @@ int runComplexityMinimizer(const ArgParser &parser) {
 
     minimizer.run(maxNoImprovements);
     return true;
+}
+
+template <template<typename> typename Scheme>
+int runComplexityMinimizerSizes(const ArgParser &parser) {
+    int maxMatrixElements = getMaxMatrixElements(parser["--input-path"], parser.isSet("--multiple"));
+    if (maxMatrixElements < 0)
+        return -1;
+
+    if (maxMatrixElements <= 16)
+        return runComplexityMinimizer<Scheme, uint16_t>(parser);
+
+    if (maxMatrixElements <= 32)
+        return runComplexityMinimizer<Scheme, uint32_t>(parser);
+
+    if (maxMatrixElements <= 64)
+        return runComplexityMinimizer<Scheme, uint64_t>(parser);
+
+    return runComplexityMinimizer<Scheme, __uint128_t>(parser);
 }
 
 int main(int argc, char **argv) {
@@ -77,22 +103,24 @@ int main(int argc, char **argv) {
 
     parser.addSection("Random walk parameters");
     parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "100K");
-    parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0");
+    parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.01");
+    parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
 
     parser.addSection("Run parameters");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--maximize", ArgType::Flag, "Maximize complexity instead of minimizing", "false");
+    parser.add("--copy-best-probability", ArgType::Real, "Probability to replace scheme with best scheme after improvement, from 0.0 to 1.0", "0.5");
     parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without complexity improvement before termination", "3");
 
     if (!parser.parse(argc, argv))
         return 0;
 
     if (parser["--ring"] == "Z2")
-        return runComplexityMinimizer<BinaryScheme, uint64_t>(parser);
+        return runComplexityMinimizerSizes<BinaryScheme>(parser);
 
     if (parser["--ring"] == "Z3")
-        return runComplexityMinimizer<Mod3Scheme, uint64_t>(parser);
+        return runComplexityMinimizerSizes<Mod3Scheme>(parser);
 
-    return runComplexityMinimizer<TernaryScheme, uint64_t>(parser);
+    return runComplexityMinimizerSizes<TernaryScheme>(parser);
 }
