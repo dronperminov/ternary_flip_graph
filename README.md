@@ -3,25 +3,28 @@
 [![arXiv:2511.20317](https://img.shields.io/badge/arXiv-2511.20317-b31b1b.svg)](https://arxiv.org/abs/2511.20317)
 [![arXiv:2512.13365](https://img.shields.io/badge/arXiv-2512.21980-b31b1b.svg)](https://arxiv.org/abs/2512.21980)
 
-A collection of C++ tools for discovering and transforming fast matrix multiplication schemes using the *flip graph* approach. The repository supports searches
-over multiple coefficient rings, with a particular focus on integer ternary coefficients `ZT`, which allows schemes to be valid over the general ring
-automatically, without any lifting step.
+A collection of C++ tools for discovering and transforming fast matrix multiplication schemes using the [flip graph](https://arxiv.org/abs/2212.01175)
+approach. The repository supports searches over multiple coefficient rings, with a particular focus on integer ternary coefficients `ZT`, which allows
+schemes to be valid over the general ring automatically, without any lifting step.
 
 All tools are implemented in pure C++, require only a standard `g++` compiler, have no external dependencies, and support parallel execution via OpenMP.
 
----
+For a comprehensive collection of discovered schemes and research results on fast matrix multiplication schemes, visit the companion repository:
+[FastMatrixMultiplication](https://github.com/dronperminov/FastMatrixMultiplication)
+
 
 ## Key features
 
 - **Multiple coefficient rings**: `Z2` binary coefficients `{0, 1}`, `Z3` ternary modular coefficients `{0, 1, 2}`,
   and `ZT` integer ternary coefficients `{-1, 0, 1}`;
-- **No lifting required for `ZT`**: Schemes over `ZT` are immediately valid over the general ring, avoiding Hensel lifting and rational reconstruction entirely;
-- **Flip graph–based search**: local transformations of schemes using `flip`, `plus`, `split`, `reduce`, and related operations, supporting both fixed-dimension
+- **No lifting required for `ZT`**: schemes over `ZT` are immediately valid over the general ring, avoiding Hensel lifting and rational reconstruction entirely;
+- **Flip graph-based search**: local transformations of schemes using `flip`, `plus`, `split`, `reduce`, and related operations, supporting both fixed-dimension
   and variable-dimension searches;
-- **Meta-operations**: `extend`, `project` and `merge`, and `product` operations allow exploration across different matrix sizes;
+- **Meta-operations**: `extend`, `project`, `merge` and `product` operations allow exploration across different matrix sizes;
 - **Parallel and reproducible**: multi-runner architecture combined with OpenMP threading and fully controllable random seeds;
 - **Validation and post-processing**: automatic verification of Brent equations, lifting from modular rings when needed, and naive additive complexity
-  minimization;
+  minimization.
+
 
 ## Installation
 
@@ -122,8 +125,8 @@ Search ternary modular schemes from multiple-scheme file:
 
 ### meta_flip_graph
 
-`meta_flip_graph` extends flip_graph with meta-operations that can modify scheme dimensions during search. Supports all flip_graph operations plus `projection`,
-`extension`, `merge` and `product` operations.
+`meta_flip_graph` extends flip_graph with meta-operations that can modify scheme dimensions during search. Supports all flip_graph operations plus `project`,
+`extend`, `merge` and `product` operations.
 
 After every random walk phase, each runner may invoke a meta operation with probability `--meta-probability`. Before executing a meta operation, the current
 rank is compared with known best ranks. If the gap exceeds `--meta-max-rank-diff`, the runner resets to an initial scheme (not necessarily of the same size).
@@ -136,7 +139,7 @@ Three strategies are available:
 - `ext`: performs only random extension operations.
 
 #### Main parameters
-Same as flip_graph.
+Same as `flip_graph`.
 
 #### Meta parameters
 - `--meta-probability REAL` — probability of call meta operations (default: `0`);
@@ -246,6 +249,9 @@ Supports both integer and fractional coefficients.
 - `--format {int, frac}` — integer or rational input format (required);
 - `--show-ring` — show detected ring;
 - `--show-coefficients` — show unique coefficient values.
+
+For fractional coefficients (`--format frac`), each value must be written as a pair of integers (numerator and denominator), even for integer values
+(e.g., `7 1` for 7).
 
 #### Example
 
