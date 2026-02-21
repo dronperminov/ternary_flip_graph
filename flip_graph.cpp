@@ -14,6 +14,7 @@
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/flip_graph.hpp"
+#include "src/flip_graph_pool.hpp"
 
 int getMaxMatrixElements(const ArgParser &parser) {
     if (parser.isSet("--input-path"))
@@ -23,6 +24,23 @@ int getMaxMatrixElements(const ArgParser &parser) {
     int n2 = std::stoi(parser["-n2"]);
     int n3 = std::stoi(parser["-n3"]);
     return std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
+}
+
+template <typename FlipGraph>
+int runFlipGraph(FlipGraph &flipGraph, const ArgParser &parser, int targetRank) {
+    bool valid;
+    if (parser.isSet("--input-path")) {
+        valid = flipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), !parser.isSet("--no-verify"));
+    }
+    else {
+        valid = flipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
+    }
+
+    if (!valid)
+        return -1;
+
+    flipGraph.run(targetRank);
+    return 0;
 }
 
 template <template<typename> typename Scheme, typename T>
@@ -36,6 +54,9 @@ int runFlipGraph(const ArgParser &parser) {
 
     FlipParameters flipParameters;
     flipParameters.parse(parser);
+
+    PoolParameters poolParameters;
+    poolParameters.parse(parser);
 
     int seed = std::stoi(parser["--seed"]);
     int topCount = std::stoi(parser["--top-count"]);
@@ -62,6 +83,9 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << std::endl;
     std::cout << flipParameters << std::endl;
 
+    if (poolParameters.use)
+        std::cout << poolParameters << std::endl;
+
     std::cout << "Other parameters:" << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- top count: " << topCount << std::endl;
@@ -75,21 +99,13 @@ int runFlipGraph(const ArgParser &parser) {
     if (!makeDirectory(outputPath))
         return -1;
 
+    if (poolParameters.use) {
+        FlipGraphPool<Scheme<T>> flipGraphPool(count, outputPath, threads, flipParameters, poolParameters, seed, topCount, format);
+        return runFlipGraph(flipGraphPool, parser, targetRank);
+    }
+
     FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipParameters, copyBestProbability, seed, topCount, maxImprovements, format);
-
-    bool valid;
-    if (parser.isSet("--input-path")) {
-        valid = flipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), !parser.isSet("--no-verify"));
-    }
-    else {
-        valid = flipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
-    }
-
-    if (!valid)
-        return -1;
-
-    flipGraph.run(targetRank);
-    return 0;
+    return runFlipGraph(flipGraph, parser, targetRank);
 }
 
 template <template<typename> typename Scheme>
@@ -114,7 +130,7 @@ int main(int argc, char **argv) {
     ArgParser parser("flip_graph", "Find fast matrix multiplication schemes using flip graph");
 
     parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
-    parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");
+    parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "128");
     parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
 
@@ -137,6 +153,10 @@ int main(int argc, char **argv) {
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "4");
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
     parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
+
+    parser.addSection("Pool parameters");
+    parser.add("--use-pool", ArgType::Flag, "Use pool strategy");
+    parser.add("--pool-size", ArgType::Natural, "Minimal size of pool", "1K");
 
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");

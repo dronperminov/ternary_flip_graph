@@ -81,6 +81,17 @@ are mutually exclusive.
 * `--sandwiching-probability REAL` — probability of `sandwiching` operation (default: `0`);
 * `--reduce-probability REAL` — probability of `reduce` operation (default: `0`).
 
+#### Pool parameters
+
+The pool strategy enables systematic rank reduction by iteratively discovering schemes of decreasing rank. Initially, a pool is populated with schemes of
+rank `r`. Each runner randomly selects a scheme from this pool and performs flip operations until a reduction to rank `r-1` is found. Once such a scheme is
+discovered, it is added to a new pool, and the runner selects another random scheme from the current pool. When the new pool reaches at least `--pool-size`
+schemes, it replaces the current pool, and the search continues for rank `r-2`, then `r-3`, and so on.
+
+- `--use-pool` — enable pool strategy;
+- `--pool-size INT` — minimum size of the next-rank pool before switching (default: `1000`).
+
+
 #### Other parameters
 - `--seed INT` — random seed, 0 uses time-based seed (default: `0`);
 - `--top-count INT` — number of best schemes displayed (default: `10`);
@@ -102,6 +113,11 @@ Search binary schemes loaded from file:
 Search ternary modular schemes from multiple-scheme file:
 ```bash
 /flip_graph -i input.txt -m --ring Z3 --count 128
+```
+
+Use pool strategy to systematically reduce rank:
+```bash
+./flip_graph -i input.txt --ring ZT --use-pool --pool-size 5000
 ```
 
 #### Example output
