@@ -11,7 +11,7 @@
 
 
 template <typename Scheme>
-class ComplexityMinimizer {
+class SchemeOptimizer {
     int initialCount;
     int count;
     std::string outputPath;
@@ -24,33 +24,35 @@ class ComplexityMinimizer {
     int goal;
     int topCount;
     std::string format;
+    std::string metric;
 
     std::vector<Scheme> schemes;
     std::vector<Scheme> schemesBest;
-    std::vector<int> bestComplexities;
+    std::vector<int> bestMetrics;
     std::vector<int> indices;
-    int bestComplexity;
+    int bestMetric;
 
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
 public:
-    ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int pllusDiff, int seed, double copyBestProbability, bool maximize, int topCount, const std::string &format);
+    SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int pllusDiff, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format);
 
     bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
     void run(int maxNoImprovements);
 private:
     void initialize();
-    void minimizeIteration();
+    void optimizeIteration();
 
-    void minimize(Scheme &scheme, Scheme &schemeBest, int &bestComplexity, std::mt19937 &generator);
+    void optimize(Scheme &scheme, Scheme &schemeBest, int &bestMetric, std::mt19937 &generator);
     bool updateBest();
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
 
+    int getMetric(const Scheme &scheme) const;
     std::string getSavePath(const Scheme &scheme) const;
 };
 
 template <typename Scheme>
-ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int plusDiff, int seed, double copyBestProbability, bool maximize, int topCount, const std::string &format) : uniform(0.0, 1.0) {
+SchemeOptimizer<Scheme>::SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int plusDiff, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format) : uniform(0.0, 1.0) {
     this->initialCount = 0;
     this->count = count;
     this->outputPath = outputPath;
@@ -60,10 +62,11 @@ ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &o
     this->plusDiff = plusDiff;
     this->seed = seed;
     this->copyBestProbability = copyBestProbability;
+    this->metric = metric;
     this->goal = maximize ? -1 : 1;
     this->topCount = std::min(topCount, count);
     this->format = format;
-    this->bestComplexity = 0;
+    this->bestMetric = 0;
 
     for (int i = 0; i < threads; i++)
         generators.emplace_back(seed + i);
@@ -71,14 +74,14 @@ ComplexityMinimizer<Scheme>::ComplexityMinimizer(int count, const std::string &o
     schemes.resize(count);
     schemesBest.resize(count);
     indices.resize(count);
-    bestComplexities.resize(count);
+    bestMetrics.resize(count);
 
     for (int i = 0; i < count; i++)
         indices[i] = i;
 }
 
 template <typename Scheme>
-bool ComplexityMinimizer<Scheme>::initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness) {
+bool SchemeOptimizer<Scheme>::initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness) {
     std::ifstream f(path);
 
     if (!f) {
@@ -110,7 +113,7 @@ bool ComplexityMinimizer<Scheme>::initializeFromFile(const std::string &path, bo
 }
 
 template <typename Scheme>
-void ComplexityMinimizer<Scheme>::run(int maxNoImprovements) {
+void SchemeOptimizer<Scheme>::run(int maxNoImprovements) {
     initialize();
 
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -120,7 +123,7 @@ void ComplexityMinimizer<Scheme>::run(int maxNoImprovements) {
 
     for (size_t iteration = 1; noImprovements < maxNoImprovements; iteration++) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        minimizeIteration();
+        optimizeIteration();
         bool improved = updateBest();
         auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -138,30 +141,30 @@ void ComplexityMinimizer<Scheme>::run(int maxNoImprovements) {
 }
 
 template <typename Scheme>
-void ComplexityMinimizer<Scheme>::initialize() {
-    bestComplexity = schemes[0].getComplexity();
+void SchemeOptimizer<Scheme>::initialize() {
+    bestMetric = getMetric(schemes[0]);
 
     for (int i = 1; i < count && i < initialCount; i++)
-        bestComplexity = std::min(bestComplexity, schemes[i].getComplexity());
+        bestMetric = std::min(bestMetric, getMetric(schemes[i]));
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
-        bestComplexities[i] = bestComplexity;
+        bestMetrics[i] = bestMetric;
         schemesBest[i].copy(schemes[i]);
     }
 
-    std::cout << "Initialized. Initial best complexity: " << bestComplexity << std::endl;
+    std::cout << "Initialized. Initial best " << metric << ": " << bestMetric << std::endl;
 }
 
 template <typename Scheme>
-void ComplexityMinimizer<Scheme>::minimizeIteration() {
+void SchemeOptimizer<Scheme>::optimizeIteration() {
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++)
-        minimize(schemes[i], schemesBest[i], bestComplexities[i], generators[omp_get_thread_num()]);
+        optimize(schemes[i], schemesBest[i], bestMetrics[i], generators[omp_get_thread_num()]);
 }
 
 template <typename Scheme>
-void ComplexityMinimizer<Scheme>::minimize(Scheme &scheme, Scheme &schemeBest, int &bestComplexity, std::mt19937 &generator) {
+void SchemeOptimizer<Scheme>::optimize(Scheme &scheme, Scheme &schemeBest, int &bestMetric, std::mt19937 &generator) {
     int targetRank = schemeBest.getRank();
 
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
@@ -171,9 +174,9 @@ void ComplexityMinimizer<Scheme>::minimize(Scheme &scheme, Scheme &schemeBest, i
         if (scheme.getRank() != targetRank)
             continue;
 
-        int complexity = scheme.getComplexity();
-        if ((complexity - bestComplexity) * goal < 0) {
-            bestComplexity = complexity;
+        int currMetric = getMetric(scheme);
+        if ((currMetric - bestMetric) * goal < 0) {
+            bestMetric = currMetric;
             schemeBest.copy(scheme);
         }
     }
@@ -183,9 +186,9 @@ void ComplexityMinimizer<Scheme>::minimize(Scheme &scheme, Scheme &schemeBest, i
 }
 
 template <typename Scheme>
-bool ComplexityMinimizer<Scheme>::updateBest() {
+bool SchemeOptimizer<Scheme>::updateBest() {
     std::partial_sort(indices.begin(), indices.begin() + topCount, indices.end(), [this](int index1, int index2) {
-        return (bestComplexities[index1] - bestComplexities[index2]) * goal < 0;
+        return (bestMetrics[index1] - bestMetrics[index2]) * goal < 0;
     });
 
     #pragma omp parallel for num_threads(threads)
@@ -194,7 +197,7 @@ bool ComplexityMinimizer<Scheme>::updateBest() {
             schemes[i].copy(schemesBest[indices[0]]);
 
     int top = indices[0];
-    if ((bestComplexities[top] - bestComplexity) * goal >= 0)
+    if ((bestMetrics[top] - bestMetric) * goal >= 0)
         return false;
 
     if (!schemesBest[top].validate()) {
@@ -209,20 +212,24 @@ bool ComplexityMinimizer<Scheme>::updateBest() {
     else
         schemesBest[top].saveTxt(path);
 
-    std::cout << "Naive complexity was improved from " << bestComplexity << " to " << bestComplexities[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
-    bestComplexity = bestComplexities[top];
+    std::cout << metric << " was improved from " << bestMetric << " to " << bestMetrics[top] << ", scheme was saved to \"" << path << "\"" << std::endl;
+    bestMetric = bestMetrics[top];
 
     return true;
 }
 
 template <typename Scheme>
-void ComplexityMinimizer<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const {
+void SchemeOptimizer<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const {
     double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0;
 
     double lastTime = elapsedTimes[elapsedTimes.size() - 1];
     double minTime = *std::min_element(elapsedTimes.begin(), elapsedTimes.end());
     double maxTime = *std::max_element(elapsedTimes.begin(), elapsedTimes.end());
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
+
+    std::string metricHeader = "scheme " + metric;
+    std::string left = std::string((23 - metricHeader.length()) / 2, ' ');
+    std::string right = std::string((23 - metricHeader.length() - left.length()), ' ');
 
     std::cout << std::right;
     std::cout << "+----------------------------------+" << std::endl;
@@ -236,11 +243,11 @@ void ComplexityMinimizer<Scheme>::report(size_t iteration, std::chrono::high_res
     std::cout << std::left;
     std::cout << "| count: " << std::setw(25) << (std::to_string(count) + " (" + std::to_string(threads) + " threads)") << " |" << std::endl;
     std::cout << "| seed: " << std::setw(26) << seed << " |" << std::endl;
-    std::cout << "| best complexity: " << std::setw(15) << bestComplexity << " |" << std::endl;
+    std::cout << "| best " << metric << ": " << std::setw(25 - metric.length()) << bestMetric << " |" << std::endl;
     std::cout << "| iteration: " << std::setw(21) << iteration << " |" << std::endl;
     std::cout << "| elapsed: " << std::setw(23) << prettyTime(elapsed) << " |" << std::endl;
     std::cout << "+==================================+" << std::endl;
-    std::cout << "| runner | naive scheme complexity |" << std::endl;
+    std::cout << "| runner | " << left << metricHeader << right << " |" << std::endl;
     std::cout << "|   id   |    best    |    curr    |" << std::endl;
     std::cout << "+--------+------------+------------+" << std::endl;
 
@@ -248,8 +255,8 @@ void ComplexityMinimizer<Scheme>::report(size_t iteration, std::chrono::high_res
         int runner = indices[i];
         std::cout << "| ";
         std::cout << std::setw(6) << runner << " | ";
-        std::cout << std::setw(10) << bestComplexities[runner] << " | ";
-        std::cout << std::setw(10) << schemes[runner].getComplexity() << " | ";
+        std::cout << std::setw(10) << bestMetrics[runner] << " | ";
+        std::cout << std::setw(10) << getMetric(schemes[runner]) << " | ";
         std::cout << std::endl;
     }
 
@@ -259,12 +266,20 @@ void ComplexityMinimizer<Scheme>::report(size_t iteration, std::chrono::high_res
 }
 
 template <typename Scheme>
-std::string ComplexityMinimizer<Scheme>::getSavePath(const Scheme &scheme) const {
+int SchemeOptimizer<Scheme>::getMetric(const Scheme &scheme) const {
+    if (metric == "flips")
+        return scheme.getAvailableFlips();
+
+    return scheme.getComplexity();
+}
+
+template <typename Scheme>
+std::string SchemeOptimizer<Scheme>::getSavePath(const Scheme &scheme) const {
     std::stringstream ss;
     ss << outputPath << "/";
     ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
-    ss << "_c" << scheme.getComplexity();
+    ss << "_" << metric[0] << getMetric(scheme);
     ss << "_" << scheme.getRing();
     ss << "." << format;
     return ss.str();

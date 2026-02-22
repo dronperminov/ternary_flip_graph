@@ -7,7 +7,7 @@ LIFT_OBJECTS = src/lift/binary_lifter.o src/lift/mod3_lifter.o
 SCHEMES_OBJECTS = src/schemes/base_scheme.o src/schemes/fractional_scheme.o
 OBJECTS = $(ALGEBRA_OBJECTS) ${ENTITIES_OBJECTS} ${PARAMETERS_OBJECTS} $(LIFT_OBJECTS) $(SCHEMES_OBJECTS) src/utils.o
 
-all: flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes validate_schemes lift
+all: flip_graph meta_flip_graph scheme_optimizer find_alternative_schemes validate_schemes lift
 
 flip_graph: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) flip_graph.cpp -o flip_graph
@@ -15,8 +15,8 @@ flip_graph: $(OBJECTS)
 meta_flip_graph: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) meta_flip_graph.cpp -o meta_flip_graph
 
-complexity_minimizer: $(OBJECTS)
-	$(CXX) $(FLAGS) $(OBJECTS) complexity_minimizer.cpp -o complexity_minimizer
+scheme_optimizer: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) scheme_optimizer.cpp -o scheme_optimizer
 
 find_alternative_schemes: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) find_alternative_schemes.cpp -o find_alternative_schemes
@@ -31,4 +31,4 @@ lift: $(OBJECTS)
 	$(CXX) $(FLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJECTS) flip_graph meta_flip_graph complexity_minimizer find_alternative_schemes validate_schemes lift
+	rm -rf $(OBJECTS) flip_graph meta_flip_graph scheme_optimizer find_alternative_schemes validate_schemes lift
