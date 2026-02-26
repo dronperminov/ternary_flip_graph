@@ -52,6 +52,7 @@ private:
 
     void randomWalk(Scheme &scheme, size_t &flipsCount, size_t &iterationsCount, size_t &plusIterations, std::vector<Scheme> &pool, std::mt19937 &generator);
 
+    std::string getPoolPath() const;
     std::string getSavePath(const Scheme &scheme, int version, const std::string path) const;
     void saveScheme(const Scheme &scheme, const std::string &path) const;
 };
@@ -170,7 +171,7 @@ void FlipGraphPool<Scheme>::initIteration() {
     pool.clear();
     iterations.assign(count, 0);
 
-    std::string poolPath = outputPath + "/rank" + std::to_string(poolRank);
+    std::string poolPath = getPoolPath();
     if (!makeDirectory(poolPath))
         exit(-1);
 }
@@ -185,7 +186,7 @@ void FlipGraphPool<Scheme>::runIteration() {
         randomWalk(schemes[i], flips[i], iterations[i], plusIterations[i], poolIteration[thread], generators[thread]);
     }
 
-    std::string path = outputPath + "/rank" + std::to_string(poolRank);
+    std::string path = getPoolPath();
     for (int i = 0; i < threads; i++) {
         for (const Scheme &scheme : poolIteration[i]) {
             pool.emplace_back(scheme);
@@ -323,6 +324,15 @@ void FlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, size_
         if (flipsCount >= plusIterations && rank < poolRank + 1 + flipParameters.plusDiff && scheme.tryExpand(generator))
             flipsCount = 0;
     }
+}
+
+template <typename Scheme>
+std::string FlipGraphPool<Scheme>::getPoolPath() const {
+    std::stringstream ss;
+    ss << outputPath;
+    ss << "/pool_" << initialPool[0].getDimension();
+    ss << "_rank" + std::to_string(poolRank);
+    return ss.str();
 }
 
 template <typename Scheme>
