@@ -89,7 +89,14 @@ discovered, it is added to a new pool, and the runner selects another random sch
 schemes, it replaces the current pool, and the search continues for rank `r-2`, then `r-3`, and so on.
 
 - `--use-pool` — enable pool strategy;
-- `--pool-size INT` — minimum size of the next-rank pool before switching (default: `1000`).
+- `--pool-size INT` — size of the next-rank pool before switching (default: `1000`).
+- `--pool-min-size INT` — minimum number of schemes required in the pool to consider it valid after max iterations (default: `5`).
+- `--pool-max-iterations INT` — maximum number of random walk iterations allowed to reach the minimum pool size (default: `1000`).
+- `--pool-select-strategy {uniform, flips}` — strategy for selecting schemes from the pool:
+  * `uniform` — each scheme is selected with equal probability;
+  * `flips` — schemes are selected with weights proportional to the number of potential flip operations.
+
+If `--pool-max-iterations` is reached and the pool contains at least `--pool-min-size` schemes, the search proceeds to the next rank. However, if the pool reaches `--pool-size` schemes earlier, the transition occurs immediately.
 
 
 #### Other parameters

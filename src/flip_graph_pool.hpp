@@ -33,6 +33,7 @@ class FlipGraphPool {
     std::vector<size_t> plusIterations;
     std::vector<int> indices;
     int poolRank;
+    int poolFlips;
 
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
@@ -55,6 +56,7 @@ private:
     std::string getPoolPath() const;
     std::string getSavePath(const Scheme &scheme, int version, const std::string path) const;
     void saveScheme(const Scheme &scheme, const std::string &path) const;
+    size_t selectScheme(std::mt19937 &generator);
 };
 
 template <typename Scheme>
@@ -151,6 +153,11 @@ void FlipGraphPool<Scheme>::run(int targetRank) {
         std::vector<double> elapsedTimes;
 
         for (size_t iteration = 0; pool.size() < poolParameters.size; iteration++) {
+            if (pool.size() >= poolParameters.minSize && iteration >= poolParameters.maxIterations) {
+                std::cout << "Pool reached minimum size after " << iteration << " iterations (max: " << poolParameters.maxIterations << "), stop walking" << std::endl;
+                break;
+            }
+
             auto t1 = std::chrono::high_resolution_clock::now();
             runIteration();
             auto t2 = std::chrono::high_resolution_clock::now();
@@ -167,6 +174,10 @@ template <typename Scheme>
 void FlipGraphPool<Scheme>::initIteration() {
     std::cout << "Run next iteration with pool rank " << poolRank << " (" << initialPool.size() << " schemes)" << std::endl;
     poolRank--;
+
+    poolFlips = 0;
+    for (const auto &scheme: initialPool)
+        poolFlips += scheme.getAvailableFlips();
 
     pool.clear();
     iterations.assign(count, 0);
@@ -281,7 +292,7 @@ void FlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, size_
 
     for (size_t iteration = 0; iteration < flipParameters.flipIterations; iteration++) {
         if (iterationsCount == 0 || iterationsCount >= flipParameters.resetIterations) {
-            scheme.copy(initialPool[generator() % initialPool.size()]);
+            scheme.copy(initialPool[selectScheme(generator)]);
             flipsCount = 0;
             iterationsCount = 0;
             plusIterations = plusDistribution(generator);
@@ -355,4 +366,20 @@ void FlipGraphPool<Scheme>::saveScheme(const Scheme &scheme, const std::string &
     else if (format == "txt") {
         scheme.saveTxt(path + ".txt");
     }
+}
+
+template <typename Scheme>
+size_t FlipGraphPool<Scheme>::selectScheme(std::mt19937 &generator) {
+    if (poolParameters.selectStrategy == "flips") {
+        int value = uniform(generator) * poolFlips;
+        int sum = 0;
+
+        for (size_t i = 0; i < initialPool.size(); i++) {
+            sum += initialPool[i].getAvailableFlips();
+            if (sum >= value)
+                return i;
+        }
+    }
+
+    return generator() % initialPool.size();
 }

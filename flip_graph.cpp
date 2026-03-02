@@ -91,8 +91,10 @@ int runFlipGraph(const ArgParser &parser) {
     std::cout << "- top count: " << topCount << std::endl;
     if (targetRank > 0)
         std::cout << "- target rank: " << targetRank << std::endl;
-    std::cout << "- copy best probability: " << copyBestProbability << std::endl;
-    std::cout << "- max improvements: " << maxImprovements << std::endl;
+    if (!poolParameters.use) {
+        std::cout << "- copy best probability: " << copyBestProbability << std::endl;
+        std::cout << "- max improvements: " << maxImprovements << std::endl;
+    }
     std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl;
 
@@ -156,7 +158,10 @@ int main(int argc, char **argv) {
 
     parser.addSection("Pool parameters");
     parser.add("--use-pool", ArgType::Flag, "Use pool strategy");
-    parser.add("--pool-size", ArgType::Natural, "Minimal size of pool", "1K");
+    parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
+    parser.add("--pool-min-size", ArgType::Natural, "Minimal size of pool", "5");
+    parser.add("--pool-max-iterations", ArgType::Natural, "Max random walk iterations to reach min pool size", "1K");
+    parser.addChoices("--pool-select-strategy", ArgType::String, "Pool selection strategy", {"uniform", "flips"}, "uniform");
 
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
