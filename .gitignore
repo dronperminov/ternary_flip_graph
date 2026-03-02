@@ -1,3 +1,9 @@
 /schemes
 *.o
 *.exe
+flip_graph
+meta_flip_graph
+optimize_scheme
+find_alternative_schemes
+validate_schemes
+lift
