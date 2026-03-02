@@ -45,7 +45,7 @@ The repository provides the following command-line tools:
 - `find_alternative_schemes` — generation of distinct schemes of the same size.
 - `lift` — Hensel lifting and rational reconstruction from modular rings (`Z2` / `Z3`).
 - `validate_schemes` — verification of Brent equations.
-- `scheme_optimizer` — optimization of naive additive complexity or potential flips count.
+- `optimize_scheme` — optimization of naive additive complexity or potential flips count.
 
 Each tool is described in detail below.
 
@@ -189,8 +189,8 @@ existing schemes for independent analysis or as broader initialization for new s
 - `--input-path PATH` — path to file with input scheme (required);
 - `--output-path PATH` — output directory for alternative schemes (default: `schemes`);
 - `--target-rank INT` — keep only schemes with this rank, if not specified, the rank of the input scheme is used as the target;
-- `--plus-probability REAL` — probability of plus (default: `0.2`);
-- `--plus-diff INT` — rank difference allowed for plus (default: `4`);
+- `--plus-probability REAL` — probability of plus (default: `0.001`);
+- `--plus-diff INT` — rank difference allowed for plus (default: `2`);
 - `--sandwiching-probability REAL` — sandwiching probability (default: `0`);
 - `--seed INT` — random seed (default: `0`).
 
@@ -292,7 +292,7 @@ Start checking 10 schemes in "input.txt"
 All 10 schemes are correct
 ```
 
-### scheme_optimizer
+### optimize_scheme
 Uses flip operations to optimize schemes according to a selected metric. By default, it minimizes naive additive complexity (maximizes the number of zero
 coefficients), but can also optimize for the number of available flips.
 
@@ -315,12 +315,12 @@ coefficients), but can also optimize for the number of available flips.
 #### Example
 Minimizing a `3x3x8` rank `56` ternary scheme:
 ```bash
-./scheme_optimizer -c 16 -i inputs/3x3x8_m56_ZT.txt --top-count 3
+./optimize_scheme -c 16 -i inputs/3x3x8_m56_ZT.txt --top-count 3
 ```
 
 Maximize the number of available flips for the same scheme:
 ```bash
-./scheme_optimizer -c 16 -i inputs/3x3x8_m56_ZT.txt --metric flips --maximize
+./optimize_scheme -c 16 -i inputs/3x3x8_m56_ZT.txt --metric flips --maximize
 ```
 
 Example output complexity minimizing a `3x3x8` rank `56` ternary scheme:
