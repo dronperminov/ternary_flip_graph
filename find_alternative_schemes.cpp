@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
     parser.addSection("Flip graph parameters");
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.0");
-    parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.2");
+    parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.001");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
 
     parser.addSection("Other parameters");
