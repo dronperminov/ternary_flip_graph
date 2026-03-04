@@ -11,6 +11,7 @@
 
 #include "utils.h"
 #include "entities/flip_parameters.h"
+#include "entities/metrics_parameters.h"
 
 template <typename Scheme>
 class FlipGraph {
@@ -18,6 +19,7 @@ class FlipGraph {
     std::string outputPath;
     int threads;
     FlipParameters flipParameters;
+    MetricsParameters metricsParameters;
     double copyBestProbability;
     int seed;
     int topCount;
@@ -39,7 +41,7 @@ class FlipGraph {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
+    FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetricsParameters &metricsParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
@@ -59,14 +61,19 @@ private:
     std::string getSavePath(const Scheme &scheme, int iteration, const std::string path) const;
 
     void saveScheme(const Scheme &scheme, const std::string &path) const;
+
+    void initializeMetrics();
+    void evaluateMetrics(const std::vector<int> &values, std::ostream &os, const std::string &name) const;
+    void saveMetrics(size_t iteration) const;
 };
 
 template <typename Scheme>
-FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
+FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const MetricsParameters &metricsParameters, double copyBestProbability, int seed, int topCount, size_t maxImprovements, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
     this->flipParameters = flipParameters;
+    this->metricsParameters = metricsParameters;
     this->copyBestProbability = copyBestProbability;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
@@ -148,6 +155,7 @@ void FlipGraph<Scheme>::run(int targetRank) {
     for (size_t iteration = 0; bestRank > targetRank; iteration++) {
         auto t1 = std::chrono::high_resolution_clock::now();
         runIteration();
+        saveMetrics(iteration + 1);
         updateBest(iteration);
         auto t2 = std::chrono::high_resolution_clock::now();
         elapsedTimes.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0);
@@ -191,6 +199,9 @@ void FlipGraph<Scheme>::initialize() {
         plusIterations[i] = plusDistribution(generators[omp_get_thread_num()]);
         indices[i] = i;
     }
+
+    initializeMetrics();
+    saveMetrics(0);
 }
 
 template <typename Scheme>
@@ -386,4 +397,81 @@ void FlipGraph<Scheme>::saveScheme(const Scheme &scheme, const std::string &path
     else if (format == "txt") {
         scheme.saveTxt(path + ".txt");
     }
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::initializeMetrics() {
+    if (!metricsParameters.use)
+        return;
+
+    std::ofstream f(metricsParameters.path);
+    if (!f) {
+        std::cout << "Unable to create file \"" << metricsParameters.path << "\" for append metrics" << std::endl;
+        return;
+    }
+
+    f << "{";
+    f << "\"dimension\": [" << schemes[0].getDimension(0) << ", " << schemes[0].getDimension(1) << ", " << schemes[0].getDimension(2) << "], ";
+    f << "\"count\": " << count << ", ";
+    f << "\"ring\": \"" << schemes[0].getRing() << "\", ";
+    f << "\"copy_best_probability\": " << copyBestProbability << ", ";
+    f << "\"seed\": " << seed << ", ";
+    f << "\"random_walk_parameters\": ";
+    flipParameters.writeJSON(f);
+    f << "}" << std::endl;
+    f.close();
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::evaluateMetrics(const std::vector<int> &values, std::ostream &os, const std::string &name) const {
+    double mean = 0;
+    double std = 0;
+    int min = values[0];
+    int max = values[0];
+
+    #pragma omp parallel for reduction(+:mean) reduction(min:min) reduction(max:max)
+    for (size_t i = 0; i < values.size(); i++) {
+        min = std::min(min, values[i]);
+        max = std::max(max, values[i]);
+        mean += values[i];
+    }
+
+    mean /= values.size();
+
+    #pragma omp parallel for reduction(+:std)
+    for (size_t i = 0; i < values.size(); i++)
+        std += (values[i] - mean) * (values[i] - mean);
+
+    std = std::sqrt(std / values.size());
+
+    os << "\"" << name << "\": {\"mean\": " << mean << ", \"std\": " << std << ", \"min\": " << min << ", \"max\": " << max << "}";
+}
+
+template <typename Scheme>
+void FlipGraph<Scheme>::saveMetrics(size_t iteration) const {
+    if (!metricsParameters.use)
+        return;
+
+    std::ofstream f(metricsParameters.path, std::ios::app);
+    if (!f) {
+        std::cout << "Unable to open file \"" << metricsParameters.path << "\" for append metrics" << std::endl;
+        return;
+    }
+
+    std::vector<int> ranks(count);
+    std::vector<int> ranksBest(count);
+
+    #pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < count; i++) {
+        ranks[i] = schemes[i].getRank();
+        ranksBest[i] = schemesBest[i].getRank();
+    }
+
+    f << "{";
+    f << "\"iteration\": " << iteration << ", ";
+    evaluateMetrics(ranks, f, "ranks");
+    f << ", ";
+    evaluateMetrics(ranksBest, f, "ranks_best");
+    f << "}" << std::endl;
+    f.close();
 }

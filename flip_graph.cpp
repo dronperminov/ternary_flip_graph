@@ -58,6 +58,9 @@ int runFlipGraph(const ArgParser &parser) {
     PoolParameters poolParameters;
     poolParameters.parse(parser);
 
+    MetricsParameters metricsParameters;
+    metricsParameters.parse(parser);
+
     int seed = std::stoi(parser["--seed"]);
     int topCount = std::stoi(parser["--top-count"]);
     int targetRank = std::stoi(parser["--target-rank"]);
@@ -86,6 +89,9 @@ int runFlipGraph(const ArgParser &parser) {
     if (poolParameters.use)
         std::cout << poolParameters << std::endl;
 
+    if (metricsParameters.use)
+        std::cout << metricsParameters << std::endl;
+
     std::cout << "Other parameters:" << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- top count: " << topCount << std::endl;
@@ -106,7 +112,7 @@ int runFlipGraph(const ArgParser &parser) {
         return runFlipGraph(flipGraphPool, parser, targetRank);
     }
 
-    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipParameters, copyBestProbability, seed, topCount, maxImprovements, format);
+    FlipGraph<Scheme<T>> flipGraph(count, outputPath, threads, flipParameters, metricsParameters, copyBestProbability, seed, topCount, maxImprovements, format);
     return runFlipGraph(flipGraph, parser, targetRank);
 }
 
@@ -126,6 +132,66 @@ int runFlipGraphSizes(const ArgParser &parser) {
         return runFlipGraph<Scheme, uint64_t>(parser);
 
     return runFlipGraph<Scheme, __uint128_t>(parser);
+}
+
+bool checkInputArguments(const ArgParser &parser) {
+    if (!parser.isSet("--input-path") && (!parser.isSet("-n1") || !parser.isSet("-n2") || !parser.isSet("-n3"))) {
+        std::cerr << "Must provide either dimension args (-n1 -n2 -n3) or an input file (-i)" << std::endl;
+        return false;
+    }
+
+    if (parser.isSet("--input-path") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
+        std::cerr << "Specify either dimension args (-n1 -n2 -n3) or an input file (-i), not both" << std::endl;
+        return false;
+    }
+
+    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
+        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool checkPoolArguments(const ArgParser &parser) {
+    if (parser.isSet("--use-pool"))
+        return true;
+
+    if (parser.isSet("--pool-size")) {
+        std::cerr << "--pool-size can only be used with --use-pool" << std::endl;
+        return false;
+    }
+
+    if (parser.isSet("--pool-min-size")) {
+        std::cerr << "--pool-min-size can only be used with --use-pool" << std::endl;
+        return false;
+    }
+
+    if (parser.isSet("--pool-max-iterations")) {
+        std::cerr << "--pool-max-iterations can only be used with --use-pool" << std::endl;
+        return false;
+    }
+
+    if (parser.isSet("--pool-select-strategy")) {
+        std::cerr << "--pool-select-strategy can only be used with --use-pool" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool checkMetricsArguments(const ArgParser &parser) {
+    if (parser.isSet("--save-metrics") && parser.isSet("--use-pool")) {
+        std::cerr << "--save-metrics is not available with pool strategy" << std::endl;
+        return false;
+    }
+
+    if (!parser.isSet("--save-metrics") && parser.isSet("--metrics-path")) {
+        std::cerr << "--metrics-path can only be used with --save-metrics" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 int main(int argc, char **argv) {
@@ -163,6 +229,10 @@ int main(int argc, char **argv) {
     parser.add("--pool-max-iterations", ArgType::Natural, "Max random walk iterations to reach min pool size", "1K");
     parser.addChoices("--pool-select-strategy", ArgType::String, "Pool selection strategy", {"uniform", "flips"}, "uniform");
 
+    parser.addSection("Metrics parameters");
+    parser.add("--save-metrics", ArgType::Flag, "Evaluate and save metrics");
+    parser.add("--metrics-path", ArgType::Path, "Path to file with metrics", "schemes/metrics.jsonl");
+
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
@@ -173,20 +243,8 @@ int main(int argc, char **argv) {
     if (!parser.parse(argc, argv))
         return 0;
 
-    if (!parser.isSet("--input-path") && (!parser.isSet("-n1") || !parser.isSet("-n2") || !parser.isSet("-n3"))) {
-        std::cerr << "Must provide either dimension args (-n1 -n2 -n3) or an input file (-i)" << std::endl;
+    if (!checkInputArguments(parser) || !checkPoolArguments(parser) || !checkMetricsArguments(parser))
         return -1;
-    }
-
-    if (parser.isSet("--input-path") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
-        std::cerr << "Specify either dimension args (-n1 -n2 -n3) or an input file (-i), not both" << std::endl;
-        return -1;
-    }
-
-    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
-        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
-        return -1;
-    }
 
     if (parser["--ring"] == "Z2")
         return runFlipGraphSizes<BinaryScheme>(parser);

@@ -14,5 +14,6 @@ struct FlipParameters {
     double reduceProbability;
 
     void parse(const ArgParser &parser);
+    void writeJSON(std::ostream &os) const;
     friend std::ostream& operator<<(std::ostream& os, const FlipParameters &flipParameters);
 };

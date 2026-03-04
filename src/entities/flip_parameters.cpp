@@ -10,6 +10,18 @@ void FlipParameters::parse(const ArgParser &parser) {
     reduceProbability = std::stod(parser["--reduce-probability"]);
 }
 
+void FlipParameters::writeJSON(std::ostream &os) const {
+    os << "{";
+    os << "\"iterations\": " << flipIterations << ", ";
+    os << "\"min_plus_iterations\": " << minPlusIterations << ", ";
+    os << "\"max_plus_iterations\": " << maxPlusIterations << ", ";
+    os << "\"reset_iterations\": " << resetIterations << ", ";
+    os << "\"plus_diff\": " << plusDiff << ", ";
+    os << "\"sandwiching_probability\": " << sandwichingProbability << ", ";
+    os << "\"reduce_probability\": " << reduceProbability;
+    os << "}";
+}
+
 std::ostream& operator<<(std::ostream& os, const FlipParameters &flipParameters) {
     os << "Random walk parameters:" << std::endl;
     os << "- flip iterations: " << prettyInt(flipParameters.flipIterations) << std::endl;

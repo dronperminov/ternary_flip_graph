@@ -107,6 +107,25 @@ int runMetaFlipGraphSizes(const ArgParser &parser) {
     return runMetaFlipGraph<Scheme, __uint128_t>(parser);
 }
 
+bool checkInputArguments(const ArgParser &parser) {
+    if (!parser.isSet("--input-path") && (!parser.isSet("-n1") || !parser.isSet("-n2") || !parser.isSet("-n3"))) {
+        std::cerr << "Must provide either dimension args (-n1 -n2 -n3) or an input file (-i)" << std::endl;
+        return false;
+    }
+
+    if (parser.isSet("--input-path") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
+        std::cerr << "Specify either dimension args (-n1 -n2 -n3) or an input file (-i), not both" << std::endl;
+        return false;
+    }
+
+    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
+        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char **argv) {
     ArgParser parser("meta_flip_graph", "Find fast matrix multiplication schemes using meta flip graph");
 
@@ -152,20 +171,8 @@ int main(int argc, char **argv) {
     if (!parser.parse(argc, argv))
         return 0;
 
-    if (!parser.isSet("--input-path") && (!parser.isSet("-n1") || !parser.isSet("-n2") || !parser.isSet("-n3"))) {
-        std::cerr << "Must provide either dimension args (-n1 -n2 -n3) or an input file (-i)" << std::endl;
+    if (!checkInputArguments(parser))
         return -1;
-    }
-
-    if (parser.isSet("--input-path") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
-        std::cerr << "Specify either dimension args (-n1 -n2 -n3) or an input file (-i), not both" << std::endl;
-        return -1;
-    }
-
-    if (!parser.isSet("--input-path") && parser.isSet("--multiple")) {
-        std::cerr << "--multiple flag requires an input file (-i), not dimension flags" << std::endl;
-        return -1;
-    }
 
     if (parser["--ring"] == "Z2")
         return runMetaFlipGraphSizes<BinaryScheme>(parser);
