@@ -62,7 +62,9 @@ are mutually exclusive.
 - `--count INT` — number of parallel runners (default: `8`);
 - `--threads INT` — number of OpenMP threads;
 - `--format {txt, json}` — output format (default: `txt`);
-- `--output-path PATH` — output directory for discovered schemes (default: `schemes`).
+- `--output-path PATH` — output directory for discovered schemes (default: `schemes`);
+- `--seed INT` — random seed, 0 uses time-based seed (default: `0`);
+- `--top-count INT` — number of best schemes displayed (default: `10`).
 
 #### Initialization parameters
 - `-n1 INT` — rows in matrix A;
@@ -98,10 +100,35 @@ schemes, it replaces the current pool, and the search continues for rank `r-2`, 
 
 If `--pool-max-iterations` is reached and the pool contains at least `--pool-min-size` schemes, the search proceeds to the next rank. However, if the pool reaches `--pool-size` schemes earlier, the transition occurs immediately.
 
+#### Metrics parameters
+
+The metrics system allows tracking the progress of the search by recording statistical information about scheme ranks at each iteration. When enabled, a JSON
+Lines file is created containing run metadata followed by per-iteration metrics. This feature is available only for the standard flip graph search and does
+not work with the pool strategy (`--use-pool`).
+
+- `--save-metrics` — enable metrics collection and saving;
+- `--metrics-path PATH` — path to the metrics output file (default: `schemes/metrics.jsonl`).
+
+When metrics are enabled, the first line of the file contains the run configuration as a JSON object:
+```json
+{"dimension": [4, 4, 4], "count": 128, "ring": "ZT", "copy_best_probability": 0, "seed": 1772651458, "random_walk_parameters": {"iterations": 1000000, "min_plus_iterations": 5000, "max_plus_iterations": 100000, "reset_iterations": 10000000000, "plus_diff": 4, "sandwiching_probability": 0, "reduce_probability": 0}}
+```
+
+Subsequent lines record metrics at each iteration (including iteration 0 before any flips):
+```json
+{"iteration": 0, "ranks": {"mean": 64, "std": 0, "min": 64, "max": 64}, "ranks_best": {"mean": 64, "std": 0, "min": 64, "max": 64}}
+{"iteration": 1, "ranks": {"mean": 63.6484, "std": 0.5672, "min": 62, "max": 64}, "ranks_best": {"mean": 63.6328, "std": 0.571061, "min": 62, "max": 64}}
+{"iteration": 2, "ranks": {"mean": 63.2734, "std": 0.816957, "min": 61, "max": 64}, "ranks_best": {"mean": 63.2344, "std": 0.833708, "min": 61, "max": 64}}
+{"iteration": 3, "ranks": {"mean": 62.8828, "std": 1.07979, "min": 59, "max": 64}, "ranks_best": {"mean": 62.8281, "std": 1.0688, "min": 59, "max": 64}}
+```
+
+For each iteration, the following statistics are provided:
+- `ranks`: statistics for the current ranks of all runners;
+- `ranks_best`: statistics for the best rank achieved by each runner;
+
+Each statistics object contains `mean`, `std` (standard deviation), `min`, and `max` values.
 
 #### Other parameters
-- `--seed INT` — random seed, 0 uses time-based seed (default: `0`);
-- `--top-count INT` — number of best schemes displayed (default: `10`);
 - `--target-rank INT` — stop search when this rank is found, 0 searches for minimum (default: `0`);
 - `--copy-best-probability REAL` — probability to replace scheme with best scheme after improvement (default: `0.5`);
 - `--max-improvements INT` — maximum saved recent improvements for reset sampling (default: `10`).
@@ -125,6 +152,11 @@ Search ternary modular schemes from multiple-scheme file:
 Use pool strategy to systematically reduce rank:
 ```bash
 ./flip_graph -i input.txt --ring ZT --use-pool --pool-size 5000
+```
+
+Track search progress with metrics:
+```bash
+./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --count 128 --save-metrics --metrics-path metrics_4x4x4.jsonl
 ```
 
 #### Example output
@@ -162,6 +194,12 @@ Three strategies are available:
 - `ext`: performs only random extension operations.
 
 #### Main parameters
+Same as `flip_graph`.
+
+#### Initialization parameters
+Same as `flip_graph`.
+
+#### Random walk parameters
 Same as `flip_graph`.
 
 #### Meta parameters
