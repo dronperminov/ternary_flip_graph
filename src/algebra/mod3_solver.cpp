@@ -1,28 +1,23 @@
 #include "mod3_solver.h"
 
-Mod3Solver::Mod3Solver(uint64_t rows, uint64_t columns) : values(rows * columns, 0) {
+Mod3Solver::Mod3Solver(uint64_t rows, uint64_t columns) : wordsPerRow(columns / 64 + 1), values(rows * wordsPerRow, 0) {
     this->rows = rows;
     this->columns = columns;
 }
 
 void Mod3Solver::set(int row, int column, uint8_t value) {
-    values[row * columns + column] = value % 3;
+    values[row * wordsPerRow + column / 64].set(column % 64, value % 3);
 }
 
 bool Mod3Solver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
-    uint64_t wordsPerRow = (columns + 1 + 63) / 64;
-    std::vector<Mod3Vector<uint64_t>> augmented(rows * wordsPerRow, 64);
+    std::vector<Mod3Vector<uint64_t>> augmented(values);
     std::vector<int> pivotCol(rows, -1);
 
     uint64_t lastWord = columns / 64;
     uint64_t lastBit = columns % 64;
 
-    for (uint64_t i = 0; i < rows; i++) {
-        for (uint64_t j = 0; j < columns; j++)
-            augmented[i * wordsPerRow + j / 64].set(j % 64, values[i * columns + j]);
-
-        augmented[i * wordsPerRow + lastWord].set(lastBit, b[i] % 3);
-    }
+    for (uint64_t i = 0; i < rows; i++)
+        augmented[i * wordsPerRow + lastWord].set(lastBit, b[i]);
 
     uint64_t rank = 0;
 

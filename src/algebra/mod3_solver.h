@@ -9,7 +9,8 @@
 class Mod3Solver {
     uint64_t rows;
     uint64_t columns;
-    std::vector<uint8_t> values;
+    uint64_t wordsPerRow;
+    std::vector<Mod3Vector<uint64_t>> values;
 public:
     Mod3Solver(uint64_t rows, uint64_t columns);
 

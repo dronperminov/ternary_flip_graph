@@ -24,7 +24,7 @@ void BinarySolver::reset() {
 }
 
 bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x) {
-    std::vector<uint64_t> augmented(rows * wordsPerRow, 0);
+    std::vector<uint64_t> augmented(values);
     std::vector<int> pivotCol(rows, -1);
 
     uint64_t lastWord = columns / 64;
@@ -33,20 +33,17 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
     for (uint64_t i = 0; i < rows; i++) {
         uint8_t bi = b[i];
 
-        for (uint64_t j = 0; j < columns; j++) {
-            uint8_t xj = (values[i * wordsPerRow + j / 64] >> (j % 64)) & 1;
-            augmented[i * wordsPerRow + j / 64] |= uint64_t(xj) << (j % 64);
-
-            if (xj && xs[j] > -1)
+        for (uint64_t j = 0; j < columns; j++)
+            if (xs[j] > -1 && (values[i * wordsPerRow + j / 64] & (uint64_t(1) << (j % 64))))
                 bi ^= xs[j];
-        }
 
         if (bi)
             augmented[i * wordsPerRow + lastWord] |= lastMask;
+        else
+            augmented[i * wordsPerRow + lastWord] &= ~lastMask;
     }
 
     uint64_t rank = 0;
-
     x.assign(columns, 0);
 
     for (uint64_t column = 0; column < columns && rank < rows; column++) {
