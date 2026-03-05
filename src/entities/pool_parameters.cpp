@@ -8,6 +8,15 @@ void PoolParameters::parse(const ArgParser &parser) {
     selectStrategy = parser["--pool-select-strategy"];
 }
 
+void PoolParameters::writeJSON(std::ostream &os) const {
+    os << "{";
+    os << "\"size\": " << size << ", ";
+    os << "\"min_size\": " << minSize << ", ";
+    os << "\"max_iterations\": " << maxIterations << ", ";
+    os << "\"select_strategy\": \"" << selectStrategy << "\"";
+    os << "}";
+}
+
 std::ostream& operator<<(std::ostream& os, const PoolParameters &poolParameters) {
     if (poolParameters.use) {
         os << "Pool parameters:" << std::endl;

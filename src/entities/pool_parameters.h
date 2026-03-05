@@ -12,6 +12,7 @@ struct PoolParameters {
     std::string selectStrategy;
 
     void parse(const ArgParser &parser);
+    void writeJSON(std::ostream &os) const;
     friend std::ostream& operator<<(std::ostream& os, const PoolParameters &poolParameters);
 
     static void addToParser(ArgParser &parser, const std::string &sectionName);

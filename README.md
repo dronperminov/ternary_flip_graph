@@ -103,13 +103,16 @@ If `--pool-max-iterations` is reached and the pool contains at least `--pool-min
 #### Metrics parameters
 
 The metrics system allows tracking the progress of the search by recording statistical information about scheme ranks at each iteration. When enabled, a JSON
-Lines file is created containing run metadata followed by per-iteration metrics. This feature is available only for the standard flip graph search and does
-not work with the pool strategy (`--use-pool`).
+Lines file is created containing run metadata followed by per-iteration metrics. This feature works with both standard flip graph search and the pool strategy
+(`--use-pool`), though the recorded metrics differ between the two modes.
 
 - `--save-metrics` — enable metrics collection and saving;
 - `--metrics-path PATH` — path to the metrics output file (default: `schemes/metrics.jsonl`).
 
-When metrics are enabled, the first line of the file contains the run configuration as a JSON object:
+##### Standard mode metrics
+
+When metrics are enabled in standard mode, the first line of the file contains the run configuration as a JSON object:
+
 ```json
 {"dimension": [4, 4, 4], "count": 128, "ring": "ZT", "copy_best_probability": 0, "seed": 1772651458, "random_walk_parameters": {"iterations": 1000000, "min_plus_iterations": 5000, "max_plus_iterations": 100000, "reset_iterations": 10000000000, "plus_diff": 4, "sandwiching_probability": 0, "reduce_probability": 0}}
 ```
@@ -123,10 +126,33 @@ Subsequent lines record metrics at each iteration (including iteration 0 before 
 ```
 
 For each iteration, the following statistics are provided:
+- `iteration`: iteration number;
+- `rank`: best rank achieved so far across all runners;
 - `ranks`: statistics for the current ranks of all runners;
 - `ranks_best`: statistics for the best rank achieved by each runner;
 
 Each statistics object contains `mean`, `std` (standard deviation), `min` and `max` values, along with `min_count` and `max_count` indicating how many schemes currently have ranks equal to the minimum and maximum values respectively.
+
+##### Pool mode metrics
+
+When metrics are enabled with the pool strategy (`--use-pool`), the first line contains run configuration including pool parameters:
+```json
+{"dimension": [4, 4, 4], "count": 128, "ring": "ZT", "seed": 1772651458, "random_walk_parameters": {"iterations": 1000000, "min_plus_iterations": 5000, "max_plus_iterations": 10000, "reset_iterations": 10000000000, "plus_diff": 4, "sandwiching_probability": 0, "reduce_probability": 0}, "pool_parameters": {"size": 256, "min_size": 32, "max_iterations": 10, "select_strategy": "uniform"}}
+```
+
+Subsequent lines track the pool progression:
+```json
+{"iteration": 0, "rank": 64, "pool_size": 1, "step": 0}
+{"iteration": 1, "rank": 63, "pool_size": 31, "step": 1}
+{"iteration": 2, "rank": 63, "pool_size": 32, "step": 2}
+{"iteration": 3, "rank": 62, "pool_size": 47, "step": 1}
+```
+
+Fields in pool mode:
+- `iteration`: iteration number;
+- `rank`: current target rank being searched for;
+- `pool_size`: current size of the pool for the target rank;
+- `step`: number of iterations spent searching for the current rank.
 
 #### Other parameters
 - `--target-rank INT` — stop search when this rank is found, 0 searches for minimum (default: `0`);
@@ -154,9 +180,15 @@ Use pool strategy to systematically reduce rank:
 ./flip_graph -i input.txt --ring ZT --use-pool --pool-size 5000
 ```
 
-Track search progress with metrics:
+Track search progress with metrics in standard mode:
 ```bash
 ./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --count 128 --save-metrics --metrics-path metrics_4x4x4.jsonl
+```
+
+Track pool strategy progress with metrics:
+
+```bash
+./flip_graph -n1 4 -n2 4 -n3 4 --ring ZT --use-pool --pool-size 1000 --save-metrics --metrics-path metrics_pool_4x4x4.jsonl
 ```
 
 #### Example output

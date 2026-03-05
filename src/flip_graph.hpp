@@ -485,6 +485,7 @@ void FlipGraph<Scheme>::saveMetrics(size_t iteration) const {
 
     f << "{";
     f << "\"iteration\": " << iteration << ", ";
+    f << "\"rank\": " << (*std::min_element(ranksBest.begin(), ranksBest.end())) << ", ";
     evaluateMetrics(ranks, f, "ranks");
     f << ", ";
     evaluateMetrics(ranksBest, f, "ranks_best");

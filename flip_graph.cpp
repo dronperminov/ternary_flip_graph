@@ -108,7 +108,7 @@ int runFlipGraph(const ArgParser &parser) {
         return -1;
 
     if (poolParameters.use) {
-        FlipGraphPool<Scheme<T>> flipGraphPool(count, outputPath, threads, flipParameters, poolParameters, seed, topCount, format);
+        FlipGraphPool<Scheme<T>> flipGraphPool(count, outputPath, threads, flipParameters, poolParameters, metricsParameters, seed, topCount, format);
         return runFlipGraph(flipGraphPool, parser, targetRank);
     }
 
@@ -181,11 +181,6 @@ bool checkPoolArguments(const ArgParser &parser) {
 }
 
 bool checkMetricsArguments(const ArgParser &parser) {
-    if (parser.isSet("--save-metrics") && parser.isSet("--use-pool")) {
-        std::cerr << "--save-metrics is not available with pool strategy" << std::endl;
-        return false;
-    }
-
     if (!parser.isSet("--save-metrics") && parser.isSet("--metrics-path")) {
         std::cerr << "--metrics-path can only be used with --save-metrics" << std::endl;
         return false;

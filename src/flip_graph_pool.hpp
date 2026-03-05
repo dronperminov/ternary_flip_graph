@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "entities/flip_parameters.h"
 #include "entities/pool_parameters.h"
+#include "entities/metrics_parameters.h"
 
 template <typename Scheme>
 class FlipGraphPool {
@@ -20,6 +21,7 @@ class FlipGraphPool {
     int threads;
     FlipParameters flipParameters;
     PoolParameters poolParameters;
+    MetricsParameters metricsParameters;
 
     int seed;
     int topCount;
@@ -39,7 +41,7 @@ class FlipGraphPool {
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
 public:
-    FlipGraphPool(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const PoolParameters &poolParameters, int seed, int topCount, const std::string &format);
+    FlipGraphPool(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const PoolParameters &poolParameters, const MetricsParameters &metricsParameters, int seed, int topCount, const std::string &format);
 
     bool initializeNaive(int n1, int n2, int n3);
     bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
@@ -57,15 +59,19 @@ private:
     std::string getSavePath(const Scheme &scheme, int version, const std::string path) const;
     void saveScheme(const Scheme &scheme, const std::string &path) const;
     size_t selectScheme(std::mt19937 &generator);
+
+    void initializeMetrics();
+    void saveMetrics(size_t iteration, size_t step) const;
 };
 
 template <typename Scheme>
-FlipGraphPool<Scheme>::FlipGraphPool(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const PoolParameters &poolParameters, int seed, int topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
+FlipGraphPool<Scheme>::FlipGraphPool(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const PoolParameters &poolParameters, const MetricsParameters &metricsParameters, int seed, int topCount, const std::string &format) : uniform(0.0, 1.0), plusDistribution(flipParameters.minPlusIterations, flipParameters.maxPlusIterations) {
     this->count = count;
     this->outputPath = outputPath;
     this->threads = std::min(threads, count);
     this->flipParameters = flipParameters;
     this->poolParameters = poolParameters;
+    this->metricsParameters = metricsParameters;
     this->seed = seed;
     this->topCount = std::min(topCount, count);
     this->format = format;
@@ -147,22 +153,27 @@ template <typename Scheme>
 void FlipGraphPool<Scheme>::run(int targetRank) {
     auto startTime = std::chrono::high_resolution_clock::now();
 
+    initializeMetrics();
+    saveMetrics(0, 0);
+    size_t iteration = 0;
+
     while (poolRank > targetRank) {
         initIteration();
         std::vector<double> elapsedTimes;
 
-        for (size_t iteration = 0; pool.size() < poolParameters.size; iteration++) {
-            if (pool.size() >= poolParameters.minSize && iteration >= poolParameters.maxIterations) {
-                std::cout << "Pool reached minimum size after " << iteration << " iterations (max: " << poolParameters.maxIterations << "), stop walking" << std::endl;
+        for (size_t step = 0; pool.size() < poolParameters.size; step++) {
+            if (pool.size() >= poolParameters.minSize && step >= poolParameters.maxIterations) {
+                std::cout << "Pool reached minimum size after " << step << " steps (max: " << poolParameters.maxIterations << "), stop walking" << std::endl;
                 break;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
             runIteration();
+            saveMetrics(++iteration, step + 1);
             auto t2 = std::chrono::high_resolution_clock::now();
             elapsedTimes.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0);
 
-            report(iteration + 1, startTime, elapsedTimes);
+            report(step + 1, startTime, elapsedTimes);
         }
 
         updatePool();
@@ -381,4 +392,48 @@ size_t FlipGraphPool<Scheme>::selectScheme(std::mt19937 &generator) {
     }
 
     return generator() % initialPool.size();
+}
+
+template <typename Scheme>
+void FlipGraphPool<Scheme>::initializeMetrics() {
+    if (!metricsParameters.use)
+        return;
+
+    std::ofstream f(metricsParameters.path);
+    if (!f) {
+        std::cout << "Unable to create file \"" << metricsParameters.path << "\" for append metrics" << std::endl;
+        return;
+    }
+
+    f << "{";
+    f << "\"dimension\": [" << initialPool[0].getDimension(0) << ", " << initialPool[0].getDimension(1) << ", " << initialPool[0].getDimension(2) << "], ";
+    f << "\"count\": " << count << ", ";
+    f << "\"ring\": \"" << initialPool[0].getRing() << "\", ";
+    f << "\"seed\": " << seed << ", ";
+    f << "\"random_walk_parameters\": ";
+    flipParameters.writeJSON(f);
+    f << ", \"pool_parameters\": ";
+    poolParameters.writeJSON(f);
+    f << "}" << std::endl;
+    f.close();
+}
+
+template <typename Scheme>
+void FlipGraphPool<Scheme>::saveMetrics(size_t iteration, size_t step) const {
+    if (!metricsParameters.use)
+        return;
+
+    std::ofstream f(metricsParameters.path, std::ios::app);
+    if (!f) {
+        std::cout << "Unable to open file \"" << metricsParameters.path << "\" for append metrics" << std::endl;
+        return;
+    }
+
+    f << "{";
+    f << "\"iteration\": " << iteration << ", ";
+    f << "\"rank\": " << poolRank << ", ";
+    f << "\"pool_size\": " << (iteration == 0 ? initialPool.size() : pool.size()) << ", ";
+    f << "\"step\": " << step;
+    f << "}" << std::endl;
+    f.close();
 }
