@@ -14,4 +14,6 @@ struct MetaParameters {
 
     void parse(const ArgParser &parser);
     friend std::ostream& operator<<(std::ostream& os, const MetaParameters &metaParameters);
+
+    static void addToParser(ArgParser &parser, const std::string &sectionName);
 };

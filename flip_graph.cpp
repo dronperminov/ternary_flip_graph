@@ -213,25 +213,9 @@ int main(int argc, char **argv) {
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
-    parser.addSection("Random walk parameters");
-    parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "1M");
-    parser.add("--min-plus-iterations", ArgType::Natural, "Minimum period for plus operator calls", "5K");
-    parser.add("--max-plus-iterations", ArgType::Natural, "Maximum period for plus operator calls", "100K");
-    parser.add("--reset-iterations", ArgType::Natural, "Total iterations before reset", "10B");
-    parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "4");
-    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
-    parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
-
-    parser.addSection("Pool parameters");
-    parser.add("--use-pool", ArgType::Flag, "Use pool strategy");
-    parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
-    parser.add("--pool-min-size", ArgType::Natural, "Minimal size of pool", "5");
-    parser.add("--pool-max-iterations", ArgType::Natural, "Max random walk iterations to reach min pool size", "1K");
-    parser.addChoices("--pool-select-strategy", ArgType::String, "Pool selection strategy", {"uniform", "flips"}, "uniform");
-
-    parser.addSection("Metrics parameters");
-    parser.add("--save-metrics", ArgType::Flag, "Evaluate and save metrics");
-    parser.add("--metrics-path", ArgType::Path, "Path to file with metrics", "schemes/metrics.jsonl");
+    FlipParameters::addToParser(parser, "Random walk parameters");
+    PoolParameters::addToParser(parser, "Pool parameters");
+    MetricsParameters::addToParser(parser, "Metrics parameters");
 
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");

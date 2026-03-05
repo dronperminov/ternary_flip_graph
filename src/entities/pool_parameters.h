@@ -13,4 +13,6 @@ struct PoolParameters {
 
     void parse(const ArgParser &parser);
     friend std::ostream& operator<<(std::ostream& os, const PoolParameters &poolParameters);
+
+    static void addToParser(ArgParser &parser, const std::string &sectionName);
 };

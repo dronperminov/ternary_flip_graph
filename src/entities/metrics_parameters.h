@@ -10,4 +10,6 @@ struct MetricsParameters {
 
     void parse(const ArgParser &parser);
     friend std::ostream& operator<<(std::ostream& os, const MetricsParameters &metricsParameters);
+
+    static void addToParser(ArgParser &parser, const std::string &sectionName);
 };

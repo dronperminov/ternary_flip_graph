@@ -145,22 +145,8 @@ int main(int argc, char **argv) {
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
-    parser.addSection("Random walk parameters");
-    parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "1M");
-    parser.add("--min-plus-iterations", ArgType::Natural, "Minimum period for plus operator calls", "5K");
-    parser.add("--max-plus-iterations", ArgType::Natural, "Maximum period for plus operator calls", "100K");
-    parser.add("--reset-iterations", ArgType::Natural, "Total iterations before reset", "10B");
-    parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "4");
-    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
-    parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
-
-    parser.addSection("Meta operations parameters");
-    parser.add("--meta-probability", ArgType::Real, "Probability of call meta operations, from 0.0 to 1.0", "0");
-    parser.addChoices("--meta-strategy", ArgType::String, "Strategy of meta operations", {"default", "proj", "ext"}, "default");
-    parser.add("--meta-min-dimension", ArgType::Natural, "Min dimension for project meta operation", "2");
-    parser.add("--meta-max-dimension", ArgType::Natural, "Max dimension for merge/extend meta operations", "16");
-    parser.add("--meta-max-rank", ArgType::Natural, "Max rank for merge/extend meta operations", "350");
-    parser.add("--meta-max-rank-diff", ArgType::Natural, "Max rank difference for reset to initial", "10");
+    FlipParameters::addToParser(parser, "Random walk parameters");
+    MetaParameters::addToParser(parser, "Meta operations parameters");
 
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");

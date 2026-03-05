@@ -16,4 +16,6 @@ struct FlipParameters {
     void parse(const ArgParser &parser);
     void writeJSON(std::ostream &os) const;
     friend std::ostream& operator<<(std::ostream& os, const FlipParameters &flipParameters);
+
+    static void addToParser(ArgParser &parser, const std::string &sectionName);
 };
