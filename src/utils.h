@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <random>
+#include <vector>
 #include <sstream>
 #include <string>
 #include <filesystem>
@@ -12,3 +14,4 @@ std::string prettyTime(double elapsed);
 size_t parseNatural(std::string value);
 bool makeDirectory(const std::string &path);
 int getMaxMatrixElements(const std::string &path, bool multiple);
+std::vector<std::mt19937> initRandomGenerators(int seed, int count);

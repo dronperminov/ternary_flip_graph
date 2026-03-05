@@ -68,8 +68,7 @@ SchemeOptimizer<Scheme>::SchemeOptimizer(int count, const std::string &outputPat
     this->format = format;
     this->bestMetric = 0;
 
-    for (int i = 0; i < threads; i++)
-        generators.emplace_back(seed + i);
+    generators = initRandomGenerators(seed, threads);
 
     schemes.resize(count);
     schemesBest.resize(count);

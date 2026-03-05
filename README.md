@@ -116,17 +116,17 @@ When metrics are enabled, the first line of the file contains the run configurat
 
 Subsequent lines record metrics at each iteration (including iteration 0 before any flips):
 ```json
-{"iteration": 0, "ranks": {"mean": 64, "std": 0, "min": 64, "max": 64}, "ranks_best": {"mean": 64, "std": 0, "min": 64, "max": 64}}
-{"iteration": 1, "ranks": {"mean": 63.6484, "std": 0.5672, "min": 62, "max": 64}, "ranks_best": {"mean": 63.6328, "std": 0.571061, "min": 62, "max": 64}}
-{"iteration": 2, "ranks": {"mean": 63.2734, "std": 0.816957, "min": 61, "max": 64}, "ranks_best": {"mean": 63.2344, "std": 0.833708, "min": 61, "max": 64}}
-{"iteration": 3, "ranks": {"mean": 62.8828, "std": 1.07979, "min": 59, "max": 64}, "ranks_best": {"mean": 62.8281, "std": 1.0688, "min": 59, "max": 64}}
+{"iteration": 0, "ranks": {"mean": 64, "std": 0, "min": 64, "max": 64, "min_count": 128, "max_count": 128}, "ranks_best": {"mean": 64, "std": 0, "min": 64, "max": 64, "min_count": 128, "max_count": 128}}
+{"iteration": 1, "ranks": {"mean": 63.6094, "std": 0.589417, "min": 62, "max": 64, "min_count": 7, "max_count": 85}, "ranks_best": {"mean": 63.5938, "std": 0.592103, "min": 62, "max": 64, "min_count": 7, "max_count": 83}}
+{"iteration": 2, "ranks": {"mean": 63.3047, "std": 0.755796, "min": 61, "max": 64, "min_count": 2, "max_count": 60}, "ranks_best": {"mean": 63.2578, "std": 0.76287, "min": 61, "max": 64, "min_count": 2, "max_count": 56}}
+{"iteration": 3, "ranks": {"mean": 63.0156, "std": 0.892542, "min": 61, "max": 64, "min_count": 9, "max_count": 43}, "ranks_best": {"mean": 62.9453, "std": 0.886607, "min": 61, "max": 64, "min_count": 10, "max_count": 37}}
 ```
 
 For each iteration, the following statistics are provided:
 - `ranks`: statistics for the current ranks of all runners;
 - `ranks_best`: statistics for the best rank achieved by each runner;
 
-Each statistics object contains `mean`, `std` (standard deviation), `min`, and `max` values.
+Each statistics object contains `mean`, `std` (standard deviation), `min` and `max` values, along with `min_count` and `max_count` indicating how many schemes currently have ranks equal to the minimum and maximum values respectively.
 
 #### Other parameters
 - `--target-rank INT` — stop search when this rank is found, 0 searches for minimum (default: `0`);

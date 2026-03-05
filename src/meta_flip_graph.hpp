@@ -91,8 +91,7 @@ MetaFlipGraph<Scheme>::MetaFlipGraph(size_t count, const std::string outputPath,
     this->topCount = std::min(topCount, count);
     this->format = format;
 
-    for (int i = 0; i < threads; i++)
-        generators.emplace_back(seed + i);
+    generators = initRandomGenerators(seed, threads);
 
     schemes.resize(count);
     schemesBest.resize(count);

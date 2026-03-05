@@ -70,8 +70,7 @@ FlipGraphPool<Scheme>::FlipGraphPool(int count, const std::string outputPath, in
     this->topCount = std::min(topCount, count);
     this->format = format;
 
-    for (int i = 0; i < threads; i++)
-        generators.emplace_back(seed + i);
+    generators = initRandomGenerators(seed, threads);
 
     schemes.resize(count);
     flips.resize(count);

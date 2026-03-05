@@ -89,3 +89,20 @@ int getMaxMatrixElements(const std::string &path, bool multiple) {
 
     return maxMatrixElements;
 }
+
+std::vector<std::mt19937> initRandomGenerators(int seed, int count) {
+    std::mt19937 generator(seed);
+    std::vector<std::mt19937> generators;
+    generators.reserve(count);
+
+    for (int i = 0; i < count; i++) {
+        std::uint32_t seedData[8];
+        for (auto& value : seedData)
+            value = generator();
+
+        std::seed_seq seq(std::begin(seedData), std::end(seedData));
+        generators.emplace_back(seq);
+    }
+
+    return generators;
+}

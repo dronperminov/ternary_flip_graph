@@ -82,8 +82,7 @@ FlipGraph<Scheme>::FlipGraph(int count, const std::string outputPath, int thread
 
     resetImprovements();
 
-    for (int i = 0; i < threads; i++)
-        generators.emplace_back(seed + i);
+    generators = initRandomGenerators(seed, threads);
 
     schemes.resize(count);
     schemesBest.resize(count);
@@ -425,7 +424,6 @@ void FlipGraph<Scheme>::initializeMetrics() {
 template <typename Scheme>
 void FlipGraph<Scheme>::evaluateMetrics(const std::vector<int> &values, std::ostream &os, const std::string &name) const {
     double mean = 0;
-    double std = 0;
     int min = values[0];
     int max = values[0];
 
@@ -438,13 +436,31 @@ void FlipGraph<Scheme>::evaluateMetrics(const std::vector<int> &values, std::ost
 
     mean /= values.size();
 
-    #pragma omp parallel for reduction(+:std)
-    for (size_t i = 0; i < values.size(); i++)
+    double std = 0;
+    int minCount = 0;
+    int maxCount = 0;
+
+    #pragma omp parallel for reduction(+:std) reduction(+:minCount) reduction(+:maxCount)
+    for (size_t i = 0; i < values.size(); i++) {
         std += (values[i] - mean) * (values[i] - mean);
+
+        if (values[i] == min)
+            minCount++;
+
+        if (values[i] == max)
+            maxCount++;
+    }
 
     std = std::sqrt(std / values.size());
 
-    os << "\"" << name << "\": {\"mean\": " << mean << ", \"std\": " << std << ", \"min\": " << min << ", \"max\": " << max << "}";
+    os << "\"" << name << "\": {";
+    os << "\"mean\": " << mean << ", ";
+    os << "\"std\": " << std << ", ";
+    os << "\"min\": " << min << ", ";
+    os << "\"max\": " << max << ", ";
+    os << "\"min_count\": " << minCount << ", ";
+    os << "\"max_count\": " << maxCount;
+    os << "}";
 }
 
 template <typename Scheme>
