@@ -39,7 +39,7 @@ void FlipParameters::addToParser(ArgParser &parser, const std::string &sectionNa
     parser.add("--min-plus-iterations", ArgType::Natural, "Minimum period for plus operator calls", "5K");
     parser.add("--max-plus-iterations", ArgType::Natural, "Maximum period for plus operator calls", "100K");
     parser.add("--reset-iterations", ArgType::Natural, "Total iterations before reset", "10B");
-    parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "4");
+    parser.add("--plus-diff", ArgType::UInt, "Maximum rank difference for plus operations", "4");
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
     parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
 }

@@ -59,6 +59,9 @@ std::string Argument::getTypeHint() const {
     if (type == ArgType::Natural)
         return "INT";
 
+    if (type == ArgType::UInt)
+        return "INT";
+
     if (type == ArgType::Real)
         return "REAL";
 
@@ -99,6 +102,11 @@ bool Argument::validate(const std::string &parsedName) const {
 
     if (type == ArgType::Natural && !isNatural(value)) {
         std::cerr << "Invalid value for argument \"" << parsedName << "\": " << value << " is not natural" << std::endl;
+        return false;
+    }
+
+    if (type == ArgType::UInt && !isNatural(value) && value != "0") {
+        std::cerr << "Invalid value for argument \"" << parsedName << "\": " << value << " is not unsigned integer" << std::endl;
         return false;
     }
 

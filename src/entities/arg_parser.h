@@ -9,7 +9,7 @@
 #include <algorithm>
 
 enum class ArgType {
-    String, Path, Natural, Real, Flag
+    String, Path, Natural, UInt, Real, Flag
 };
 
 struct Argument {
