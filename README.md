@@ -1,5 +1,6 @@
 # ternary_flip_graph
 
+[![arXiv:2511.20317](https://img.shields.io/badge/arXiv-2603.02398-b31b1b.svg)](https://arxiv.org/abs/2603.02398)
 [![arXiv:2511.20317](https://img.shields.io/badge/arXiv-2511.20317-b31b1b.svg)](https://arxiv.org/abs/2511.20317)
 [![arXiv:2512.13365](https://img.shields.io/badge/arXiv-2512.21980-b31b1b.svg)](https://arxiv.org/abs/2512.21980)
 
@@ -471,6 +472,16 @@ When reading multiple schemes, use the `-m` flag with tools that support it.
 
 ## Citation
 If you use this software in your research, please cite:
+
+```bibtex
+@article{perminov2026fast,
+    title={Fast Matrix Multiplication in Small Formats: Discovering New Schemes with an Open-Source Flip Graph Framework},
+    author={Perminov, Andrew I},
+    journal={arXiv preprint arXiv:2603.02398},
+    url={https://arxiv.org/abs/2603.02398},
+    year={2026}
+}
+```
 
 ```bibtex
 @article{perminov2025fast,
