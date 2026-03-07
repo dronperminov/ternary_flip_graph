@@ -9,6 +9,7 @@ approach. The repository supports searches over multiple coefficient rings, with
 schemes to be valid over the general ring automatically, without any lifting step.
 
 All tools are implemented in pure C++, require only a standard `g++` compiler, have no external dependencies, and support parallel execution via OpenMP.
+The implementation handles matrices with up to 128 elements, supporting a wide range of matrix dimensions.
 
 For a comprehensive collection of discovered schemes and research results on fast matrix multiplication schemes, visit the companion repository:
 [FastMatrixMultiplication](https://github.com/dronperminov/FastMatrixMultiplication)
@@ -24,7 +25,8 @@ For a comprehensive collection of discovered schemes and research results on fas
 - **Meta-operations**: `extend`, `project`, `merge` and `product` operations allow exploration across different matrix sizes;
 - **Parallel and reproducible**: multi-runner architecture combined with OpenMP threading and fully controllable random seeds;
 - **Validation and post-processing**: automatic verification of Brent equations, lifting from modular rings when needed, and naive additive complexity
-  minimization.
+  minimization;
+- **Large matrix support**: handles matrices with up to 128 elements, accommodating a wide variety of dimensions.
 
 
 ## Installation
