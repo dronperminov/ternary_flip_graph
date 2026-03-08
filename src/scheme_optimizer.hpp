@@ -143,8 +143,11 @@ template <typename Scheme>
 void SchemeOptimizer<Scheme>::initialize() {
     bestMetric = getMetric(schemes[0]);
 
-    for (int i = 1; i < count && i < initialCount; i++)
-        bestMetric = std::min(bestMetric, getMetric(schemes[i]));
+    for (int i = 1; i < count && i < initialCount; i++) {
+        int currMetric = getMetric(schemes[i]);
+        if ((currMetric - bestMetric) * goal < 0)
+            bestMetric = currMetric;
+    }
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
