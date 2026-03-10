@@ -36,7 +36,7 @@ bool FractionalScheme::validate() const {
     return true;
 }
 
-bool FractionalScheme::read(const std::string &path, bool integer) {
+bool FractionalScheme::read(const std::string &path, bool checkCorrectness, bool integer) {
     std::ifstream f(path);
 
     if (!f) {
@@ -44,7 +44,7 @@ bool FractionalScheme::read(const std::string &path, bool integer) {
         return false;
     }
 
-    bool valid = read(f, integer);
+    bool valid = read(f, checkCorrectness, integer);
     f.close();
 
     if (!valid) {
@@ -55,7 +55,7 @@ bool FractionalScheme::read(const std::string &path, bool integer) {
     return true;
 }
 
-bool FractionalScheme::read(std::istream &is, bool integer) {
+bool FractionalScheme::read(std::istream &is, bool checkCorrectness, bool integer) {
     is >> dimension[0] >> dimension[1] >> dimension[2] >> rank;
 
     for (int i = 0; i < 3; i++)
@@ -76,9 +76,10 @@ bool FractionalScheme::read(std::istream &is, bool integer) {
         }
     }
 
-    if (!validate())
+    if (checkCorrectness && !validate())
         return false;
 
+    initFlips();
     return true;
 }
 
@@ -130,6 +131,28 @@ int64_t FractionalScheme::getWeight() const {
             weight += abs(uvw[i][j].numerator()) * uvw[i][j].denominator();
 
     return weight;
+}
+
+int FractionalScheme::getMaxAbsInteger() const {
+    int maxAbsInt = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            if (uvw[i][j].denominator() == 1)
+                maxAbsInt = std::max(maxAbsInt, abs(uvw[i][j].numerator()));
+
+    return maxAbsInt;
+}
+
+int FractionalScheme::getAbsIntCount(int value) const {
+    int count = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            if (uvw[i][j].denominator() == 1 && abs(uvw[i][j].numerator()) == value)
+                count++;
+
+    return count;
 }
 
 std::string FractionalScheme::getRing() const {
@@ -215,6 +238,77 @@ std::string FractionalScheme::getTypeInvariant() const {
     return type.str();
 }
 
+bool FractionalScheme::tryFlip(std::mt19937 &generator) {
+    size_t size = flips[0].size() + flips[1].size() + flips[2].size();
+
+    if (!size)
+        return false;
+
+    size_t index = generator() % size;
+
+    int i, j, k;
+
+    if (index < flips[0].size()) {
+        i = 0;
+        j = 1;
+        k = 2;
+    }
+    else if (index < flips[0].size() + flips[1].size()) {
+        i = 1;
+        j = 0;
+        k = 2;
+        index -= flips[0].size();
+    }
+    else {
+        i = 2;
+        j = 0;
+        k = 1;
+        index -= flips[0].size() + flips[1].size();
+    }
+
+    int index1 = flips[i].index1(index);
+    int index2 = flips[i].index2(index);
+
+    if (boolDistribution(generator))
+        std::swap(j, k);
+
+    if (boolDistribution(generator))
+        std::swap(index1, index2);
+
+    flip(i, j, k, index1, index2);
+    return true;
+}
+
+void FractionalScheme::sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1) {
+    for (int index = 0; index < rank; index++) {
+        Matrix ui(dimension[0], dimension[1]);
+        Matrix vi(dimension[1], dimension[2]);
+        Matrix wi(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            ui[i] = uvw[0][index * elements[0] + i];
+
+        for (int i = 0; i < elements[1]; i++)
+            vi[i] = uvw[1][index * elements[1] + i];
+
+        for (int i = 0; i < elements[2]; i++)
+            wi[i] = uvw[2][index * elements[2] + i];
+
+        ui = u * ui * v1;
+        vi = v * vi * w1;
+        wi = w * wi * u1;
+
+        for (int i = 0; i < elements[0]; i++)
+            uvw[0][index * elements[0] + i] = ui[i];
+
+        for (int i = 0; i < elements[1]; i++)
+            uvw[1][index * elements[1] + i] = vi[i];
+
+        for (int i = 0; i < elements[2]; i++)
+            uvw[2][index * elements[2] + i] = wi[i];
+    }
+}
+
 void FractionalScheme::copy(const FractionalScheme &scheme) {
     rank = scheme.rank;
 
@@ -226,6 +320,8 @@ void FractionalScheme::copy(const FractionalScheme &scheme) {
         for (int j = 0; j < rank * elements[i]; j++)
             uvw[i][j] = scheme.uvw[i][j];
     }
+
+    initFlips();
 }
 
 void FractionalScheme::canonize() {
@@ -288,6 +384,49 @@ void FractionalScheme::saveTxt(const std::string &path) const {
     f.close();
 }
 
+void FractionalScheme::save(const std::string &path) const {
+    if (path.length() >= 5 && !path.compare(path.length() - 5, 5, ".json")) {
+        saveJson(path);
+        return;
+    }
+
+    saveTxt(path);
+}
+
+void FractionalScheme::initFlips() {
+    for (int i = 0; i < 3; i++) {
+        flips[i].clear();
+
+        for (int index1 = 0; index1 < rank; index1++)
+            for (int index2 = index1 + 1; index2 < rank; index2++)
+                if (isEqualMatrices(i, index1, index2))
+                    flips[i].add(index1, index2);
+    }
+}
+
+void FractionalScheme::removeZeroes() {
+    for (int index = 0; index < rank; index++)
+        if (isZeroMatrix(0, index) || isZeroMatrix(1, index) || isZeroMatrix(2, index))
+            removeAt(index--);
+}
+
+void FractionalScheme::removeAt(int index) {
+    rank--;
+
+    if (index != rank) {
+        for (int i = 0; i < 3; i++) {
+            int curr = index * elements[i];
+            int last = rank * elements[i];
+
+            for (int j = 0; j < elements[i]; j++)
+                uvw[i][curr + j] = uvw[i][last + j];
+        }
+    }
+
+    for (int i = 0; i < 3; i++)
+        uvw[i].resize(rank * elements[i]);
+}
+
 bool FractionalScheme::validateEquation(int i, int j, int k) const {
     int i1 = i / dimension[1];
     int i2 = i % dimension[1];
@@ -303,6 +442,47 @@ bool FractionalScheme::validateEquation(int i, int j, int k) const {
         equation += uvw[0][index * elements[0] + i] * uvw[1][index * elements[1] + j] * uvw[2][index * elements[2] + k];
 
     return equation == target;
+}
+
+bool FractionalScheme::isEqualMatrices(int p, int index1, int index2) const {
+    for (int i = 0; i < elements[p]; i++)
+        if (uvw[p][index1 * elements[p] + i] != uvw[p][index2 * elements[p] + i])
+            return false;
+
+    return true;
+}
+
+bool FractionalScheme::isZeroMatrix(int p, int index) const {
+    for (int i = 0; i < elements[p]; i++)
+        if (uvw[p][index * elements[p] + i])
+            return false;
+
+    return true;
+}
+
+void FractionalScheme::flip(int i, int j, int k, int index1, int index2) {
+    for (int index = 0; index < elements[j]; index++)
+        uvw[j][index1 * elements[j] + index] -= uvw[j][index2 * elements[j] + index];
+
+    for (int index = 0; index < elements[k]; index++)
+        uvw[k][index2 * elements[k] + index] += uvw[k][index1 * elements[k] + index];
+
+    flips[j].remove(index1);
+    flips[k].remove(index2);
+
+    if (isZeroMatrix(j, index1) || isZeroMatrix(k, index2)) {
+        removeZeroes();
+        initFlips();
+        return;
+    }
+
+    for (int index = 0; index < rank; index++) {
+        if (index != index1 && isEqualMatrices(j, index, index1))
+            flips[j].add(index1, index);
+
+        if (index != index2 && isEqualMatrices(k, index, index2))
+            flips[k].add(index2, index);
+    }
 }
 
 int64_t FractionalScheme::gcdNumerators(const std::vector<Fraction> &fractions) const {

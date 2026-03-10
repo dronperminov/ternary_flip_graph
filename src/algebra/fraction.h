@@ -34,6 +34,8 @@ public:
     Fraction& operator*=(const Fraction &fraction);
     Fraction& operator/=(const Fraction &fraction);
 
+    operator bool() const;
+
     bool operator==(const Fraction &fraction) const;
     bool operator==(int value) const;
 

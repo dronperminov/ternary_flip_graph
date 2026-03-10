@@ -34,7 +34,7 @@ void validateSchemes(const std::string &path, bool multiple, bool showRing, bool
 
     for (int i = 0; i < count; i++) {
         FractionalScheme scheme;
-        if (!scheme.read(f, integer)) {
+        if (!scheme.read(f, true, integer)) {
             std::cout << "- invalid scheme " << (i + 1) << " / " << count;
             invalid++;
         }

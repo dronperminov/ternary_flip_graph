@@ -27,6 +27,7 @@ public:
     bool isTernary() const;
 
     int fractionsCount() const;
+    int maxDenominator() const;
     int rank() const;
 
     void swapRows(int row1, int row2, int column = 0);

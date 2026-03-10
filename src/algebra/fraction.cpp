@@ -150,6 +150,10 @@ Fraction& Fraction::operator/=(const Fraction &fraction) {
     return *this;
 }
 
+Fraction::operator bool() const {
+    return num != 0;
+}
+
 bool Fraction::operator==(const Fraction &fraction) const {
     return num == fraction.num && den == fraction.den;
 }

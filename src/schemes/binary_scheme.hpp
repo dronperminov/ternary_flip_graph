@@ -777,13 +777,14 @@ void BinaryScheme<T>::removeZeroes() {
 
 template <typename T>
 void BinaryScheme<T>::removeAt(int index) {
+    rank--;
+
     if (index != rank) {
         uvw[0][index] = uvw[0].back();
         uvw[1][index] = uvw[1].back();
         uvw[2][index] = uvw[2].back();
     }
 
-    rank--;
     uvw[0].pop_back();
     uvw[1].pop_back();
     uvw[2].pop_back();

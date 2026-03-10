@@ -110,6 +110,15 @@ int Matrix::fractionsCount() const {
     return count;
 }
 
+int Matrix::maxDenominator() const {
+    int max = 1;
+
+    for (int i = 0; i < rows * columns; i++)
+        max = std::max(max, values[i].denominator());
+
+    return max;
+}
+
 int Matrix::rank() const {
     Matrix tmp(rows, columns);
     tmp.values = values;
