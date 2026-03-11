@@ -166,19 +166,19 @@ std::string FractionalScheme::getRing() const {
 }
 
 std::string FractionalScheme::getUniqueValues() const {
-    std::unordered_set<std::string> unique;
+    std::unordered_set<Fraction> unique;
 
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < rank * elements[i]; j++)
-            unique.insert(uvw[i][j].pretty());
+            unique.insert(uvw[i][j]);
 
-    std::vector<std::string> uniqueValues(unique.begin(), unique.end());
+    std::vector<Fraction> uniqueValues(unique.begin(), unique.end());
     std::sort(uniqueValues.begin(), uniqueValues.end());
     std::stringstream ss;
 
     ss << "{";
     for (size_t i = 0; i < uniqueValues.size(); i++)
-        ss << (i > 0 ? ", " : "") << uniqueValues[i];
+        ss << (i > 0 ? ", " : "") << uniqueValues[i].pretty();
     ss << "}";
 
     return ss.str();
@@ -306,6 +306,42 @@ void FractionalScheme::sandwiching(const Matrix &u, const Matrix &v, const Matri
 
         for (int i = 0; i < elements[2]; i++)
             uvw[2][index * elements[2] + i] = wi[i];
+    }
+}
+
+void FractionalScheme::scale(int index, const Fraction &alpha, const Fraction &beta, const Fraction &gamma) {
+    Fraction scale[3] = {alpha, beta, gamma};
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < elements[i]; j++)
+            uvw[i][index * elements[i] + j] *= scale[i];
+}
+
+void FractionalScheme::fixFractions() {
+    for (int index = 0; index < rank; index++) {
+        int64_t lcm[3] = {1, 1, 1};
+        int64_t gcd[3] = {0, 0, 0};
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < elements[i]; j++) {
+                lcm[i] = std::lcm(lcm[i], uvw[i][index * elements[i] + j].denominator());
+
+                int num = uvw[i][index * elements[i] + j].numerator();
+                if (num)
+                    gcd[i] = std::gcd(gcd[i], std::abs(num));
+            }
+        }
+
+        int64_t gcdP = gcd[0] * gcd[1] * gcd[2];
+        int64_t lcmP = lcm[0] * lcm[1] * lcm[2];
+        if (lcmP == 1 || gcdP % lcmP != 0)
+            continue;
+
+        Fraction alpha(lcm[0], std::gcd(lcmP, gcd[0]));
+        Fraction beta(lcm[1], std::gcd(lcmP, gcd[1]));
+        Fraction gamma(lcm[2], std::gcd(lcmP, gcd[2]));
+
+        scale(index, alpha, beta, gamma);
     }
 }
 

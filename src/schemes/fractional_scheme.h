@@ -39,6 +39,8 @@ public:
 
     bool tryFlip(std::mt19937 &generator);
     void sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1);
+    void scale(int index, const Fraction &alpha, const Fraction &beta, const Fraction &gamma);
+    void fixFractions();
 
     void copy(const FractionalScheme &scheme);
     void canonize();

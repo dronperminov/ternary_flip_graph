@@ -52,3 +52,14 @@ private:
 };
 
 Fraction abs(const Fraction &fraction);
+
+namespace std {
+    template <>
+    struct hash<Fraction> {
+        std::size_t operator()(const Fraction &f) const noexcept {
+            std::size_t h1 = std::hash<long long>{}(f.numerator());
+            std::size_t h2 = std::hash<long long>{}(f.denominator());
+            return h1 ^ (h2 << 1);
+        }
+    };
+}
