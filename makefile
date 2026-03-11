@@ -21,6 +21,9 @@ optimize_scheme: $(OBJECTS)
 find_alternative_schemes: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) find_alternative_schemes.cpp -o find_alternative_schemes
 
+sandwich_flip: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) sandwich_flip.cpp -o sandwich_flip
+
 validate_schemes: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) validate_schemes.cpp -o validate_schemes
 

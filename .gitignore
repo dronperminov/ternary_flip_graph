@@ -5,5 +5,6 @@ flip_graph
 meta_flip_graph
 optimize_scheme
 find_alternative_schemes
+sandwich_flip
 validate_schemes
 lift
