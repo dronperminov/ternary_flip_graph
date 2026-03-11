@@ -8,13 +8,17 @@
 #include "src/schemes/fractional_scheme.h"
 
 struct Weight {
+    int flips;
     int fractions;
     int maxValue;
     int maxCount;
     int weight;
 };
 
-bool operator<(const Weight &w1, const Weight &w2) {
+bool compareWeight(const Weight &w1, const Weight &w2, bool checkFlips) {
+    if (checkFlips && w1.flips != w2.flips)
+        return w1.flips > w2.flips;
+
     if (w1.fractions != w2.fractions)
         return w1.fractions < w2.fractions;
 
@@ -29,6 +33,7 @@ bool operator<(const Weight &w1, const Weight &w2) {
 
 Weight getWeight(const FractionalScheme &scheme) {
     Weight weight;
+    weight.flips = scheme.getAvailableFlips();
     weight.fractions = scheme.getFractionsCount();
     weight.maxValue = scheme.getMaxAbsInteger();
     weight.maxCount = scheme.getAbsIntCount(weight.maxValue);
@@ -39,6 +44,7 @@ Weight getWeight(const FractionalScheme &scheme) {
 
 std::ostream& operator<<(std::ostream &os, const Weight &weight) {
     os << "(";
+    os << weight.flips << ", ";
     os << weight.fractions << ", ";
     os << weight.maxValue << ", ";
     os << weight.maxCount << ", ";
@@ -116,11 +122,16 @@ void makeScale(FractionalScheme &scheme, std::mt19937 &generator, const std::vec
 
 void saveScheme(const FractionalScheme &scheme, const std::string &outputPath, const std::string &format) {
     std::stringstream ss;
+    Weight weight = getWeight(scheme);
     ss << outputPath;
     ss << "/";
     ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
-    ss << "_w" << getWeight(scheme);
+    ss << "_fr" << weight.fractions;
+    ss << "_mv" << weight.maxValue;
+    ss << "_mc" << weight.maxCount;
+    ss << "_w" << weight.weight;
+    ss << "_f" << weight.flips;
     ss << "_" << scheme.getRing();
     ss << "." << format;
     std::string path = ss.str();
@@ -157,23 +168,26 @@ bool runSandwichFlip(const ArgParser &parser) {
     std::string format = parser["--format"];
     bool verbose = parser.isSet("--verbose");
     bool fixFractions = parser.isSet("--fix-fractions");
+    bool maximizeFlips = parser.isSet("--maximize-flips");
 
     std::cout << "Parsed parameters of the sandwich-flip tool:" << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
+    std::cout << "Run parameters:" << std::endl;
     std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << "- scale probability: " << scaleProbability << std::endl;
     if (scaleProbability > 0)
         std::cout << "- scale factors: " << scales << std::endl;
-    if (fixFractions)
-        std::cout << "- fix fractions: yes" << std::endl;
-
-    std::cout << std::endl;
-    std::cout << "Other parameters:" << std::endl;
     std::cout << "- steps: " << minSteps << " .. " << maxSteps << std::endl;
     std::cout << "- max denominator: " << maxDenominator << std::endl;
     std::cout << "- max improvements: " << maxImprovements << std::endl;
+    if (fixFractions)
+        std::cout << "- fix fractions: yes" << std::endl;
+    if (maximizeFlips)
+        std::cout << "- maximize flips: yes" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Other parameters:" << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl;
@@ -241,7 +255,7 @@ bool runSandwichFlip(const ArgParser &parser) {
 
             Weight weight = getWeight(scheme);
 
-            if (weight < bestWeight) {
+            if (compareWeight(weight, bestWeight, maximizeFlips)) {
                 if (!scheme.validate()) {
                     std::cout << "Invalid scheme, skip" << std::endl;
                     break;
@@ -279,6 +293,7 @@ int main(int argc, char *argv[]) {
     parser.add("--scale-probability", ArgType::Real, "Probability of scale operation, from 0.0 to 1.0", "0.0");
     parser.add("--scale-denominators", ArgType::String, "Denominators for scale operation (for example, \"2 3 5\")", "2");
     parser.add("--fix-fractions", ArgType::Flag, "Try to convert fractions to integers");
+    parser.add("--maximize-flips", ArgType::Flag, "Check flips count during comparison first");
 
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
