@@ -17,6 +17,7 @@
 class FractionalScheme : public BaseScheme {
 protected:
     std::vector<Fraction> uvw[3];
+    FlipSet flipsNeg[3];
 public:
     bool reconstruct(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, int64_t mod, int64_t bound);
     bool validate() const;
@@ -27,6 +28,7 @@ public:
     bool isInteger() const;
     bool isTernary() const;
 
+    int getAvailableFlips() const;
     int getFractionsCount() const;
     int getComplexity() const;
     int64_t getWeight() const;
@@ -56,9 +58,11 @@ private:
     bool reconstructValue(int64_t a, int64_t mod, int64_t bound, Fraction &fraction) const;
 
     bool isEqualMatrices(int p, int index1, int index2) const;
+    bool isInverseMatrices(int p, int index1, int index2) const;
     bool isZeroMatrix(int p, int index) const;
 
-    void flip(int i, int j, int k, int index1, int index2);
+    void selectFlip(FlipSet *flips, size_t index, int &i, int &j, int &k, int &index1, int &index2, std::mt19937 &generator);
+    void flip(int i, int j, int k, int index1, int index2, bool inverse);
 
     int64_t gcdNumerators(const std::vector<Fraction> &fractions) const;
     int64_t lcmDenominators(const std::vector<Fraction> &fractions) const;

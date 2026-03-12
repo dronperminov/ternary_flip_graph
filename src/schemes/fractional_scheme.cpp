@@ -101,6 +101,12 @@ bool FractionalScheme::isTernary() const {
     return true;
 }
 
+int FractionalScheme::getAvailableFlips() const {
+    size_t sizePos = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();
+    return sizePos + sizeNeg;
+}
+
 int FractionalScheme::getFractionsCount() const {
     int count = 0;
 
@@ -239,43 +245,25 @@ std::string FractionalScheme::getTypeInvariant() const {
 }
 
 bool FractionalScheme::tryFlip(std::mt19937 &generator) {
-    size_t size = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t sizePos = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();
+    size_t size = sizePos + sizeNeg;
 
     if (!size)
         return false;
 
     size_t index = generator() % size;
+    int i, j, k, index1, index2;
 
-    int i, j, k;
-
-    if (index < flips[0].size()) {
-        i = 0;
-        j = 1;
-        k = 2;
-    }
-    else if (index < flips[0].size() + flips[1].size()) {
-        i = 1;
-        j = 0;
-        k = 2;
-        index -= flips[0].size();
+    if (index < sizePos) {
+        selectFlip(flips, index, i, j, k, index1, index2, generator);
+        flip(i, j, k, index1, index2, false);
     }
     else {
-        i = 2;
-        j = 0;
-        k = 1;
-        index -= flips[0].size() + flips[1].size();
+        selectFlip(flipsNeg, index - sizePos, i, j, k, index1, index2, generator);
+        flip(i, j, k, index1, index2, true);
     }
 
-    int index1 = flips[i].index1(index);
-    int index2 = flips[i].index2(index);
-
-    if (boolDistribution(generator))
-        std::swap(j, k);
-
-    if (boolDistribution(generator))
-        std::swap(index1, index2);
-
-    flip(i, j, k, index1, index2);
     return true;
 }
 
@@ -432,11 +420,18 @@ void FractionalScheme::save(const std::string &path) const {
 void FractionalScheme::initFlips() {
     for (int i = 0; i < 3; i++) {
         flips[i].clear();
+        flipsNeg[i].clear();
 
-        for (int index1 = 0; index1 < rank; index1++)
-            for (int index2 = index1 + 1; index2 < rank; index2++)
-                if (isEqualMatrices(i, index1, index2))
+        for (int index1 = 0; index1 < rank; index1++) {
+            for (int index2 = index1 + 1; index2 < rank; index2++) {
+                if (isEqualMatrices(i, index1, index2)) {
                     flips[i].add(index1, index2);
+                }
+                else if (isInverseMatrices(i, index1, index2)) {
+                    flipsNeg[i].add(index1, index2);
+                }
+            }
+        }
     }
 }
 
@@ -488,6 +483,14 @@ bool FractionalScheme::isEqualMatrices(int p, int index1, int index2) const {
     return true;
 }
 
+bool FractionalScheme::isInverseMatrices(int p, int index1, int index2) const {
+    for (int i = 0; i < elements[p]; i++)
+        if (uvw[p][index1 * elements[p] + i] != -uvw[p][index2 * elements[p] + i])
+            return false;
+
+    return true;
+}
+
 bool FractionalScheme::isZeroMatrix(int p, int index) const {
     for (int i = 0; i < elements[p]; i++)
         if (uvw[p][index * elements[p] + i])
@@ -496,15 +499,52 @@ bool FractionalScheme::isZeroMatrix(int p, int index) const {
     return true;
 }
 
-void FractionalScheme::flip(int i, int j, int k, int index1, int index2) {
-    for (int index = 0; index < elements[j]; index++)
-        uvw[j][index1 * elements[j] + index] -= uvw[j][index2 * elements[j] + index];
+void FractionalScheme::selectFlip(FlipSet *flips, size_t index, int &i, int &j, int &k, int &index1, int &index2, std::mt19937 &generator) {
+    if (index < flips[0].size()) {
+        i = 0;
+        j = 1;
+        k = 2;
+    }
+    else if (index < flips[0].size() + flips[1].size()) {
+        i = 1;
+        j = 0;
+        k = 2;
+        index -= flips[0].size();
+    }
+    else {
+        i = 2;
+        j = 0;
+        k = 1;
+        index -= flips[0].size() + flips[1].size();
+    }
+
+    index1 = flips[i].index1(index);
+    index2 = flips[i].index2(index);
+
+    if (boolDistribution(generator))
+        std::swap(j, k);
+
+    if (boolDistribution(generator))
+        std::swap(index1, index2);
+}
+
+void FractionalScheme::flip(int i, int j, int k, int index1, int index2, bool inverse) {
+    if (inverse) {
+        for (int index = 0; index < elements[j]; index++)
+            uvw[j][index1 * elements[j] + index] += uvw[j][index2 * elements[j] + index];
+    }
+    else {
+        for (int index = 0; index < elements[j]; index++)
+            uvw[j][index1 * elements[j] + index] -= uvw[j][index2 * elements[j] + index];
+    }
 
     for (int index = 0; index < elements[k]; index++)
         uvw[k][index2 * elements[k] + index] += uvw[k][index1 * elements[k] + index];
 
     flips[j].remove(index1);
     flips[k].remove(index2);
+    flipsNeg[j].remove(index1);
+    flipsNeg[k].remove(index2);
 
     if (isZeroMatrix(j, index1) || isZeroMatrix(k, index2)) {
         removeZeroes();
@@ -513,11 +553,23 @@ void FractionalScheme::flip(int i, int j, int k, int index1, int index2) {
     }
 
     for (int index = 0; index < rank; index++) {
-        if (index != index1 && isEqualMatrices(j, index, index1))
-            flips[j].add(index1, index);
+        if (index != index1) {
+            if (isEqualMatrices(j, index, index1)) {
+                flips[j].add(index1, index);
+            }
+            else if (isInverseMatrices(j, index, index1)) {
+                flipsNeg[j].add(index1, index);
+            }
+        }
 
-        if (index != index2 && isEqualMatrices(k, index, index2))
-            flips[k].add(index2, index);
+        if (index != index2) {
+            if (isEqualMatrices(k, index, index2)) {
+                flips[k].add(index2, index);
+            }
+            else if (isInverseMatrices(k, index, index2)) {
+                flipsNeg[k].add(index2, index);
+            }
+        }
     }
 }
 
