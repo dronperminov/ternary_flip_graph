@@ -58,6 +58,7 @@ int runLiftSchemes(const ArgParser &parser) {
     std::string ring = parser["--ring"];
     int steps = std::stoi(parser["--steps"]);
     bool canonize = parser.isSet("--canonize");
+    bool fixFractions = parser.isSet("--fix-fractions");
 
     int threads = std::stoi(parser["--threads"]);
     std::string format = parser["--format"];
@@ -70,6 +71,7 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << "- steps: " << steps << std::endl;
     std::cout << "- canonize: " << (canonize ? "yes" : "no") << std::endl;
+    std::cout << "- fix fractions: " << (fixFractions ? "yes" : "no") << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- format: " << format << std::endl;
     std::cout << std::endl << std::endl;
@@ -111,6 +113,9 @@ int runLiftSchemes(const ArgParser &parser) {
         std::string status;
 
         if (reconstructed) {
+            if (fixFractions)
+                liftedScheme.fixFractions();
+
             if (canonize)
                 liftedScheme.canonize();
 
@@ -179,6 +184,7 @@ int main(int argc, char *argv[]) {
     parser.addSection("Lifting parameters");
     parser.add("--steps", "-k", ArgType::Natural, "Number of Hensel lifting steps", "10");
     parser.add("--canonize", "-c", ArgType::Flag, "Canonize reconstructed schemes");
+    parser.add("--fix-fractions", ArgType::Flag, "Try to rescale fractions to integers");
 
     parser.addSection("Other parameters");
     parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
