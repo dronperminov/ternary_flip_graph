@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <chrono>
 #include <string>
 #include <sstream>
 
@@ -166,7 +167,6 @@ bool runSandwichFlip(const ArgParser &parser) {
         seed = time(0);
 
     std::string format = parser["--format"];
-    bool verbose = parser.isSet("--verbose");
     bool fixFractions = parser.isSet("--fix-fractions");
     bool maximizeFlips = parser.isSet("--maximize-flips");
 
@@ -212,7 +212,9 @@ bool runSandwichFlip(const ArgParser &parser) {
     std::cout << "- rank: " << initScheme.getRank() << std::endl;
     std::cout << "- flips: " << initScheme.getAvailableFlips() << std::endl;
     std::cout << "- values: " << initScheme.getUniqueValues() << std::endl;
-    std::cout << "- weight: " << bestWeight << std::endl;
+    std::cout << "- fractions: " << bestWeight.fractions << std::endl;
+    std::cout << "- max abs value: " << bestWeight.maxValue << " (count: " << bestWeight.maxCount << ")" << std::endl;
+    std::cout << "- weight: " << bestWeight.weight << std::endl;
     std::cout << std::endl;
 
     if (initScheme.getAvailableFlips() == 0 && sumP < 1) {
@@ -228,10 +230,14 @@ bool runSandwichFlip(const ArgParser &parser) {
     std::mt19937 generator(seed);
     std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
-    std::vector<FractionalScheme> improvements;
-    addImprovement(improvements, initScheme, maxImprovements, position);
 
     FractionalScheme scheme;
+
+    std::cout << "+------+---------+-----------+---------------+-----------------+------------+--------------+" << std::endl;
+    std::cout << "| step |  flips  | fractions | max abs value | max value count |   weight   | elapsed time |" << std::endl;
+    std::cout << "+------+---------+-----------+---------------+-----------------+------------+--------------+" << std::endl;
+
+    auto startTime = std::chrono::high_resolution_clock::now();
 
     while (1) {
         int steps = minSteps + generator() % (maxSteps - minSteps + 1);
@@ -264,11 +270,19 @@ bool runSandwichFlip(const ArgParser &parser) {
                 bestWeight = weight;
                 saveScheme(scheme, outputPath, format);
                 addImprovement(improvements, scheme, maxImprovements, position);
-                std::cout << "New improvement (step: " << (step + 1) << "): " << bestWeight << std::endl;
-            }
 
-            if (verbose)
-                std::cout << weight << "    " << bestWeight << std::endl;
+                double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0;
+
+                std::cout << "| ";
+                std::cout << std::setw(4) << (step + 1) << " | ";
+                std::cout << std::setw(7) << bestWeight.flips << " | ";
+                std::cout << std::setw(9) << bestWeight.fractions << " | ";
+                std::cout << std::setw(13) << bestWeight.maxValue << " | ";
+                std::cout << std::setw(15) << bestWeight.maxCount << " | ";
+                std::cout << std::setw(10) << bestWeight.weight << " | ";
+                std::cout << std::setw(12) << prettyTime(elapsedTime) << " |";
+                std::cout << std::endl;
+            }
         }
     }
 
@@ -283,6 +297,7 @@ int main(int argc, char *argv[]) {
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for improved schemes", "schemes");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
     parser.add("--integer", ArgType::Flag, "Read scheme as integer");
+    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes");
 
     parser.addSection("Run parameters");
     parser.add("--min-steps", ArgType::Natural, "Minimum number of random steps", "1");
@@ -298,7 +313,6 @@ int main(int argc, char *argv[]) {
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
-    parser.add("--verbose", "-v", ArgType::Flag, "Show every step weight");
 
     if (!parser.parse(argc, argv))
         return 0;
