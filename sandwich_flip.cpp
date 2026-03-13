@@ -230,6 +230,8 @@ bool runSandwichFlip(const ArgParser &parser) {
     std::mt19937 generator(seed);
     std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
+    std::vector<FractionalScheme> improvements;
+    addImprovement(improvements, initScheme, maxImprovements, position);
 
     FractionalScheme scheme;
 
