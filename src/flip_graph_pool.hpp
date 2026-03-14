@@ -117,7 +117,7 @@ bool FlipGraphPool<Scheme>::initializeFromFile(const std::string &path, bool mul
     if (multiple)
         f >> schemesCount;
 
-    int readCount = std::min(schemesCount, (int)poolParameters.size);
+    int readCount = std::min(schemesCount, std::max(count, (int)poolParameters.size));
     std::cout << "Start reading " << readCount << " / " << schemesCount << " schemes from \"" << path << "\" as initial pool" << std::endl;
 
     initialPool.resize(readCount);
