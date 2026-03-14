@@ -267,6 +267,21 @@ bool FractionalScheme::tryFlip(std::mt19937 &generator) {
     return true;
 }
 
+void FractionalScheme::plus(std::mt19937 &generator) {
+    int index1 = generator() % rank;
+    int index2 = generator() % rank;
+
+    while (index1 == index2 || isEqualMatrices(0, index1, index2) || isEqualMatrices(1, index1, index2) || isEqualMatrices(2, index1, index2)) {
+        index1 = generator() % rank;
+        index2 = generator() % rank;
+    }
+
+    int permutation[3] = {0, 1, 2};
+    std::shuffle(permutation, permutation + 3, generator);
+
+    plus(permutation[0], permutation[1], permutation[2], index1, index2, generator() % 3);
+}
+
 void FractionalScheme::sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1) {
     for (int index = 0; index < rank; index++) {
         Matrix ui(dimension[0], dimension[1]);
@@ -458,6 +473,13 @@ void FractionalScheme::removeAt(int index) {
         uvw[i].resize(rank * elements[i]);
 }
 
+void FractionalScheme::addTriplet(int i, int j, int k, const std::vector<Fraction> &u, const std::vector<Fraction> &v, const std::vector<Fraction> &w) {
+    uvw[i].insert(uvw[i].end(), u.begin(), u.end());
+    uvw[j].insert(uvw[j].end(), v.begin(), v.end());
+    uvw[k].insert(uvw[k].end(), w.begin(), w.end());
+    rank++;
+}
+
 bool FractionalScheme::validateEquation(int i, int j, int k) const {
     int i1 = i / dimension[1];
     int i2 = i % dimension[1];
@@ -489,6 +511,16 @@ bool FractionalScheme::isInverseMatrices(int p, int index1, int index2) const {
             return false;
 
     return true;
+}
+
+int FractionalScheme::compareMatrices(int p, int index1, int index2) const {
+    if (isEqualMatrices(p, index1, index2))
+        return 1;
+
+    if (isInverseMatrices(p, index1, index2))
+        return -1;
+
+    return 0;
 }
 
 bool FractionalScheme::isZeroMatrix(int p, int index) const {
@@ -554,23 +586,136 @@ void FractionalScheme::flip(int i, int j, int k, int index1, int index2, bool in
 
     for (int index = 0; index < rank; index++) {
         if (index != index1) {
-            if (isEqualMatrices(j, index, index1)) {
+            int cmp = compareMatrices(j, index, index1);
+            if (cmp != 0 && checkFlipReduce(i, k, index, index1, cmp))
+                return;
+
+            if (cmp == 1) {
                 flips[j].add(index1, index);
             }
-            else if (isInverseMatrices(j, index, index1)) {
+            else if (cmp == -1) {
                 flipsNeg[j].add(index1, index);
             }
         }
 
         if (index != index2) {
-            if (isEqualMatrices(k, index, index2)) {
+            int cmp = compareMatrices(k, index, index2);
+            if (cmp != 0 && checkFlipReduce(i, j, index, index2, cmp))
+                return;
+
+            if (cmp == 1) {
                 flips[k].add(index2, index);
             }
-            else if (isInverseMatrices(k, index, index2)) {
+            else if (cmp == -1) {
                 flipsNeg[k].add(index2, index);
             }
         }
     }
+}
+
+void FractionalScheme::plus(int i, int j, int k, int index1, int index2, int variant) {
+    std::vector<Fraction> a1(uvw[i].begin() + index1 * elements[i], uvw[i].begin() + (index1 + 1) * elements[i]);
+    std::vector<Fraction> b1(uvw[j].begin() + index1 * elements[j], uvw[j].begin() + (index1 + 1) * elements[j]);
+    std::vector<Fraction> c1(uvw[k].begin() + index1 * elements[k], uvw[k].begin() + (index1 + 1) * elements[k]);
+
+    std::vector<Fraction> a2(uvw[i].begin() + index2 * elements[i], uvw[i].begin() + (index2 + 1) * elements[i]);
+    std::vector<Fraction> b2(uvw[j].begin() + index2 * elements[j], uvw[j].begin() + (index2 + 1) * elements[j]);
+    std::vector<Fraction> c2(uvw[k].begin() + index2 * elements[k], uvw[k].begin() + (index2 + 1) * elements[k]);
+
+    std::vector<Fraction> aAdd = addVectors(a1, a2);
+    std::vector<Fraction> bAdd = addVectors(b1, b2);
+    std::vector<Fraction> cAdd = addVectors(c1, c2);
+
+    std::vector<Fraction> aSub = subVectors(a2, a1);
+    std::vector<Fraction> bSub = subVectors(b2, b1);
+    std::vector<Fraction> cSub = subVectors(c2, c1);
+
+    if (variant == 0) {
+        std::copy(bAdd.begin(), bAdd.end(), uvw[j].begin() + index1 * elements[j]);
+        std::copy(aSub.begin(), aSub.end(), uvw[i].begin() + index2 * elements[i]);
+        addTriplet(i, j, k, a1, b2, cSub);
+    }
+    else if (variant == 1) {
+        std::copy(cAdd.begin(), cAdd.end(), uvw[k].begin() + index1 * elements[k]);
+        std::copy(bSub.begin(), bSub.end(), uvw[j].begin() + index2 * elements[j]);
+        addTriplet(i, j, k, aSub, b1, c2);
+    }
+    else {
+        std::copy(aAdd.begin(), aAdd.end(), uvw[i].begin() + index1 * elements[i]);
+        std::copy(cSub.begin(), cSub.end(), uvw[k].begin() + index2 * elements[k]);
+        addTriplet(i, j, k, a2, bSub, c1);
+    }
+
+    removeZeroes();
+    initFlips();
+}
+
+bool FractionalScheme::reduce(int i, int index1, int index2, int sign) {
+    if (sign == 0)
+        return false;
+
+    if (sign == 1)
+        reduceAdd(i, index1, index2);
+    else
+        reduceSub(i, index1, index2);
+
+    return true;
+}
+
+void FractionalScheme::reduceAdd(int i, int index1, int index2) {
+    for (int index = 0; index < elements[i]; index++)
+        uvw[i][index1 * elements[i] + index] += uvw[i][index2 * elements[i] + index];
+
+    bool isZero = isZeroMatrix(i, index1);
+    removeAt(index2);
+
+    if (isZero)
+        removeZeroes();
+
+    initFlips();
+}
+
+void FractionalScheme::reduceSub(int i, int index1, int index2) {
+    for (int index = 0; index < elements[i]; index++)
+        uvw[i][index1 * elements[i] + index] -= uvw[i][index2 * elements[i] + index];
+
+    bool isZero = isZeroMatrix(i, index1);
+    removeAt(index2);
+
+    if (isZero)
+        removeZeroes();
+
+    initFlips();
+}
+
+bool FractionalScheme::checkFlipReduce(int i, int j, int index1, int index2, int sign) {
+    int cmpI = compareMatrices(i, index1, index2);
+    if (reduce(j, index1, index2, cmpI * sign))
+        return true;
+
+    int cmpJ = compareMatrices(j, index1, index2);
+    if (reduce(i, index1, index2, cmpJ * sign))
+        return true;
+
+    return false;
+}
+
+std::vector<Fraction> FractionalScheme::addVectors(const std::vector<Fraction> &a, const std::vector<Fraction> &b) const {
+    std::vector<Fraction> result(a.size());
+
+    for (size_t i = 0; i < a.size(); i++)
+        result[i] = a[i] + b[i];
+
+    return result;
+}
+
+std::vector<Fraction> FractionalScheme::subVectors(const std::vector<Fraction> &a, const std::vector<Fraction> &b) const {
+    std::vector<Fraction> result(a.size());
+
+    for (size_t i = 0; i < a.size(); i++)
+        result[i] = a[i] - b[i];
+
+    return result;
 }
 
 int64_t FractionalScheme::gcdNumerators(const std::vector<Fraction> &fractions) const {

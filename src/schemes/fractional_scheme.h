@@ -40,6 +40,7 @@ public:
     std::string getTypeInvariant() const;
 
     bool tryFlip(std::mt19937 &generator);
+    void plus(std::mt19937 &generator);
     void sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1);
     void scale(int index, const Fraction &alpha, const Fraction &beta, const Fraction &gamma);
     void fixFractions();
@@ -53,16 +54,26 @@ private:
     void initFlips();
     void removeZeroes();
     void removeAt(int index);
+    void addTriplet(int i, int j, int k, const std::vector<Fraction> &u, const std::vector<Fraction> &v, const std::vector<Fraction> &w);
 
     bool validateEquation(int i, int j, int k) const;
     bool reconstructValue(int64_t a, int64_t mod, int64_t bound, Fraction &fraction) const;
 
     bool isEqualMatrices(int p, int index1, int index2) const;
     bool isInverseMatrices(int p, int index1, int index2) const;
+    int compareMatrices(int p, int index1, int index2) const;
     bool isZeroMatrix(int p, int index) const;
 
     void selectFlip(FlipSet *flips, size_t index, int &i, int &j, int &k, int &index1, int &index2, std::mt19937 &generator);
     void flip(int i, int j, int k, int index1, int index2, bool inverse);
+    void plus(int i, int j, int k, int index1, int index2, int variant);
+    bool reduce(int i, int index1, int index2, int sign);
+    void reduceAdd(int i, int index1, int index2);
+    void reduceSub(int i, int index1, int index2);
+    bool checkFlipReduce(int i, int j, int index1, int index2, int sign);
+
+    std::vector<Fraction> addVectors(const std::vector<Fraction> &a, const std::vector<Fraction> &b) const;
+    std::vector<Fraction> subVectors(const std::vector<Fraction> &a, const std::vector<Fraction> &b) const;
 
     int64_t gcdNumerators(const std::vector<Fraction> &fractions) const;
     int64_t lcmDenominators(const std::vector<Fraction> &fractions) const;
