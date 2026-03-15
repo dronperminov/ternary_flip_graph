@@ -50,7 +50,7 @@ std::string getSavePath(const FractionalScheme &scheme, int index, const std::st
     return ss.str();
 }
 
-template <typename Scheme>
+template <template<typename> typename Scheme, typename T>
 int runLiftSchemes(const ArgParser &parser) {
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
@@ -62,6 +62,7 @@ int runLiftSchemes(const ArgParser &parser) {
 
     int threads = std::stoi(parser["--threads"]);
     std::string format = parser["--format"];
+    int maxMatrixElements = sizeof(T) * 8;
 
     if (!makeDirectory(outputPath))
         return -1;
@@ -74,9 +75,10 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << "- fix fractions: " << (fixFractions ? "yes" : "no") << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- format: " << format << std::endl;
+    std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl << std::endl;
 
-    std::vector<Scheme> schemes;
+    std::vector<Scheme<T>> schemes;
     if (!readSchemes(inputPath, schemes, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
 
@@ -155,18 +157,20 @@ int runLiftSchemes(const ArgParser &parser) {
 
 template <template<typename> typename Scheme>
 int runLiftSchemesSizes(const ArgParser &parser) {
-    int maxMatrixElements = std::stoi(parser["--int-width"]);
+    int maxMatrixElements = parser["--int-width"] == "auto" ? getMaxMatrixElements(parser["--input-path"], parser.isSet("--multiple")) : std::stoi(parser["--int-width"]);
+    if (maxMatrixElements < 0)
+        return -1;
 
     if (maxMatrixElements <= 16)
-        return runLiftSchemes<Scheme<uint16_t>>(parser);
+        return runLiftSchemes<Scheme, uint16_t>(parser);
 
     if (maxMatrixElements <= 32)
-        return runLiftSchemes<Scheme<uint32_t>>(parser);
+        return runLiftSchemes<Scheme, uint32_t>(parser);
 
     if (maxMatrixElements <= 64)
-        return runLiftSchemes<Scheme<uint64_t>>(parser);
+        return runLiftSchemes<Scheme, uint64_t>(parser);
 
-    return runLiftSchemes<Scheme<__uint128_t>>(parser);
+    return runLiftSchemes<Scheme, __uint128_t>(parser);
 }
 
 int main(int argc, char *argv[]) {
@@ -187,7 +191,7 @@ int main(int argc, char *argv[]) {
     parser.add("--fix-fractions", ArgType::Flag, "Try to rescale fractions to integers");
 
     parser.addSection("Other parameters");
-    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
+    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128", "auto"}, "auto");
 
     if (!parser.parse(argc, argv))
         return 0;
