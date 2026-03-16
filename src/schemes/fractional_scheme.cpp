@@ -161,6 +161,16 @@ int FractionalScheme::getAbsIntCount(int value) const {
     return count;
 }
 
+int FractionalScheme::getMaxDenominator() const {
+    int denominator = 1;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            denominator = std::max(denominator, uvw[i][j].denominator());
+
+    return denominator;
+}
+
 std::string FractionalScheme::getRing() const {
     if (isTernary())
         return "ZT";

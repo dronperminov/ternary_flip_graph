@@ -30,6 +30,8 @@ public:
     int maxDenominator() const;
     int rank() const;
 
+    void identity();
+
     void swapRows(int row1, int row2, int column = 0);
     void divideRow(int row, const Fraction &divider, int column = 0);
     void subtractRow(int row1, int row2, const Fraction &value, int column = 0);

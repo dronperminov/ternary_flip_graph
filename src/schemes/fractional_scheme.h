@@ -34,6 +34,7 @@ public:
     int64_t getWeight() const;
     int getMaxAbsInteger() const;
     int getAbsIntCount(int value) const;
+    int getMaxDenominator() const;
     std::string getRing() const;
     std::string getUniqueValues() const;
 

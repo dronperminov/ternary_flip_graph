@@ -150,6 +150,12 @@ int Matrix::rank() const {
     return rank;
 }
 
+void Matrix::identity() {
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < columns; j++)
+            values[i * columns + j] = i == j ? 1 : 0;
+}
+
 void Matrix::swapRows(int row1, int row2, int column) {
     for (int i = column; i < columns; i++)
         std::swap(values[row1 * columns + i], values[row2 * columns + i]);
