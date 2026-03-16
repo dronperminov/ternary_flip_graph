@@ -292,6 +292,39 @@ void FractionalScheme::plus(std::mt19937 &generator) {
     plus(permutation[0], permutation[1], permutation[2], index1, index2, generator() % 3);
 }
 
+void FractionalScheme::split(std::mt19937 &generator, const std::vector<Fraction> &values) {
+    int permutation[3] = {0, 1, 2};
+    std::shuffle(permutation, permutation + 3, generator);
+
+    int i = permutation[0];
+    int j = permutation[1];
+    int k = permutation[2];
+    int index = generator() % rank;
+
+    std::vector<Fraction> u1(elements[i]), u2(elements[i]);
+    std::vector<Fraction> v(uvw[j].begin() + index * elements[j], uvw[j].begin() + (index + 1) * elements[j]);
+    std::vector<Fraction> w(uvw[k].begin() + index * elements[k], uvw[k].begin() + (index + 1) * elements[k]);
+
+    for (int ind = 0; ind < elements[i]; ind++) {
+        Fraction value = values[generator() % values.size()];
+
+        if (boolDistribution(generator)) {
+            u1[ind] = value;
+            u2[ind] = uvw[i][index * elements[i] + ind] - value;
+        }
+        else {
+            u1[ind] = uvw[i][index * elements[i] + ind] - value;
+            u2[ind] = value;
+        }
+    }
+
+    std::copy(u1.begin(), u1.end(), uvw[i].begin() + index * elements[i]);
+    addTriplet(i, j, k, u2, v, w);
+
+    removeZeroes();
+    initFlips();
+}
+
 void FractionalScheme::sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1) {
     for (int index = 0; index < rank; index++) {
         Matrix ui(dimension[0], dimension[1]);
