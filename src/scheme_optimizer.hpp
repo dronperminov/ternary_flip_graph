@@ -19,6 +19,7 @@ class SchemeOptimizer {
     size_t flipIterations;
     double plusProbability;
     int plusDiff;
+    double sandwichingProbability;
     int seed;
     double copyBestProbability;
     int goal;
@@ -35,7 +36,7 @@ class SchemeOptimizer {
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
 public:
-    SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int pllusDiff, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format);
+    SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int plusDiff, double sandwichingProbability, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format);
 
     bool initializeFromFile(const std::string &path, bool multiple, bool checkCorrectness);
     void run(int maxNoImprovements);
@@ -52,7 +53,7 @@ private:
 };
 
 template <typename Scheme>
-SchemeOptimizer<Scheme>::SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int plusDiff, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format) : uniform(0.0, 1.0) {
+SchemeOptimizer<Scheme>::SchemeOptimizer(int count, const std::string &outputPath, int threads, size_t flipIterations, double plusProbability, int plusDiff, double sandwichingProbability, int seed, double copyBestProbability, const std::string &metric, bool maximize, int topCount, const std::string &format) : uniform(0.0, 1.0) {
     this->initialCount = 0;
     this->count = count;
     this->outputPath = outputPath;
@@ -60,6 +61,7 @@ SchemeOptimizer<Scheme>::SchemeOptimizer(int count, const std::string &outputPat
     this->flipIterations = flipIterations;
     this->plusProbability = plusProbability;
     this->plusDiff = plusDiff;
+    this->sandwichingProbability = sandwichingProbability;
     this->seed = seed;
     this->copyBestProbability = copyBestProbability;
     this->metric = metric;
@@ -172,6 +174,9 @@ void SchemeOptimizer<Scheme>::optimize(Scheme &scheme, Scheme &schemeBest, int &
     for (size_t iteration = 0; iteration < flipIterations; iteration++) {
         if (!scheme.tryFlip(generator) || (scheme.getRank() < targetRank + plusDiff && uniform(generator) < plusProbability))
             scheme.tryExpand(generator);
+
+        if (uniform(generator) < sandwichingProbability)
+            scheme.trySandwiching(generator);
 
         if (scheme.getRank() != targetRank)
             continue;

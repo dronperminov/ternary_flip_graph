@@ -26,6 +26,7 @@ int runSchemeOptimizer(const ArgParser &parser) {
     size_t flipIterations = parseNatural(parser["--flip-iterations"]);
     double plusProbability = std::stod(parser["--plus-probability"]);
     int plusDiff = std::stoi(parser["--plus-diff"]);
+    double sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
 
     int topCount = std::stoi(parser["--top-count"]);
     int seed = std::stoi(parser["--seed"]);
@@ -50,6 +51,7 @@ int runSchemeOptimizer(const ArgParser &parser) {
     std::cout << "- flip iterations: " << flipIterations << std::endl;
     std::cout << "- plus probability: " << plusProbability << std::endl;
     std::cout << "- plus diff: " << plusDiff << std::endl;
+    std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << std::endl;
     std::cout << "- top count: " << topCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
@@ -58,7 +60,7 @@ int runSchemeOptimizer(const ArgParser &parser) {
     std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl;
 
-    SchemeOptimizer<Scheme<T>> optimizer(count, outputPath, threads, flipIterations, plusProbability, plusDiff, seed, copyBestProbability, metric, maximize, topCount, format);
+    SchemeOptimizer<Scheme<T>> optimizer(count, outputPath, threads, flipIterations, plusProbability, plusDiff, sandwichingProbability, seed, copyBestProbability, metric, maximize, topCount, format);
 
     if (!optimizer.initializeFromFile(inputPath, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
@@ -107,6 +109,7 @@ int main(int argc, char **argv) {
     parser.add("--flip-iterations", ArgType::Natural, "Flip iterations before reporting", "100K");
     parser.add("--plus-probability", ArgType::Real, "Probability of plus operation, from 0.0 to 1.0", "0.01");
     parser.add("--plus-diff", ArgType::Natural, "Maximum rank difference for plus operations", "2");
+    parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0.0");
 
     parser.addSection("Other parameters");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");

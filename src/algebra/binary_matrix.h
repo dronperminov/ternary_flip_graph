@@ -19,6 +19,8 @@ public:
 
     bool invertible(BinaryMatrix &inverse) const;
 
+    void identity();
+
     void swapRows(int row1, int row2);
     void sandwich(const BinaryMatrix &left, const BinaryMatrix &right);
     void random(std::mt19937 &generator);

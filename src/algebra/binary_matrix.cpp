@@ -62,6 +62,12 @@ bool BinaryMatrix::invertible(BinaryMatrix &inverse) const {
     return true;
 }
 
+void BinaryMatrix::identity() {
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < columns; j++)
+            values[i * columns + j] = i == j;
+}
+
 void BinaryMatrix::swapRows(int row1, int row2) {
     for (int i = 0; i < columns; i++)
         std::swap(values[row1 * columns + i], values[row2 * columns + i]);
@@ -94,8 +100,25 @@ void BinaryMatrix::sandwich(const BinaryMatrix &left, const BinaryMatrix &right)
 }
 
 void BinaryMatrix::random(std::mt19937 &generator) {
-    for (int i = 0; i < rows * columns; i++)
-        values[i] = generator() & 1;
+    if (generator() % 10) {
+        identity();
+
+        int row = generator() % rows;
+        int column1 = generator() % columns;
+        int column2 = generator() % columns;
+
+        while (column1 == column2) {
+            column1 = generator() % columns;
+            column2 = generator() % columns;
+        }
+
+        values[row * columns + column1] = 1;
+        values[row * columns + column2] = 1;
+    }
+    else {
+        for (int i = 0; i < rows * columns; i++)
+            values[i] = generator() & 1;
+    }
 }
 
 void BinaryMatrix::randomInvertible(BinaryMatrix &inverse, std::mt19937 &generator) {
