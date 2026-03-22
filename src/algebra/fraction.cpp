@@ -113,6 +113,9 @@ Fraction Fraction::operator*(const Fraction &fraction) const {
     int64_t gcd1 = std::gcd(abs(num), fraction.den);
     int64_t gcd2 = std::gcd(abs(fraction.num), den);
 
+    if (gcd1 == 0 || gcd2 == 0)
+        return 0;
+
     int64_t numerator = (num / gcd1) * (fraction.num / gcd2);
     int64_t denominator = (den / gcd2) * (fraction.den / gcd1);
     return Fraction(numerator, denominator);
@@ -124,6 +127,9 @@ Fraction Fraction::operator/(const Fraction &fraction) const {
 
     int64_t gcd1 = std::gcd(abs(num), fraction.num);
     int64_t gcd2 = std::gcd(abs(fraction.den), den);
+
+    if (gcd1 == 0 || gcd2 == 0)
+        return 0;
 
     int64_t numerator = (num / gcd1) * (fraction.den / gcd2);
     int64_t denominator = (den / gcd2) * (fraction.num / gcd1);

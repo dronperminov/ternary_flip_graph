@@ -200,6 +200,20 @@ std::string FractionalScheme::getUniqueValues() const {
     return ss.str();
 }
 
+FlipStructure FractionalScheme::getOptimalStructure(std::mt19937 &generator, int iterations, double eps) const {
+    FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
+
+    for (int i = 0; i < 3; i++) {
+        for (size_t j = 0; j < flips[i].size(); j++)
+            optimizer.add(i, flips[i].index1(j), flips[i].index2(j));
+
+        for (size_t j = 0; j < flipsNeg[i].size(); j++)
+            optimizer.add(i, flipsNeg[i].index1(j), flipsNeg[i].index2(j));
+    }
+
+    return optimizer.optimize(generator, iterations, eps);
+}
+
 std::string FractionalScheme::getTypeInvariant() const {
     std::vector<Ranks> ranks;
 

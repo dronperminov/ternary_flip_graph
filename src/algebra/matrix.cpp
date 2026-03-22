@@ -200,8 +200,25 @@ void Matrix::sandwich(const Matrix &left, const Matrix &right) {
 void Matrix::random(int min, int max, int denominator, std::mt19937 &generator) {
     std::uniform_int_distribution<int> distribution(min, max);
 
-    for (int i = 0; i < rows * columns; i++)
-        values[i] = Fraction(distribution(generator), denominator);
+    if (generator() % 10) {
+        identity();
+
+        int row = generator() % rows;
+        int column1 = generator() % columns;
+        int column2 = generator() % columns;
+
+        while (column1 == column2) {
+            column1 = generator() % columns;
+            column2 = generator() % columns;
+        }
+
+        values[row * columns + column1] = Fraction(distribution(generator), denominator);
+        values[row * columns + column2] = Fraction(distribution(generator), denominator);
+    }
+    else {
+        for (int i = 0; i < rows * columns; i++)
+            values[i] = Fraction(distribution(generator), denominator);
+    }
 }
 
 void Matrix::diagonal(const Fraction &value) {

@@ -21,3 +21,7 @@ std::string BaseScheme::getDimension() const {
 int BaseScheme::getAvailableFlips() const {
     return flips[0].size() + flips[1].size() + flips[2].size();
 }
+
+double BaseScheme::getOmega() const {
+    return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
+}

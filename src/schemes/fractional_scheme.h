@@ -12,6 +12,7 @@
 #include "../algebra/fraction.h"
 #include "../algebra/matrix.h"
 #include "../entities/ranks.h"
+#include "../entities/flip_structure_optimizer.h"
 #include "base_scheme.h"
 
 class FractionalScheme : public BaseScheme {
@@ -37,6 +38,8 @@ public:
     int getMaxDenominator() const;
     std::string getRing() const;
     std::string getUniqueValues() const;
+
+    FlipStructure getOptimalStructure(std::mt19937 &generator, int iterations = 250, double eps = 1e-15) const;
 
     std::string getTypeInvariant() const;
 

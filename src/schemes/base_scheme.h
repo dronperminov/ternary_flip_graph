@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <random>
+#include <cmath>
 
 #include "../entities/flip_set.h"
 
@@ -24,4 +25,5 @@ public:
     int getDimension(int index) const;
     std::string getDimension() const;
     int getAvailableFlips() const;
+    double getOmega() const;
 };
