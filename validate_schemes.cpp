@@ -1,11 +1,13 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #include "src/entities/arg_parser.h"
 #include "src/schemes/fractional_scheme.h"
+#include "src/utils.h"
 
-void showSchemeParameters(const FractionalScheme &scheme, bool showRing, bool showCoefficients) {
+void showSchemeParameters(const FractionalScheme &scheme, bool showRing, bool showCoefficients, double elapsed) {
     std::cout << " (" << scheme.getDimension(0) << ", " << scheme.getDimension(1) << ", " << scheme.getDimension(2) << ": " << scheme.getRank() << ")";
 
     if (showRing)
@@ -14,7 +16,7 @@ void showSchemeParameters(const FractionalScheme &scheme, bool showRing, bool sh
     if (showCoefficients)
         std::cout << ", values: " << scheme.getUniqueValues();
 
-    std::cout << std::endl;
+    std::cout << ", elapsed: " << prettyTime(elapsed) << std::endl;
 }
 
 void validateSchemes(const std::string &path, bool multiple, bool showRing, bool showCoefficients, bool integer) {
@@ -33,8 +35,10 @@ void validateSchemes(const std::string &path, bool multiple, bool showRing, bool
     int invalid = 0;
 
     for (int i = 0; i < count; i++) {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
         FractionalScheme scheme;
-        if (!scheme.read(f, true, integer)) {
+        if (!scheme.read(f, false, integer) || !scheme.validateParallel()) {
             std::cout << "- invalid scheme " << (i + 1) << " / " << count;
             invalid++;
         }
@@ -42,7 +46,10 @@ void validateSchemes(const std::string &path, bool multiple, bool showRing, bool
             std::cout << "- correct scheme " << (i + 1) << " / " << count;
         }
 
-        showSchemeParameters(scheme, showRing, showCoefficients);
+        auto endTime = std::chrono::high_resolution_clock::now();
+        double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0;
+
+        showSchemeParameters(scheme, showRing, showCoefficients, elapsed);
     }
 
     f.close();

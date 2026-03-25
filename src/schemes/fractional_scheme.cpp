@@ -36,6 +36,18 @@ bool FractionalScheme::validate() const {
     return true;
 }
 
+bool FractionalScheme::validateParallel() const {
+    bool valid = true;
+
+    #pragma omp parallel for collapse(3) reduction(&&: valid) schedule(dynamic, 32)
+    for (int i = 0; i < elements[0]; i++)
+        for (int j = 0; j < elements[1]; j++)
+            for (int k = 0; k < elements[2]; k++)
+                valid = valid && validateEquation(i, j, k);
+
+    return valid;
+}
+
 bool FractionalScheme::read(const std::string &path, bool checkCorrectness, bool integer) {
     std::ifstream f(path);
 
