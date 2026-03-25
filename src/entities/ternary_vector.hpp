@@ -260,6 +260,11 @@ int TernaryVector<T>::nonZeroCount() const {
     return __builtin_popcountll(values);
 }
 
+template <>
+int TernaryVector<__uint128_t>::nonZeroCount() const {
+    return __builtin_popcountll(values) + __builtin_popcountll(values >> 64);
+}
+
 template <typename T>
 std::ostream& operator<<(std::ostream &os, const TernaryVector<T> &vector) {
     for (int i = 0; i < vector.n; i++) {

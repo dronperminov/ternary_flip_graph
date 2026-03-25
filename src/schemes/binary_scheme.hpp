@@ -189,6 +189,17 @@ int BinaryScheme<T>::getComplexity() const {
     return count - 2 * rank - elements[2];
 }
 
+template <>
+int BinaryScheme<__uint128_t>::getComplexity() const {
+    int count = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int index = 0; index < rank; index++)
+            count += __builtin_popcountll(uvw[i][index]) + __builtin_popcountll(uvw[i][index] >> 64);
+
+    return count - 2 * rank - elements[2];
+}
+
 template <typename T>
 std::string BinaryScheme<T>::getRing() const {
     return "Z2";

@@ -213,7 +213,13 @@ Mod3Vector<T>::operator bool() const {
 
 template <typename T>
 int Mod3Vector<T>::nonZeroCount() const {
-    return __builtin_popcountll(low | high);
+    T values = low | high;
+    int count = __builtin_popcountll(values);
+
+    if (sizeof(T) > 8)
+        count += __builtin_popcountll(values >> 64);
+
+    return count;
 }
 
 template <typename T>
