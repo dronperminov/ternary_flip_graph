@@ -25,6 +25,7 @@ public:
     bool read(const std::string &path, bool checkCorrectness);
     bool read(std::istream &is, bool checkCorrectness);
 
+    int getAvailableFlips() const;
     int getComplexity() const;
     std::string getRing() const;
     std::string getHash() const;
@@ -168,6 +169,19 @@ bool TernaryScheme<T>::read(std::istream &is, bool checkCorrectness) {
     fixSigns();
     initFlips();
     return true;
+}
+
+template <typename T>
+int TernaryScheme<T>::getAvailableFlips() const {
+    int total = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int index1 = 0; index1 < rank; index1++)
+            for (int index2 = index1 + 1; index2 < rank; index2++)
+                if (uvw[i][index1].compare(uvw[i][index2]))
+                    total++;
+
+    return total;
 }
 
 template <typename T>
