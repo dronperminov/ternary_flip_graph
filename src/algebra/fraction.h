@@ -18,6 +18,8 @@ public:
     int denominator() const;
     std::string pretty() const;
 
+    double toDouble() const;
+
     bool isInteger() const;
     bool isTernaryInteger() const;
     bool reconstruct(uint64_t a, int64_t mod, int64_t bound);

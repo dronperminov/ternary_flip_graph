@@ -28,6 +28,10 @@ std::string Fraction::pretty() const {
     return ss.str();
 }
 
+double Fraction::toDouble() const {
+    return double(num) / den;
+}
+
 bool Fraction::isInteger() const {
     return den == 1;
 }

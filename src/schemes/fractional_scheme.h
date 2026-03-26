@@ -39,6 +39,7 @@ public:
     int getMaxDenominator() const;
     std::string getRing() const;
     std::string getUniqueValues() const;
+    double getFrobeniusNorm() const;
 
     FlipStructure getOptimalStructure(std::mt19937 &generator, int iterations = 250, double eps = 1e-15) const;
 

@@ -23,6 +23,9 @@ public:
 
     Matrix operator*(const Matrix &matrix) const;
 
+    Matrix transpose() const;
+    Fraction trace() const;
+
     bool invertible(Matrix &inverse) const;
     bool isTernary() const;
 

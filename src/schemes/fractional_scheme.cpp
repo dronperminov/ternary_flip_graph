@@ -212,6 +212,33 @@ std::string FractionalScheme::getUniqueValues() const {
     return ss.str();
 }
 
+double FractionalScheme::getFrobeniusNorm() const {
+    double norm = 0;
+
+    for (int index = 0; index < rank; index++) {
+        Matrix u(dimension[0], dimension[1]);
+        Matrix v(dimension[1], dimension[2]);
+        Matrix w(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            u[i] = uvw[0][index * elements[0] + i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[i] = uvw[1][index * elements[1] + i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[i] = uvw[2][index * elements[2] + i];
+
+        Matrix uut = u * u.transpose();
+        Matrix vvt = v * v.transpose();
+        Matrix wwt = w * w.transpose();
+
+        norm += std::sqrt((uut.trace() * vvt.trace() * wwt.trace()).toDouble());
+    }
+
+    return norm;
+}
+
 FlipStructure FractionalScheme::getOptimalStructure(std::mt19937 &generator, int iterations, double eps) const {
     FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
 

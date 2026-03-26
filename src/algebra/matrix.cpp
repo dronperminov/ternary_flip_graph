@@ -42,6 +42,25 @@ Matrix Matrix::operator*(const Matrix &matrix) const {
     return result;
 }
 
+Matrix Matrix::transpose() const {
+    Matrix transposed(columns, rows);
+
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < columns; j++)
+            transposed.values[j * rows + i] = values[i * columns + j];
+
+    return transposed;
+}
+
+Fraction Matrix::trace() const {
+    Fraction sum = 0;
+
+    for (int i = 0; i < rows; i++)
+        sum += values[i * columns + i];
+
+    return sum;
+}
+
 bool Matrix::invertible(Matrix &inverse) const {
     if (rows != columns)
         return false;
