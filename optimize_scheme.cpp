@@ -30,8 +30,7 @@ int runSchemeOptimizer(const ArgParser &parser) {
 
     int topCount = std::stoi(parser["--top-count"]);
     int seed = std::stoi(parser["--seed"]);
-    std::string metric = parser["--metric"];
-    bool maximize = parser.isSet("--maximize");
+    bool maximizeFlips = parser.isSet("--maximize-flips");
     double copyBestProbability = std::stod(parser["--copy-best-probability"]);
     int maxNoImprovements = std::stoi(parser["--max-no-improvements"]);
     int maxMatrixElements = sizeof(T) * 8;
@@ -39,7 +38,7 @@ int runSchemeOptimizer(const ArgParser &parser) {
     if (seed == 0)
         seed = time(0);
 
-    std::cout << "Parsed parameters of the " << metric << " " << (maximize ? "maximizer" : "minimizer") << " algorithm:" << std::endl;
+    std::cout << "Parsed parameters of the opimize scheme algorithm:" << std::endl;
     std::cout << "- ring: " << ring << std::endl;
     std::cout << "- count: " << count << std::endl;
     std::cout << "- threads: " << threads << std::endl;
@@ -56,11 +55,12 @@ int runSchemeOptimizer(const ArgParser &parser) {
     std::cout << "- top count: " << topCount << std::endl;
     std::cout << "- seed: " << seed << std::endl;
     std::cout << "- copy best probability: " << copyBestProbability << std::endl;
+    std::cout << "- maximize flips: " << (maximizeFlips ? "yes" : "no") << std::endl;
     std::cout << "- max no improvements: " << maxNoImprovements << std::endl;
     std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl;
 
-    SchemeOptimizer<Scheme<T>> optimizer(count, outputPath, threads, flipIterations, plusProbability, plusDiff, sandwichingProbability, seed, copyBestProbability, metric, maximize, topCount, format);
+    SchemeOptimizer<Scheme<T>> optimizer(count, outputPath, threads, flipIterations, plusProbability, plusDiff, sandwichingProbability, seed, copyBestProbability, maximizeFlips, topCount, format);
 
     if (!optimizer.initializeFromFile(inputPath, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
         return -1;
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
-    parser.add("--output-path", "-o", ArgType::Path, "Output directory for optimized schemes", "schemes");
+    parser.add("--output-path", "-o", ArgType::Path, "Output directory for optimized schemes", "schemes/optimized");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     parser.addSection("Other parameters");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
-    parser.add("--maximize", ArgType::Flag, "Maximize instead of minimizing");
+    parser.add("--maximize-flips", ArgType::Flag, "Maximize number of potential flips");
     parser.add("--copy-best-probability", ArgType::Real, "Probability to replace scheme with best scheme after improvement, from 0.0 to 1.0", "0.5");
     parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without metric improvement before termination", "3");
 

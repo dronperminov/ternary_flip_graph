@@ -373,8 +373,8 @@ All 10 schemes are correct
 ```
 
 ### optimize_scheme
-Uses flip operations to optimize schemes according to a selected metric. By default, it minimizes naive additive complexity (maximizes the number of zero
-coefficients), but can also optimize for the number of available flips.
+Uses flip operations to optimize schemes by minimizing naive additive complexity (maximizing the number of zero coefficients). When the `--maximize-flips` flag
+is used, it prioritizes maximizing the number of available flip operations, using complexity as a secondary criterion when flip counts are equal.
 
 #### Parameters
 - `--ring {ZT, Z2, Z3}` — coefficient ring (default: `ZT`);
@@ -383,12 +383,11 @@ coefficients), but can also optimize for the number of available flips.
 - `--multiple` — input file contains multiple schemes;
 - `--count INT` — number of runners (default: `8`);
 - `--threads INT` — OpenMP threads;
-- `--metric {complexity, flips}` — metric to optimize (default: `complexity`);
 - `--format {txt, json}` — output format (default: `txt`);
 - `--flip-iterations INT` — flips per report (default: `100K`);
 - `--plus-probability REAL` — probability of `plus` operation (default: `0.01`);
 * `--plus-diff INT` — allowed rank difference for `plus` operation (default: `2`);
-- `--maximize` — maximize instead of minimize;
+- `--maximize-flips` — maximize number of potential flips first;
 - `--copy-best-probability REAL` — probability to replace scheme with best scheme after improvement (default: `0.5`);
 - `--max-no-improvements INT` — termination threshold (default: `3`).
 
@@ -400,29 +399,37 @@ Minimizing a `3x3x8` rank `56` ternary scheme:
 
 Maximize the number of available flips for the same scheme:
 ```bash
-./optimize_scheme -c 16 -i inputs/3x3x8_m56_ZT.txt --metric flips --maximize
+./optimize_scheme -c 16 -i inputs/3x3x8_m56_ZT.txt --maximize-flips
 ```
 
 Example output complexity minimizing a `3x3x8` rank `56` ternary scheme:
 ```text
-+----------------------------------+
-| dimension       rank        ring |
-|     3x3x8         56          ZT |
-+----------------------------------+
-| count: 16 (12 threads)           |
-| seed: 1771334776                 |
-| best complexity: 439             |
-| iteration: 4                     |
-| elapsed: 1.81                    |
-+==================================+
-| runner |    scheme complexity    |
-|   id   |    best    |    curr    |
-+--------+------------+------------+
-| 5      | 439        | 527        |
-| 2      | 440        | 439        |
-| 1      | 440        | 439        |
-+--------+------------+------------+
-- iteration time (last / min / max / mean): 0.52 / 0.42 / 0.52 / 0.45
++----------------------------------------------------------+
+| dimension                   rank                    ring |
+|     3x3x8                     56                      ZT |
++----------------------------------------------------------+
+| count: 16 (16 threads)                                   |
+| seed: 1774561219                                         |
+| best flips: 22                                           |
+| best complexity: 502                                     |
+| iteration: 13                                            |
+| elapsed: 0.55                                            |
++========+========================+========================+
+| runner |          best          |          curr          |
+|   id   |   flips   | complexity |   flips   | complexity |
++--------+-----------+------------+-----------+------------+
+| 0      | 22        | 502        | 22        | 502        |
+| 3      | 22        | 502        | 22        | 502        |
+| 8      | 22        | 502        | 22        | 502        |
+| 4      | 22        | 504        | 22        | 502        |
+| 2      | 22        | 505        | 16        | 532        |
+| 13     | 22        | 505        | 22        | 502        |
+| 11     | 22        | 505        | 22        | 502        |
+| 10     | 22        | 509        | 22        | 509        |
+| 6      | 22        | 509        | 22        | 509        |
+| 9      | 22        | 510        | 22        | 502        |
++--------+-----------+------------+-----------+------------+
+- iteration time (last / min / max / mean): 0.03 / 0.03 / 0.07 / 0.04
 ```
 
 
