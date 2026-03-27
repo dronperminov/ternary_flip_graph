@@ -31,6 +31,7 @@ public:
     bool isTernary() const;
 
     int getAvailableFlips() const;
+    int getAvailableFlips(int index) const;
     int getFractionsCount() const;
     int getComplexity() const;
     int64_t getWeight() const;

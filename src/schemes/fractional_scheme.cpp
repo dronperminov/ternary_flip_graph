@@ -119,6 +119,10 @@ int FractionalScheme::getAvailableFlips() const {
     return sizePos + sizeNeg;
 }
 
+int FractionalScheme::getAvailableFlips(int index) const {
+    return flips[index].size() + flipsNeg[index].size();
+}
+
 int FractionalScheme::getFractionsCount() const {
     int count = 0;
 
