@@ -87,7 +87,10 @@ int runSchemeOptimizerSizes(const ArgParser &parser) {
     if (maxMatrixElements <= 64)
         return runSchemeOptimizer<Scheme, uint64_t>(parser);
 
-    return runSchemeOptimizer<Scheme, __uint128_t>(parser);
+    if (maxMatrixElements <= 128)
+        return runSchemeOptimizer<Scheme, __uint128_t>(parser);
+
+    return runSchemeOptimizer<Scheme, uint256_t>(parser);
 }
 
 int main(int argc, char **argv) {

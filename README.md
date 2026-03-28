@@ -9,7 +9,7 @@ approach. The repository supports searches over multiple coefficient rings, with
 schemes to be valid over the general ring automatically, without any lifting step.
 
 All tools are implemented in pure C++, require only a standard `g++` compiler, have no external dependencies, and support parallel execution via OpenMP.
-The implementation handles matrices with up to 128 elements, supporting a wide range of matrix dimensions.
+The implementation handles matrices with up to 256 elements, supporting a wide range of matrix dimensions.
 
 For a comprehensive collection of discovered schemes and research results on fast matrix multiplication schemes, visit the companion repository:
 [FastMatrixMultiplication](https://github.com/dronperminov/FastMatrixMultiplication)
@@ -26,7 +26,7 @@ For a comprehensive collection of discovered schemes and research results on fas
 - **Parallel and reproducible**: multi-runner architecture combined with OpenMP threading and fully controllable random seeds;
 - **Validation and post-processing**: automatic verification of Brent equations, lifting from modular rings when needed, and naive additive complexity
   minimization;
-- **Large matrix support**: handles matrices with up to 128 elements, accommodating a wide variety of dimensions.
+- **Large matrix support**: handles matrices with up to 256 elements, accommodating a wide variety of dimensions.
 
 
 ## Installation
@@ -247,7 +247,7 @@ Same as `flip_graph`.
 
 #### Additional parameters
 - `--improve-ring {Z2, ZT, Q}` — save only schemes improving known rank (saves all by default);
-- `--int-width {16, 32, 64, 128}` — integer bit width, determines maximum matrix elements (default: `64`).
+- `--int-width {16, 32, 64, 128, 256}` — integer bit width, determines maximum matrix elements (default: `64`).
 
 #### Example
 Search binary schemes with meta-operations, dimensions varying from 4 to 10, rank limit 400:
@@ -308,7 +308,7 @@ obtain rational/integer coefficients.
 - `--steps INT` — number of lifting steps; (default: `10`)
 - `--canonize` — canonize reconstructed schemes;
 - `--threads INT` — OpenMP threads;
-- `--int-width {16, 32, 64, 128}` — integer width (default: `64`).
+- `--int-width {16, 32, 64, 128, 256}` — integer width (default: `64`).
 
 #### Example
 Lift multiple binary schemes:

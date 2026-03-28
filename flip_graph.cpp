@@ -131,7 +131,10 @@ int runFlipGraphSizes(const ArgParser &parser) {
     if (maxMatrixElements <= 64)
         return runFlipGraph<Scheme, uint64_t>(parser);
 
-    return runFlipGraph<Scheme, __uint128_t>(parser);
+    if (maxMatrixElements <= 128)
+        return runFlipGraph<Scheme, __uint128_t>(parser);
+
+    return runFlipGraph<Scheme, uint256_t>(parser);
 }
 
 bool checkInputArguments(const ArgParser &parser) {

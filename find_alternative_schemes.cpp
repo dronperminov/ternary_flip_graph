@@ -138,7 +138,10 @@ int runFindAlternativeSchemesSizes(const ArgParser &parser) {
     if (maxMatrixElements <= 64)
         return runFindAlternativeSchemes<Scheme, uint64_t>(parser);
 
-    return runFindAlternativeSchemes<Scheme, __uint128_t>(parser);
+    if (maxMatrixElements <= 128)
+        return runFindAlternativeSchemes<Scheme, __uint128_t>(parser);
+
+    return runFindAlternativeSchemes<Scheme, uint256_t>(parser);
 }
 
 int main(int argc, char **argv) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "uint256_t.h"
+
 template <typename T>
 struct TernaryVector {
     int n;
@@ -195,7 +197,7 @@ TernaryVector<T>& TernaryVector<T>::operator-=(const TernaryVector<T> &vector) {
 
 template <typename T>
 TernaryVector<T>::operator bool() const {
-    return values != 0;
+    return bool(values);
 }
 
 template <typename T>
@@ -204,7 +206,7 @@ bool TernaryVector<T>::limit(bool checkFirstNonZero) const {
         return false;
 
     if (checkFirstNonZero)
-        return values == 0 || (values & ~(values & (values - 1)) & ~signs);
+        return !values || (values & -values & ~signs);
 
     return true;
 }
@@ -220,7 +222,7 @@ bool TernaryVector<T>::limitSum(const TernaryVector<T> &vector, bool checkFirstN
         T sumValues = values ^ vector.values;
         T sumSigns = ((signs & values) | (vector.signs & vector.values)) & sumValues;
 
-        return sumValues == 0 || (sumValues & ~(sumValues & (sumValues - 1)) & ~sumSigns);
+        return !sumValues || (sumValues & -sumValues & ~sumSigns);
     }
 
     return true;
@@ -237,7 +239,7 @@ bool TernaryVector<T>::limitSub(const TernaryVector<T> &vector, bool checkFirstN
         T subValues = values ^ vector.values;
         T subSigns = ((signs & values) | (~vector.signs & vector.values)) & subValues;
 
-        return subValues == 0 || (subValues & ~(subValues & (subValues - 1)) & ~subSigns);
+        return !subValues || (subValues & -subValues & ~subSigns);
     }
 
     return true;
@@ -247,12 +249,12 @@ template <typename T>
 bool TernaryVector<T>::positiveFirstNonZeroSub(const TernaryVector<T> &vector) const {
     T subValues = values ^ vector.values;
     T subSigns = ((signs & values) | (~vector.signs & vector.values)) & subValues;
-    return subValues == 0 || (subValues & ~(subValues & (subValues - 1)) & ~subSigns);
+    return !subValues || (subValues & -subValues & ~subSigns);
 }
 
 template <typename T>
 bool TernaryVector<T>::positiveFirstNonZero() const {
-    return values == 0 || (values & ~(values & (values - 1)) & ~signs);
+    return !values || (values & -values & ~signs);
 }
 
 template <typename T>
@@ -263,6 +265,11 @@ int TernaryVector<T>::nonZeroCount() const {
 template <>
 int TernaryVector<__uint128_t>::nonZeroCount() const {
     return __builtin_popcountll(values) + __builtin_popcountll(values >> 64);
+}
+
+template <>
+int TernaryVector<uint256_t>::nonZeroCount() const {
+    return values.popcount();
 }
 
 template <typename T>

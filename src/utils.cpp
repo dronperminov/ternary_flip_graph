@@ -82,8 +82,8 @@ int getMaxMatrixElements(const std::string &path, bool multiple) {
 
     int maxMatrixElements = std::max(n1 * n2, std::max(n2 * n3, n3 * n1));
 
-    if (maxMatrixElements > 128) {
-        std::cerr << "Max matrix elements too big (> 128): " << n1 << "x" << n2 << "x" << n3 << std::endl;
+    if (maxMatrixElements > 256) {
+        std::cerr << "Max matrix elements too big (> 256): " << n1 << "x" << n2 << "x" << n3 << std::endl;
         return -1;
     }
 

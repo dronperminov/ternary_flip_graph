@@ -104,7 +104,10 @@ int runMetaFlipGraphSizes(const ArgParser &parser) {
     if (maxMatrixElements <= 64)
         return runMetaFlipGraph<Scheme, uint64_t>(parser);
 
-    return runMetaFlipGraph<Scheme, __uint128_t>(parser);
+    if (maxMatrixElements <= 128)
+        return runMetaFlipGraph<Scheme, __uint128_t>(parser);
+
+    return runMetaFlipGraph<Scheme, uint256_t>(parser);
 }
 
 bool checkInputArguments(const ArgParser &parser) {
@@ -152,7 +155,7 @@ int main(int argc, char **argv) {
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--top-count", ArgType::Natural, "Number of top schemes to report", "10");
     parser.addChoices("--improve-ring", ArgType::String, "Only save schemes that improve known rank for this ring (saves all by default)", {"Z2", "ZT", "Q"}, "");
-    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128"}, "64");
+    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128", "256"}, "64");
 
     if (!parser.parse(argc, argv))
         return 0;

@@ -170,7 +170,10 @@ int runLiftSchemesSizes(const ArgParser &parser) {
     if (maxMatrixElements <= 64)
         return runLiftSchemes<Scheme, uint64_t>(parser);
 
-    return runLiftSchemes<Scheme, __uint128_t>(parser);
+    if (maxMatrixElements <= 128)
+        return runLiftSchemes<Scheme, __uint128_t>(parser);
+
+    return runLiftSchemes<Scheme, uint256_t>(parser);
 }
 
 int main(int argc, char *argv[]) {
@@ -191,7 +194,7 @@ int main(int argc, char *argv[]) {
     parser.add("--fix-fractions", ArgType::Flag, "Try to rescale fractions to integers");
 
     parser.addSection("Other parameters");
-    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128), determines maximum matrix elements", {"16", "32", "64", "128", "auto"}, "auto");
+    parser.addChoices("--int-width", ArgType::String, "Integer bit width (16/32/64/128/256), determines maximum matrix elements", {"16", "32", "64", "128", "256", "auto"}, "auto");
 
     if (!parser.parse(argc, argv))
         return 0;
