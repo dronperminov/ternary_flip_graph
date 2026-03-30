@@ -56,6 +56,7 @@ public:
     void copy(const Mod3Scheme &scheme);
 
     bool validate() const;
+    bool validateParallel() const;
     bool reconstruct(FractionalScheme &scheme) const;
 
     Mod3Lifter toLift() const;
@@ -775,6 +776,19 @@ bool Mod3Scheme<T>::validate() const {
                     return false;
 
     return true;
+}
+
+template <typename T>
+bool Mod3Scheme<T>::validateParallel() const {
+    bool valid = true;
+
+    #pragma omp parallel for collapse(3) reduction(&&: valid) schedule(dynamic, 32)
+    for (int i = 0; i < elements[0]; i++)
+        for (int j = 0; j < elements[1]; j++)
+            for (int k = 0; k < elements[2]; k++)
+                valid = valid && validateEquation(i, j, k);
+
+    return valid;
 }
 
 template <typename T>

@@ -55,6 +55,7 @@ public:
     void copy(const BinaryScheme &scheme);
 
     bool validate() const;
+    bool validateParallel() const;
     bool reconstruct(FractionalScheme &scheme) const;
 
     BinaryLifter toLift() const;
@@ -752,6 +753,19 @@ bool BinaryScheme<T>::validate() const {
                     return false;
 
     return true;
+}
+
+template <typename T>
+bool BinaryScheme<T>::validateParallel() const {
+    bool valid = true;
+
+    #pragma omp parallel for collapse(3) reduction(&&: valid) schedule(dynamic, 32)
+    for (int i = 0; i < elements[0]; i++)
+        for (int j = 0; j < elements[1]; j++)
+            for (int k = 0; k < elements[2]; k++)
+                valid = valid && validateEquation(i, j, k);
+
+    return valid;
 }
 
 template <typename T>

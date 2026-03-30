@@ -444,7 +444,7 @@ void MetaFlipGraph<Scheme>::updateBest(size_t iteration) {
         if (known != dimension2knownRank.end() && bestRanks[top] >= known->second)
             continue;
 
-        if (!schemesBest[top].validate()) {
+        if (!schemesBest[top].validateParallel()) {
             std::cout << "error: unable to save scheme " << schemesBest[top].getDimension() << " - it is invalid" << std::endl;
             exit(-1);
         }
@@ -493,7 +493,7 @@ void MetaFlipGraph<Scheme>::updateRanks(int iteration, bool save) {
         if (known != dimension2knownRank.end() && bestRanks[pair.second] >= known->second)
             continue;
 
-        if (!schemes[pair.second].validate()) {
+        if (!schemes[pair.second].validateParallel()) {
             std::cout << "error: unable to save scheme " << schemes[pair.second].getDimension() << " - it is invalid" << std::endl;
             exit(-1);
         }

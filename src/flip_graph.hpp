@@ -220,7 +220,7 @@ void FlipGraph<Scheme>::updateBest(size_t iteration) {
     if (bestRanks[top] >= bestRank)
         return;
 
-    if (!schemesBest[top].validate()) {
+    if (!schemesBest[top].validateParallel()) {
         std::cout << "Unable to save: scheme invalid" << std::endl;
         return;
     }

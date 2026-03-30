@@ -54,6 +54,7 @@ public:
     void copy(const TernaryScheme<T> &scheme);
 
     bool validate() const;
+    bool validateParallel() const;
 protected:
     void initFlips();
     void removeZeroes();
@@ -812,6 +813,19 @@ bool TernaryScheme<T>::validate() const {
                 return false;
 
     return true;
+}
+
+template <typename T>
+bool TernaryScheme<T>::validateParallel() const {
+    bool valid = true;
+
+    #pragma omp parallel for collapse(3) reduction(&&: valid) schedule(dynamic, 32)
+    for (int i = 0; i < elements[0]; i++)
+        for (int j = 0; j < elements[1]; j++)
+            for (int k = 0; k < elements[2]; k++)
+                valid = valid && validateEquation(i, j, k);
+
+    return valid;
 }
 
 template <typename T>

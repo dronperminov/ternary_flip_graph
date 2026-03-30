@@ -214,7 +214,7 @@ bool SchemeOptimizer<Scheme>::updateBest() {
     if (!compareMetric(topMetric, bestMetric))
         return false;
 
-    if (!schemesBest[top].validate()) {
+    if (!schemesBest[top].validateParallel()) {
         std::cout << "Unable to save: scheme invalid" << std::endl;
         return false;
     }
