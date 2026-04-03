@@ -22,6 +22,20 @@ int BaseScheme::getAvailableFlips() const {
     return flips[0].size() + flips[1].size() + flips[2].size();
 }
 
+int BaseScheme::getAvailableFlips(int index) const {
+    return flips[index].size();
+}
+
 double BaseScheme::getOmega() const {
     return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
+}
+
+FlipStructure BaseScheme::getOptimalStructure(std::mt19937 &generator, int iterations, double eps) const {
+    FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
+
+    for (int i = 0; i < 3; i++)
+        for (size_t j = 0; j < flips[i].size(); j++)
+            optimizer.add(i, flips[i].index1(j), flips[i].index2(j));
+
+    return optimizer.optimize(generator, iterations, eps);
 }

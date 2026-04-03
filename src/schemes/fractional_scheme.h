@@ -12,7 +12,6 @@
 #include "../algebra/fraction.h"
 #include "../algebra/matrix.h"
 #include "../entities/ranks.h"
-#include "../entities/flip_structure_optimizer.h"
 #include "base_scheme.h"
 
 class FractionalScheme : public BaseScheme {

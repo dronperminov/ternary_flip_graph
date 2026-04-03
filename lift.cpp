@@ -99,13 +99,13 @@ int runLiftSchemes(const ArgParser &parser) {
         FractionalScheme liftedScheme;
 
         int step = 0;
-        bool reconstructed = schemes[i].reconstruct(liftedScheme) && liftedScheme.validate();
+        bool reconstructed = schemes[i].reconstruct(liftedScheme) && liftedScheme.validateParallel();
 
         if (!reconstructed) {
             auto lifter = schemes[i].toLift();
 
             while (step < steps && !reconstructed && lifter.lift()) {
-                reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
+                reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validateParallel();
                 step++;
             }
         }
