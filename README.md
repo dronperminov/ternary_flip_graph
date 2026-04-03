@@ -246,7 +246,7 @@ Same as `flip_graph`.
 - `--meta-max-rank-diff INT` — reset threshold relative to known rank (default: `10`).
 
 #### Additional parameters
-- `--improve-ring {Z2, ZT, Q}` — save only schemes improving known rank (saves all by default);
+- `--improve-ring {ZT, Z, Q}` — save only schemes improving known rank (saves all by default);
 - `--int-width {16, 32, 64, 128, 256}` — integer bit width, determines maximum matrix elements (default: `64`).
 
 #### Example
