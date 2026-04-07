@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
-    parser.add("--output-path", "-o", ArgType::Path, "Output directory for lifted schemes", "schemes");
+    parser.add("--output-path", "-o", ArgType::Path, "Output directory for lifted schemes", "schemes/lifted");
     parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
