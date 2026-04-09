@@ -8,8 +8,9 @@
 
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
-#include "src/entities/flip_parameters.h"
-#include "src/entities/meta_parameters.h"
+#include "src/parameters/flip_parameters.h"
+#include "src/parameters/pool_parameters.h"
+#include "src/parameters/metrics_parameters.h"
 #include "src/schemes/ternary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"

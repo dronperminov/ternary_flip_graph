@@ -10,9 +10,9 @@
 #include <omp.h>
 
 #include "utils.h"
-#include "entities/flip_parameters.h"
-#include "entities/pool_parameters.h"
-#include "entities/metrics_parameters.h"
+#include "parameters/flip_parameters.h"
+#include "parameters/pool_parameters.h"
+#include "parameters/metrics_parameters.h"
 
 template <typename Scheme>
 class FlipGraphPool {

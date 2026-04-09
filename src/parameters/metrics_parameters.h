@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <string>
-#include "arg_parser.h"
+#include "../entities/arg_parser.h"
 
 struct MetricsParameters {
     bool use;

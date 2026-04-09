@@ -53,6 +53,33 @@ size_t parseNatural(std::string value) {
     return std::stoul(value) * multiplier;
 }
 
+Fraction parseFraction(const std::string &value) {
+    std::stringstream ss(value);
+    int numerator;
+    int denominator = 1;
+
+    ss >> numerator;
+    if (!ss.str().empty()) {
+        char c;
+        ss >> c;
+        ss >> denominator;
+    }
+
+    return Fraction(numerator, denominator);
+}
+
+std::vector<Fraction> parseFractions(const std::string &values) {
+    std::vector<Fraction> fractions;
+
+    std::stringstream ss(values);
+    std::string value;
+
+    while (ss >> value)
+        fractions.push_back(parseFraction(value));
+
+    return fractions;
+}
+
 bool makeDirectory(const std::string &path) {
     std::error_code err;
     if (std::filesystem::create_directories(path, err))

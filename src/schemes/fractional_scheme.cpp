@@ -88,7 +88,7 @@ bool FractionalScheme::read(std::istream &is, bool checkCorrectness, bool intege
         }
     }
 
-    if (checkCorrectness && !validate())
+    if (checkCorrectness && !validateParallel())
         return false;
 
     initFlips();
@@ -124,12 +124,15 @@ int FractionalScheme::getAvailableFlips(int index) const {
 }
 
 int FractionalScheme::getFractionsCount() const {
+    return getFractionsCount(0) + getFractionsCount(1) + getFractionsCount(2);
+}
+
+int FractionalScheme::getFractionsCount(int index) const {
     int count = 0;
 
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < rank * elements[i]; j++)
-            if (!uvw[i][j].isInteger())
-                count++;
+    for (int i = 0; i < rank * elements[index]; i++)
+        if (!uvw[index][i].isInteger())
+            count++;
 
     return count;
 }
@@ -155,23 +158,22 @@ int64_t FractionalScheme::getWeight() const {
     return weight;
 }
 
-int FractionalScheme::getMaxAbsInteger() const {
-    int maxAbsInt = 0;
+int FractionalScheme::getMaxAbsNumerator() const {
+    int maxAbsNumerator = 0;
 
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < rank * elements[i]; j++)
-            if (uvw[i][j].denominator() == 1)
-                maxAbsInt = std::max(maxAbsInt, abs(uvw[i][j].numerator()));
+            maxAbsNumerator = std::max(maxAbsNumerator, abs(uvw[i][j].numerator()));
 
-    return maxAbsInt;
+    return maxAbsNumerator;
 }
 
-int FractionalScheme::getAbsIntCount(int value) const {
+int FractionalScheme::getAbsNumeratorCount(int numerator) const {
     int count = 0;
 
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < rank * elements[i]; j++)
-            if (uvw[i][j].denominator() == 1 && abs(uvw[i][j].numerator()) == value)
+            if (abs(uvw[i][j].numerator()) == numerator)
                 count++;
 
     return count;

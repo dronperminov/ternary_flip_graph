@@ -10,8 +10,8 @@
 #include <omp.h>
 
 #include "utils.h"
-#include "entities/flip_parameters.h"
-#include "entities/metrics_parameters.h"
+#include "parameters/flip_parameters.h"
+#include "parameters/metrics_parameters.h"
 
 template <typename Scheme>
 class FlipGraph {
@@ -360,6 +360,12 @@ bool FlipGraph<Scheme>::compare(int index1, int index2) const {
 
     if (bestRank1 != bestRank2)
         return bestRank1 < bestRank2;
+
+    int bestFlips1 = schemesBest[index1].getAvailableFlips();
+    int bestFlips2 = schemesBest[index2].getAvailableFlips();
+
+    if (bestFlips1 != bestFlips2)
+        return bestFlips1 > bestFlips2;
 
     int rank1 = schemes[index1].getRank();
     int rank2 = schemes[index2].getRank();

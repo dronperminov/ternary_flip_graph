@@ -11,8 +11,8 @@
 #include <omp.h>
 
 #include "utils.h"
-#include "entities/flip_parameters.h"
-#include "entities/meta_parameters.h"
+#include "parameters/flip_parameters.h"
+#include "parameters/meta_parameters.h"
 
 template <typename Scheme>
 class MetaFlipGraph {

@@ -32,10 +32,11 @@ public:
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;
     int getFractionsCount() const;
+    int getFractionsCount(int index) const;
     int getComplexity() const;
     int64_t getWeight() const;
-    int getMaxAbsInteger() const;
-    int getAbsIntCount(int value) const;
+    int getMaxAbsNumerator() const;
+    int getAbsNumeratorCount(int value) const;
     int getMaxDenominator() const;
     std::string getRing() const;
     std::string getUniqueValues() const;

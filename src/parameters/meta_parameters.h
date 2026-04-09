@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-#include "arg_parser.h"
+#include "../entities/arg_parser.h"
 #include "../utils.h"
 
 struct MetaParameters {
