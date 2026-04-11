@@ -97,6 +97,7 @@ schemes, it replaces the current pool, and the search continues for rank `r-2`, 
 - `--pool-size INT` — size of the next-rank pool before switching (default: `1000`).
 - `--pool-min-size INT` — minimum number of schemes required in the pool to consider it valid after max iterations (default: `5`).
 - `--pool-max-iterations INT` — maximum number of random walk iterations allowed to reach the minimum pool size (default: `1000`).
+- `--pool-unique-only` — save only unique schemes.
 - `--pool-select-strategy {uniform, flips}` — strategy for selecting schemes from the pool:
   * `uniform` — each scheme is selected with equal probability;
   * `flips` — schemes are selected with weights proportional to the number of potential flip operations.

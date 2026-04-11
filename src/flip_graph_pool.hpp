@@ -7,9 +7,11 @@
 #include <string>
 #include <random>
 #include <vector>
+#include <unordered_set>
 #include <omp.h>
 
 #include "utils.h"
+#include "entities/sha1.h"
 #include "parameters/flip_parameters.h"
 #include "parameters/pool_parameters.h"
 #include "parameters/metrics_parameters.h"
@@ -29,6 +31,7 @@ class FlipGraphPool {
 
     std::vector<Scheme> initialPool;
     std::vector<Scheme> pool;
+    std::unordered_set<std::string> hashes;
     std::vector<Scheme> schemes;
     std::vector<size_t> flips;
     std::vector<size_t> iterations;
@@ -40,6 +43,7 @@ class FlipGraphPool {
     std::vector<std::mt19937> generators;
     std::uniform_real_distribution<double> uniform;
     std::uniform_int_distribution<size_t> plusDistribution;
+    SHA1 sha1;
 public:
     FlipGraphPool(int count, const std::string outputPath, int threads, const FlipParameters &flipParameters, const PoolParameters &poolParameters, const MetricsParameters &metricsParameters, int seed, int topCount, const std::string &format);
 
@@ -117,14 +121,13 @@ bool FlipGraphPool<Scheme>::initializeFromFile(const std::string &path, bool mul
     if (multiple)
         f >> schemesCount;
 
-    int readCount = std::min(schemesCount, std::max(count, (int)poolParameters.size));
-    std::cout << "Start reading " << readCount << " / " << schemesCount << " schemes from \"" << path << "\" as initial pool" << std::endl;
+    std::cout << "Start reading " << schemesCount << " schemes from \"" << path << "\" as initial pool" << std::endl;
 
-    initialPool.resize(readCount);
+    initialPool.resize(schemesCount);
 
     bool valid = true;
 
-    for (int i = 0; i < readCount; i++) {
+    for (int i = 0; i < schemesCount; i++) {
         if (!initialPool[i].read(f, checkCorrectness)) {
             valid = false;
             break;
@@ -190,6 +193,7 @@ void FlipGraphPool<Scheme>::initIteration() {
         poolFlips += scheme.getAvailableFlips();
 
     pool.clear();
+    hashes.clear();
     iterations.assign(count, 0);
 
     std::string poolPath = getPoolPath();
@@ -210,6 +214,14 @@ void FlipGraphPool<Scheme>::runIteration() {
     std::string path = getPoolPath();
     for (int i = 0; i < threads; i++) {
         for (const Scheme &scheme : poolIteration[i]) {
+            if (poolParameters.uniqueOnly) {
+                std::string hash = scheme.getHash();
+                if (hashes.find(hash) != hashes.end())
+                    continue;
+
+                hashes.insert(hash);
+            }
+
             pool.emplace_back(scheme);
             std::string schemePath = getSavePath(scheme, pool.size(), path);
             saveScheme(scheme, schemePath);
@@ -362,8 +374,14 @@ std::string FlipGraphPool<Scheme>::getSavePath(const Scheme &scheme, int version
     ss << path << "/";
     ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
-    ss << "_version" << std::setfill('0') << std::setw(5) << version;
-    ss << "_c" << scheme.getComplexity();
+
+    if (poolParameters.uniqueOnly) {
+        ss << "_" << sha1.get(scheme.getHash());
+    }
+    else {
+        ss << "_version" << std::setfill('0') << std::setw(5) << version;
+    }
+
     ss << "_" << scheme.getRing();
     return ss.str();
 }
