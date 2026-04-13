@@ -102,7 +102,7 @@ template <template<typename> typename Scheme>
 int runMetaFlipGraphSizes(const ArgParser &parser) {
     int maxMatrixElements = std::stoi(parser["--int-width"]);
 
-    if (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3")) {
+    if (!parser.isSet("--int-width") && (parser.isSet("-n1") || parser.isSet("-n2") || parser.isSet("-n3"))) {
         int n1 = std::stoi(parser["-n1"]);
         int n2 = std::stoi(parser["-n2"]);
         int n3 = std::stoi(parser["-n3"]);
