@@ -58,7 +58,7 @@ private:
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
     void showImprovements() const;
 
-    void selectRunner(Scheme &scheme, std::mt19937 &generator);
+    void selectRunner(Scheme &scheme, std::mt19937 &generator, std::vector<Scheme> &pool);
     std::string selectDimension(std::mt19937 &generator);
     void addScheme(const Scheme &scheme, bool save);
     void fixSizes(Scheme &scheme) const;
@@ -563,7 +563,7 @@ template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, int &runnerRank, size_t &iterationsCount, size_t &plusIterations, std::vector<Scheme> &pool, std::mt19937 &generator) {
     for (size_t iteration = 0; iteration < flipParameters.flipIterations; iteration++) {
         if (iterationsCount == 0 || iterationsCount >= flipParameters.resetIterations) {
-            selectRunner(scheme, generator);
+            selectRunner(scheme, generator, pool);
             flipsCount = 0;
             runnerRank = scheme.getRank();
             iterationsCount = 0;
@@ -657,51 +657,61 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::selectRunner(Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::selectRunner(Scheme &scheme, std::mt19937 &generator, std::vector<Scheme> &pool) {
     std::string dimension = selectDimension(generator);
-    SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
+    SchemesRankPool<Scheme> &pools = dimension2pools.at(dimension);
 
-    pool.copyRandom(scheme, generator);
+    pools.copyRandom(scheme, generator);
 
     int rank = scheme.getRank();
-    int minRank = std::min(pool.minRank(), dimension2knownRank.at(dimension));
-    int maxRank = std::min(pool.maxRank(), minRank + metaParameters.maxRankDiff);
+    int minRank = std::min(pools.minRank(), dimension2knownRank.at(dimension));
+    int maxRank = std::min(pools.maxRank(), minRank + metaParameters.maxRankDiff);
+    double p = 1.0 - (rank - minRank) / (maxRank - minRank + 1.0);
 
-    double p = (1 - (rank - minRank) / (maxRank - minRank + 1.0)) * metaParameters.probability;
-
-    if (!canExtend(scheme.getRing(), dimension, rank) || rank > minRank + metaParameters.maxRankDiff || uniform(generator) >= p)
+    if (!canExtend(scheme.getRing(), dimension, rank) || rank > minRank + metaParameters.maxRankDiff || uniform(generator) >= metaParameters.probability * p)
         return;
 
     if (uniform(generator) > 0.5 || !scheme.tryProject(generator, metaParameters.minDimension))
         scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank);
 
     scheme.fixSizes();
+
+    Scheme poolScheme;
+    poolScheme.copy(scheme);
+    pool.emplace_back(poolScheme);
 }
 
 template <typename Scheme>
 std::string MetaFlipGraphPool<Scheme>::selectDimension(std::mt19937 &generator) {
-    // std::vector<size_t> sizes(dimensions.size());
-    // size_t total = 0;
+    std::vector<double> weights(dimensions.size());
+    double total = 0;
 
-    // for (size_t i = 0; i < dimensions.size(); i++) {
-    //     sizes[i] = dimension2pools.at(dimensions[i]).minRankSize();
-    //     total += sizes[i];
-    // }
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimensions[i]);
 
-    // std::uniform_int_distribution<size_t> distribution(1, total);
+        int minRank = pool.minRank();
+        int knownRank = std::min(minRank, dimension2knownRank.at(dimensions[i]));
 
-    // size_t randomWeight = distribution(generator);
-    // size_t sum = 0;
+        double fillRatio = 1.0 - pool.fillRatio(minRank);
+        double rankRatio = 1.0 - minRank / double(knownRank);
 
-    // for (size_t i = 0; i < dimensions.size(); i++) {
-    //     sum += sizes[i];
+        weights[i] = (fillRatio + rankRatio) * 0.5;
+        total += weights[i];
+    }
 
-    //     if (randomWeight <= sum)
-    //         return dimensions[i];
-    // }
+    std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
-    // return dimensions.back();
-    return dimensions[generator() % dimensions.size()];
+    double randomWeight = uniform(generator) * total;
+    double sum = 0;
+
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        sum += weights[i];
+
+        if (randomWeight <= sum)
+            return dimensions[i];
+    }
+
+    return dimensions.back();
 }
 
 template <typename Scheme>
@@ -743,6 +753,9 @@ bool MetaFlipGraphPool<Scheme>::canExtend(const std::string &ring, const std::st
         return false;
 
     if (dimension == "4x4x5" && rank < 61)
+        return false;
+
+    if (dimension == "3x3x8" && rank < 56)
         return false;
 
     return true;

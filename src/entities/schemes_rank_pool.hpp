@@ -27,14 +27,17 @@ public:
 
     int minRank() const;
     int maxRank() const;
+
     size_t minRankSize() const;
     size_t size(int rank) const;
+
+    double fillRatio(int rank) const;
 
     bool add(const Scheme &scheme, bool save = false);
     void copyRandom(Scheme &scheme, std::mt19937 &generator) const;
     void print(int knownRank) const;
 private:
-    int getRandomRank(std::mt19937 &generator) const;
+    int getRandomRank(std::mt19937 &generator, double alpha) const;
 };
 
 template <typename Scheme>
@@ -79,6 +82,11 @@ size_t SchemesRankPool<Scheme>::size(int rank) const {
 }
 
 template <typename Scheme>
+double SchemesRankPool<Scheme>::fillRatio(int rank) const {
+    return size(rank) / double(maxSize);
+}
+
+template <typename Scheme>
 bool SchemesRankPool<Scheme>::add(const Scheme &scheme, bool save) {
     int rank = scheme.getRank();
 
@@ -118,15 +126,24 @@ void SchemesRankPool<Scheme>::print(int knownRank) const {
 }
 
 template <typename Scheme>
-int SchemesRankPool<Scheme>::getRandomRank(std::mt19937 &generator) const {
-    size_t size = ranks.size();
-    std::uniform_int_distribution<> distribution(1, size * (size + 1) / 2);
+int SchemesRankPool<Scheme>::getRandomRank(std::mt19937 &generator, double alpha) const {
+    std::vector<double> weights(ranks.size());
+    weights[0] = 1.0;
 
-    int randomWeight = distribution(generator);
-    int sum = 0;
+    double total = 1.0;
 
-    for (size_t i = 0; i < size; i++) {
-        sum += size - i;
+    for (size_t i = 1; i < ranks.size(); i++) {
+        weights[i] = weights[i - 1] * alpha;
+        total += weights[i];
+    }
+
+    std::uniform_real_distribution<double> uniform(0.0, 1.0);
+
+    double randomWeight = uniform(generator) * total;
+    double sum = 0;
+
+    for (size_t i = 0; i < ranks.size(); i++) {
+        sum += weights[i];
 
         if (randomWeight <= sum)
             return ranks[i];
@@ -137,6 +154,6 @@ int SchemesRankPool<Scheme>::getRandomRank(std::mt19937 &generator) const {
 
 template <typename Scheme>
 void SchemesRankPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
-    int rank = getRandomRank(generator);
+    int rank = getRandomRank(generator, 0.7);
     rank2pool.at(rank).copyRandom(scheme, generator);
 }

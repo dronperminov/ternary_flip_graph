@@ -29,5 +29,5 @@ void MetaParameters::addToParser(ArgParser &parser, const std::string &sectionNa
     parser.add("--meta-min-dimension", ArgType::Natural, "Min dimension for project meta operation", "2");
     parser.add("--meta-max-dimension", ArgType::Natural, "Max dimension for merge/extend meta operations", "16");
     parser.add("--meta-max-rank", ArgType::Natural, "Max rank for merge/extend meta operations", "350");
-    parser.add("--meta-max-rank-diff", ArgType::Natural, "Max rank difference for reset to initial", "10");
+    parser.add("--meta-max-rank-diff", ArgType::UInt, "Max rank difference for reset to initial", "10");
 }
