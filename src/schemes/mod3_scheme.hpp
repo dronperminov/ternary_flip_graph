@@ -44,6 +44,7 @@ public:
     bool tryMerge(const Mod3Scheme<T> &scheme, std::mt19937 &generator, int maxN, int maxRank);
     bool tryProduct(const Mod3Scheme<T> &scheme, int maxN, int maxRank);
 
+    void fixSizes();
     void swapSizes(std::mt19937 &generator);
     void swapSizes(int p1, int p2);
     void merge(const Mod3Scheme<T> &scheme, int p);
@@ -480,6 +481,18 @@ bool Mod3Scheme<T>::tryProduct(const Mod3Scheme<T> &scheme, int maxN, int maxRan
 
     product(scheme);
     return true;
+}
+
+template <typename T>
+void Mod3Scheme<T>::fixSizes() {
+    if (dimension[0] > dimension[1])
+        swapSizes(0, 1);
+
+    if (dimension[1] > dimension[2])
+        swapSizes(1, 2);
+
+    if (dimension[0] > dimension[1])
+        swapSizes(0, 1);
 }
 
 template <typename T>

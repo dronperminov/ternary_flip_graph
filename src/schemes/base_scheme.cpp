@@ -1,7 +1,12 @@
 #include "base_scheme.h"
 
 BaseScheme::BaseScheme() : boolDistribution(0, 1), ijkDistribution(0, 2) {
+    for (int i = 0; i < 3; i++) {
+        dimension[i] = 0;
+        elements[i] = 0;
+    }
 
+    rank = 0;
 }
 
 int BaseScheme::getRank() const {

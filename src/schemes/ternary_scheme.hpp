@@ -43,6 +43,7 @@ public:
     bool tryMerge(const TernaryScheme<T> &scheme, std::mt19937 &generator, int maxN, int maxRank);
     bool tryProduct(const TernaryScheme<T> &scheme, int maxN, int maxRank);
 
+    void fixSizes();
     void swapSizes(std::mt19937 &generator);
     void swapSizes(int p1, int p2);
     void merge(const TernaryScheme<T> &scheme, int p);
@@ -180,6 +181,9 @@ int TernaryScheme<T>::getAvailableFlips() const {
 
 template <typename T>
 int TernaryScheme<T>::getAvailableFlips(int index) const {
+    if (index < 2)
+        return flips[index].size();
+
     int total = 0;
 
     for (int index1 = 0; index1 < rank; index1++)
@@ -515,6 +519,18 @@ bool TernaryScheme<T>::tryProduct(const TernaryScheme<T> &scheme, int maxN, int 
 
     product(scheme);
     return true;
+}
+
+template <typename T>
+void TernaryScheme<T>::fixSizes() {
+    if (dimension[0] > dimension[1])
+        swapSizes(0, 1);
+
+    if (dimension[1] > dimension[2])
+        swapSizes(1, 2);
+
+    if (dimension[0] > dimension[1])
+        swapSizes(0, 1);
 }
 
 template <typename T>

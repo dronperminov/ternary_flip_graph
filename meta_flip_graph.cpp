@@ -9,11 +9,31 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/parameters/flip_parameters.h"
+#include "src/parameters/pool_parameters.h"
 #include "src/parameters/meta_parameters.h"
 #include "src/schemes/ternary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/meta_flip_graph.hpp"
+#include "src/meta_flip_graph_pool.hpp"
+
+template <typename MetaFlipGraph>
+int runMetaFlipGraph(MetaFlipGraph &metaFlipGraph, const ArgParser &parser) {
+    bool valid;
+    if (parser.isSet("--input-path")) {
+        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), !parser.isSet("--no-verify"));
+    }
+    else {
+        valid = metaFlipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
+    }
+
+    if (!valid)
+        return -1;
+
+    metaFlipGraph.initializeKnownRanks(parser["--improve-ring"]);
+    metaFlipGraph.run();
+    return 0;
+}
 
 template <template<typename> typename Scheme, typename T>
 int runMetaFlipGraph(const ArgParser &parser) {
@@ -26,6 +46,9 @@ int runMetaFlipGraph(const ArgParser &parser) {
 
     FlipParameters flipParameters;
     flipParameters.parse(parser);
+
+    PoolParameters poolParameters;
+    poolParameters.parse(parser);
 
     MetaParameters metaParameters;
     metaParameters.parse(parser);
@@ -52,6 +75,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << std::endl;
     std::cout << flipParameters << std::endl;
+    std::cout << poolParameters << std::endl;
     std::cout << metaParameters << std::endl;
 
     std::cout << "Other parameters:" << std::endl;
@@ -65,22 +89,13 @@ int runMetaFlipGraph(const ArgParser &parser) {
     if (!makeDirectory(outputPath))
         return -1;
 
+    if (poolParameters.use) {
+        MetaFlipGraphPool<Scheme<T>> metaFlipGraphPool(count, outputPath, threads, flipParameters, poolParameters, metaParameters, seed, format);
+        return runMetaFlipGraph(metaFlipGraphPool, parser);
+    }
+
     MetaFlipGraph<Scheme<T>> metaFlipGraph(count, outputPath, threads, flipParameters, metaParameters, seed, topCount, format);
-    metaFlipGraph.initializeKnownRanks(improveRing);
-
-    bool valid;
-    if (parser.isSet("--input-path")) {
-        valid = metaFlipGraph.initializeFromFile(parser["--input-path"], parser.isSet("--multiple"), !parser.isSet("--no-verify"));
-    }
-    else {
-        valid = metaFlipGraph.initializeNaive(std::stoi(parser["-n1"]), std::stoi(parser["-n2"]), std::stoi(parser["-n3"]));
-    }
-
-    if (!valid)
-        return -1;
-
-    metaFlipGraph.run();
-    return 0;
+    return runMetaFlipGraph(metaFlipGraph, parser);
 }
 
 template <template<typename> typename Scheme>
@@ -126,6 +141,11 @@ bool checkInputArguments(const ArgParser &parser) {
         return false;
     }
 
+    if (parser.isSet("--use-pool") && !parser.isSet("--improve-ring")) {
+        std::cerr << "--use-pool flag requires --improve-ring option" << std::endl;
+        return false;
+    }
+
     return true;
 }
 
@@ -149,6 +169,7 @@ int main(int argc, char **argv) {
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     FlipParameters::addToParser(parser, "Random walk parameters");
+    PoolParameters::addToParser(parser, "Pool parameters");
     MetaParameters::addToParser(parser, "Meta operations parameters");
 
     parser.addSection("Other parameters");
