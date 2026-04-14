@@ -23,7 +23,7 @@ bool readSchemesFromDirectory(const std::string &inputPath, std::vector<Scheme> 
     std::cout << "Start reading schemes from directory \"" << inputPath << "\"" << std::endl;
 
     for (const auto& entry : std::filesystem::directory_iterator(inputPath)) {
-        std::string filename = entry.path().filename();
+        std::string filename = entry.path().filename().string();
 
         Scheme scheme;
         if (!scheme.read(inputPath + "/" + filename, checkCorrectness)) {
