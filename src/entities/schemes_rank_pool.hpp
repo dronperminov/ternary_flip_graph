@@ -31,10 +31,12 @@ public:
     size_t minRankSize() const;
     size_t size(int rank) const;
 
+    double minFillRatio() const;
     double fillRatio(int rank) const;
 
     bool add(const Scheme &scheme, bool save = false);
     void copyRandom(Scheme &scheme, std::mt19937 &generator) const;
+    void copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const;
     void print(int knownRank) const;
 private:
     int getRandomRank(std::mt19937 &generator, double alpha) const;
@@ -79,6 +81,14 @@ size_t SchemesRankPool<Scheme>::size(int rank) const {
         return 0;
 
     return rank2pool.at(rank).size();
+}
+
+template <typename Scheme>
+double SchemesRankPool<Scheme>::minFillRatio() const {
+    if (ranks.empty())
+        return 0;
+
+    return rank2pool.at(ranks[0]).size() / double(maxSize);
 }
 
 template <typename Scheme>
@@ -156,4 +166,9 @@ template <typename Scheme>
 void SchemesRankPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
     int rank = getRandomRank(generator, 0.7);
     rank2pool.at(rank).copyRandom(scheme, generator);
+}
+
+template <typename Scheme>
+void SchemesRankPool<Scheme>::copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const {
+    rank2pool.at(ranks[0]).copyRandom(scheme, generator);
 }

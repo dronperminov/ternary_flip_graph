@@ -61,7 +61,8 @@ private:
     void selectRunner(Scheme &scheme, std::mt19937 &generator, std::vector<Scheme> &pool);
     std::string selectDimension(std::mt19937 &generator);
     void addScheme(const Scheme &scheme, bool save);
-    void fixSizes(Scheme &scheme) const;
+
+    bool tryMerge(Scheme &scheme, std::mt19937 &generator) const;
     bool compareDimension(const std::string &d1, const std::string &d2) const;
     bool canExtend(const std::string &ring, const std::string &dimension, int rank) const;
 };
@@ -613,6 +614,7 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     double minTime = *std::min_element(elapsedTimes.begin(), elapsedTimes.end());
     double maxTime = *std::max_element(elapsedTimes.begin(), elapsedTimes.end());
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
+    double meanFillRatio = 0;
 
     std::cout << "+----------------------------+" << std::endl << std::left;
     std::cout << "| seed: " << std::setw(20) << seed << " |" << std::endl;
@@ -620,17 +622,19 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     std::cout << "| threads: " << std::setw(17) << threads << " |" << std::endl;
     std::cout << "| iteration: " << std::setw(15) << iteration << " |" << std::endl;
     std::cout << "| elapsed time: " << std::setw(12) << prettyTime(elapsed) << " |" << std::endl;
-
-    showImprovements();
-
     std::cout << "+-----------+------+---------+" << std::endl;
     std::cout << "| dimension | rank |  count  |" << std::endl;
 
-    for (const std::string &dimension : dimensions)
-        dimension2pools.at(dimension).print(dimension2knownRank.at(dimension));
+    for (const std::string &dimension : dimensions) {
+        const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
+        pool.print(dimension2knownRank.at(dimension));
+        meanFillRatio += pool.minFillRatio();
+    }
 
     std::cout << "+-----------+------+---------+" << std::endl;
+    showImprovements();
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
+    std::cout << "- mean fill ratio: " << std::setprecision(3) << (meanFillRatio / dimensions.size()) << std::endl;
     std::cout << std::endl;
 }
 
@@ -646,7 +650,6 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
 
         if (!showed) {
             showed = true;
-            std::cout << "+----------------------------+" << std::endl << std::left;
             std::cout << "| improvements:              |" << std::endl;
         }
 
@@ -654,6 +657,9 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
         ss << dimension << ": " << curr << " (" << known << ")";
         std::cout << "| " << std::setw(26) << ss.str() << " |" << std::endl;
     }
+
+    if (showed)
+        std::cout << "+----------------------------+" << std::endl << std::left;
 }
 
 template <typename Scheme>
@@ -665,19 +671,28 @@ void MetaFlipGraphPool<Scheme>::selectRunner(Scheme &scheme, std::mt19937 &gener
 
     int rank = scheme.getRank();
     int minRank = std::min(pools.minRank(), dimension2knownRank.at(dimension));
-    int maxRank = std::min(pools.maxRank(), minRank + metaParameters.maxRankDiff);
-    double p = 1.0 - (rank - minRank) / (maxRank - minRank + 1.0);
+    double p = 1.0 - 1.0 / (1 << (rank - minRank));
 
-    if (!canExtend(scheme.getRing(), dimension, rank) || rank > minRank + metaParameters.maxRankDiff || uniform(generator) >= metaParameters.probability * p)
+    if (rank > minRank + metaParameters.maxRankDiff || !canExtend(scheme.getRing(), dimension, rank) || uniform(generator) >= metaParameters.probability * p)
         return;
-
-    if (uniform(generator) > 0.5 || !scheme.tryProject(generator, metaParameters.minDimension))
-        scheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank);
-
-    scheme.fixSizes();
 
     Scheme poolScheme;
     poolScheme.copy(scheme);
+
+    double q = uniform(generator);
+    bool changed = false;
+
+    if (q < 0.01) {
+        changed = tryMerge(poolScheme, generator);
+    }
+    else if (q < 0.5) {
+        changed = poolScheme.tryProject(generator, metaParameters.minDimension);
+    }
+
+    if (q >= 0.5 || !changed)
+        poolScheme.tryExtend(generator, metaParameters.maxDimension, metaParameters.maxRank);
+
+    poolScheme.fixSizes();
     pool.emplace_back(poolScheme);
 }
 
@@ -689,13 +704,7 @@ std::string MetaFlipGraphPool<Scheme>::selectDimension(std::mt19937 &generator) 
     for (size_t i = 0; i < dimensions.size(); i++) {
         const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimensions[i]);
 
-        int minRank = pool.minRank();
-        int knownRank = std::min(minRank, dimension2knownRank.at(dimensions[i]));
-
-        double fillRatio = 1.0 - pool.fillRatio(minRank);
-        double rankRatio = 1.0 - minRank / double(knownRank);
-
-        weights[i] = (fillRatio + rankRatio) * 0.5;
+        weights[i] = 1.0 - pool.minFillRatio();
         total += weights[i];
     }
 
@@ -725,6 +734,30 @@ void MetaFlipGraphPool<Scheme>::addScheme(const Scheme &scheme, bool save) {
     }
 
     dimension2pools.at(dimension).add(scheme, save);
+}
+
+template <typename Scheme>
+bool MetaFlipGraphPool<Scheme>::tryMerge(Scheme &scheme, std::mt19937 &generator) const {
+    int n1 = scheme.getDimension(0);
+    int n2 = scheme.getDimension(1);
+    int n3 = scheme.getDimension(2);
+
+    int n[3] = {n1, n2, n3};
+
+    n[2] = 2 + generator() % 2;
+    std::sort(n, n + 3);
+
+    std::stringstream ss;
+    ss << n[0] << "x" << n[1] << "x" << n[2];
+    std::string dimension = ss.str();
+
+    auto it = dimension2pools.find(dimension);
+    if (it == dimension2pools.end() || it->second.minRank() > dimension2knownRank.at(dimension) + metaParameters.maxRankDiff)
+        return false;
+
+    Scheme scheme2;
+    it->second.copyRandomMinRank(scheme2, generator);
+    return scheme.tryMerge(scheme2, generator, metaParameters.maxDimension, metaParameters.maxRank);
 }
 
 template <typename Scheme>
