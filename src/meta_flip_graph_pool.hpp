@@ -734,9 +734,8 @@ void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &g
     const auto& pool = dimension2pools.at(dimension);
 
     int minRank = std::min(pool.minRank(), dimension2knownRank.at(dimension));
-    double p = 1.0 / (1 << (rank - minRank));
 
-    if (rank > minRank + metaParameters.maxRankDiff || !canExtend(scheme.getRing(), dimension, rank) || uniform(generator) >= metaParameters.probability * p)
+    if (rank > minRank + metaParameters.maxRankDiff || !canExtend(scheme.getRing(), dimension, rank) || uniform(generator) >= metaParameters.probability * pow(poolParameters.metaRankScale, rank - minRank))
         return;
 
     tryExtend(scheme, generator);
@@ -765,15 +764,20 @@ void MetaFlipGraphPool<Scheme>::tryExtend(const Scheme &scheme, std::mt19937 &ge
         poolScheme.extend(i);
         poolScheme.fixSizes();
 
-        if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.extendMaxDiff) {
+        if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.extendMaxDiff)
             addScheme(poolScheme, true);
-            metaScheme(poolScheme, generator);
-        }
     }
 }
 
 template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &generator) {
+    int n1 = scheme.getDimension(0);
+    int n2 = scheme.getDimension(1);
+    int n3 = scheme.getDimension(2);
+
+    if (n1 < poolParameters.projectMinN1 || n2 < poolParameters.projectMinN2 || n3 < poolParameters.projectMinN3)
+        return;
+
     for (int i = 0; i < 3; i++) {
         if (!scheme.isValidProject(i, metaParameters.minDimension))
             continue;
@@ -784,10 +788,8 @@ void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &g
             poolScheme.project(i, j);
             poolScheme.fixSizes();
 
-            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff) {
+            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff)
                 addScheme(poolScheme, true);
-                metaScheme(poolScheme, generator);
-            }
         }
     }
 }
@@ -816,7 +818,6 @@ void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &gen
         return;
 
     addScheme(poolScheme, true);
-    metaScheme(poolScheme, generator);
 }
 
 template <typename Scheme>

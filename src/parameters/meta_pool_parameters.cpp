@@ -10,6 +10,10 @@ void MetaPoolParameters::parse(const ArgParser &parser) {
     extendMaxDiff = std::stoi(parser["--extend-max-diff"]);
     projectMaxDiff = std::stoi(parser["--project-max-diff"]);
 
+    projectMinN1 = std::stoi(parser["--project-min-n1"]);
+    projectMinN2 = std::stoi(parser["--project-min-n2"]);
+    projectMinN3 = std::stoi(parser["--project-min-n3"]);
+
     selectRankScale = std::stod(parser["--select-rank-scale"]);
     metaRankScale = std::stod(parser["--meta-rank-scale"]);
 }
@@ -22,6 +26,7 @@ void MetaPoolParameters::writeJSON(std::ostream &os) const {
     os << "\"merge_max_diff\": " << mergeMaxDiff << ", ";
     os << "\"extend_max_diff\": " << extendMaxDiff << ", ";
     os << "\"project_max_diff\": " << projectMaxDiff << ", ";
+    os << "\"project_min_n\": [" << projectMinN1 << ", " << projectMinN2 << ", " << projectMinN3 << "], ";
     os << "\"select_rank_scale\": " << selectRankScale << ", ";
     os << "\"meta_rank_scale\": " << metaRankScale << ", ";
     os << "}";
@@ -36,6 +41,7 @@ std::ostream& operator<<(std::ostream& os, const MetaPoolParameters &parameters)
         os << "- merge max diff: " << parameters.mergeMaxDiff << std::endl;
         os << "- extend max diff: " << parameters.extendMaxDiff << std::endl;
         os << "- project max diff: " << parameters.projectMaxDiff << std::endl;
+        os << "- project min N: " << parameters.projectMinN1 << ", " << parameters.projectMinN2 << ", " << parameters.projectMinN3 << std::endl;
         os << "- select rank scale: " << parameters.selectRankScale << std::endl;
         os << "- meta rank scale: " << parameters.metaRankScale << std::endl;
     }
@@ -54,6 +60,10 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.add("--extend-max-diff", ArgType::UInt, "Max rank difference for extend operator", "10");
     parser.add("--project-max-diff", ArgType::UInt, "Max rank difference for project operator", "10");
     
+    parser.add("--project-min-n1", ArgType::Natural, "Min first dimension for project", "4");
+    parser.add("--project-min-n2", ArgType::Natural, "Min second dimension for project", "5");
+    parser.add("--project-min-n3", ArgType::Natural, "Min third dimension for project", "6");
+
     parser.add("--select-rank-scale", ArgType::Real, "Scale for pool rank selection", "0.7");
     parser.add("--meta-rank-scale", ArgType::Real, "Scale for make meta operator", "0.5");
 }

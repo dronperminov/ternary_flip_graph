@@ -14,6 +14,10 @@ struct MetaPoolParameters {
     int extendMaxDiff;
     int projectMaxDiff;
 
+    int projectMinN1;
+    int projectMinN2;
+    int projectMinN3;
+
     double selectRankScale;
     double metaRankScale;
 
