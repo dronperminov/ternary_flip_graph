@@ -17,7 +17,27 @@
 #include "src/lift/mod3_lifter.h"
 
 template <typename Scheme>
-bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
+bool readSchemesFromDirectory(const std::string &inputPath, std::vector<Scheme> &schemes, bool checkCorrectness) {
+    bool valid = true;
+    std::cout << "Start reading schemes from directory \"" << inputPath << "\"" << std::endl;
+
+    for (const auto& entry : std::filesystem::directory_iterator(inputPath)) {
+        std::string filename = entry.path().filename();
+
+        Scheme scheme;
+        if (!scheme.read(inputPath + "/" + filename, checkCorrectness)) {
+            valid = false;
+            break;
+        }
+
+        schemes.emplace_back(scheme);
+    }
+
+    return valid;
+}
+
+template <typename Scheme>
+bool readSchemesFromFile(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
     std::ifstream f(inputPath);
     if (!f) {
         std::cerr << "Unable to open file \"" << inputPath << "\"" << std::endl;
@@ -37,6 +57,14 @@ bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, boo
 
     f.close();
     return valid;
+}
+
+template <typename Scheme>
+bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
+    if (std::filesystem::is_directory(inputPath))
+        return readSchemesFromDirectory(inputPath, schemes, checkCorrectness);
+
+    return readSchemesFromFile(inputPath, schemes, multiple, checkCorrectness);
 }
 
 std::string getSavePath(const FractionalScheme &scheme, int index, const std::string &outputPath, const std::string &format) {
