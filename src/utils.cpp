@@ -93,6 +93,11 @@ bool makeDirectory(const std::string &path) {
 }
 
 int getMaxMatrixElements(const std::string &path, bool multiple) {
+    if (std::filesystem::is_directory(path)) {
+        std::cout << "Warning: max matrix elements set by default to 64 for directory \"" << path << "\"" << std::endl;
+        return 64;
+    }
+
     std::ifstream f(path);
     if (!f) {
         std::cerr << "Unable to open file \"" << path << "\"" << std::endl;
