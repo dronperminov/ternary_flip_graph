@@ -35,7 +35,7 @@ public:
     double fillRatio(int rank) const;
 
     bool add(const Scheme &scheme, bool save = false);
-    void copyRandom(Scheme &scheme, std::mt19937 &generator) const;
+    void copyRandom(Scheme &scheme, std::mt19937 &generator, double alpha) const;
     void copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const;
     void print(int knownRank) const;
 private:
@@ -163,8 +163,8 @@ int SchemesRankPool<Scheme>::getRandomRank(std::mt19937 &generator, double alpha
 }
 
 template <typename Scheme>
-void SchemesRankPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
-    int rank = getRandomRank(generator, 0.7);
+void SchemesRankPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator, double alpha) const {
+    int rank = getRandomRank(generator, alpha);
     rank2pool.at(rank).copyRandom(scheme, generator);
 }
 
