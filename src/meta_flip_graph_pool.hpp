@@ -65,7 +65,7 @@ private:
     void addScheme(const Scheme &scheme, bool save);
     void metaScheme(const Scheme &scheme, std::mt19937 &generator);
 
-    std::string getMergeDimension(const Scheme &scheme, std::mt19937 &generator) const;
+    std::string getMergeDimension(const Scheme &scheme, std::mt19937 &generator, int &n1, int &n2, int &n3) const;
 
     void tryExtend(const Scheme &scheme, std::mt19937 &generator);
     void tryProject(const Scheme &scheme, std::mt19937 &generator);
@@ -744,9 +744,16 @@ void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &g
 }
 
 template <typename Scheme>
-std::string MetaFlipGraphPool<Scheme>::getMergeDimension(const Scheme &scheme, std::mt19937 &generator) const {
+std::string MetaFlipGraphPool<Scheme>::getMergeDimension(const Scheme &scheme, std::mt19937 &generator, int &n1, int &n2, int &n3) const {
     int n[3] = {scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2)};
-    n[2] = 2 + generator() % 2;
+
+    int i = generator() % 3;
+    n[i] = 2 + generator() % (n[i] - 1);
+
+    n1 = n[0];
+    n2 = n[1];
+    n3 = n[2];
+
     std::sort(n, n + 3);
     std::stringstream dimension;
     dimension << n[0] << "x" << n[1] << "x" << n[2];
@@ -796,7 +803,8 @@ void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &g
 
 template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &generator) {
-    std::string dimension = getMergeDimension(scheme, generator);
+    int n1, n2, n3;
+    std::string dimension = getMergeDimension(scheme, generator, n1, n2, n3);
     if (dimension2pools.find(dimension) == dimension2pools.end())
         return;
 
@@ -806,6 +814,7 @@ void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &gen
 
     Scheme scheme2;
     pool.copyRandomMinRank(scheme2, generator);
+    scheme2.setSizes(n1, n2, n3);
 
     Scheme poolScheme;
     poolScheme.copy(scheme);

@@ -47,6 +47,7 @@ public:
     bool isValidExtension(int p, int maxN, int maxRank) const;
 
     void fixSizes();
+    void setSizes(int n1, int n2, int n3);
     void swapSizes(std::mt19937 &generator);
     void swapSizes(int p1, int p2);
     void merge(const TernaryScheme<T> &scheme, int p);
@@ -532,6 +533,27 @@ void TernaryScheme<T>::fixSizes() {
 
     if (dimension[0] > dimension[1])
         swapSizes(0, 1);
+}
+
+template <typename T>
+void TernaryScheme<T>::setSizes(int n1, int n2, int n3) {
+    if (dimension[0] == n1 && dimension[1] == n3 && dimension[2] == n2) {
+        swapSizes(1, 2);
+    }
+    else if (dimension[0] == n2 && dimension[1] == n1 && dimension[2] == n3) {
+        swapSizes(0, 1);
+    }
+    else if (dimension[0] == n2 && dimension[1] == n3 && dimension[2] == n1) {
+        swapSizes(0, 1);
+        swapSizes(0, 2);
+    }
+    else if (dimension[0] == n3 && dimension[1] == n1 && dimension[2] == n2) {
+        swapSizes(0, 1);
+        swapSizes(1, 2);
+    }
+    else if (dimension[0] == n3 && dimension[1] == n2 && dimension[2] == n1) {
+        swapSizes(0, 2);
+    }
 }
 
 template <typename T>
