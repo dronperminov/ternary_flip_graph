@@ -39,6 +39,7 @@ public:
     int getAbsNumeratorCount(int value) const;
     int getMaxDenominator() const;
     std::string getRing() const;
+    std::string getHash() const;
     std::string getUniqueValues() const;
     double getFrobeniusNorm() const;
 

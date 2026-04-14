@@ -10,6 +10,7 @@
 
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
+#include "src/entities/sha1.h"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/fractional_scheme.h"
@@ -68,12 +69,13 @@ bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, boo
 }
 
 std::string getSavePath(const FractionalScheme &scheme, int index, const std::string &outputPath, const std::string &format) {
+    SHA1 sha1;
     std::stringstream ss;
     ss << outputPath << "/";
     ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
+    ss << "_" << sha1.get(scheme.getHash());
     ss << "_" << scheme.getRing();
-    ss << "_v" << index;
     ss << "." << format;
     return ss.str();
 }

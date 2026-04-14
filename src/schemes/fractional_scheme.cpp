@@ -199,6 +199,27 @@ std::string FractionalScheme::getRing() const {
     return "Q";
 }
 
+std::string FractionalScheme::getHash() const {
+    std::vector<std::string> lines;
+
+    for (int index = 0; index < rank; index++) {
+        std::stringstream ss;
+
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < elements[i]; j++)
+                ss << uvw[i][index * elements[i] + j].pretty();
+
+        lines.push_back(ss.str());
+    }
+
+    std::sort(lines.begin(), lines.end());
+    std::stringstream hash;
+    for (int index = 0; index < rank; index++)
+        hash << lines[index];
+
+    return hash.str();
+}
+
 std::string FractionalScheme::getUniqueValues() const {
     std::unordered_set<Fraction> unique;
 
@@ -515,9 +536,18 @@ void FractionalScheme::saveTxt(const std::string &path) const {
     std::ofstream f(path);
     f << dimension[0] << " " << dimension[1] << " " << dimension[2] << " " << rank << std::endl;
 
+    bool fractional = !isInteger();
+
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < rank * elements[i]; j++)
-            f << (j > 0 ? " " : "") << uvw[i][j].numerator() << " " << uvw[i][j].denominator();
+        for (int j = 0; j < rank * elements[i]; j++) {
+            if (j > 0)
+                f << " ";
+
+            f << uvw[i][j].numerator();
+
+            if (fractional)
+                f << " " << uvw[i][j].denominator();
+        }
 
         f << std::endl;
     }
