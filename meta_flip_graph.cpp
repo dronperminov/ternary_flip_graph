@@ -9,7 +9,7 @@
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
 #include "src/parameters/flip_parameters.h"
-#include "src/parameters/pool_parameters.h"
+#include "src/parameters/meta_pool_parameters.h"
 #include "src/parameters/meta_parameters.h"
 #include "src/schemes/ternary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
@@ -47,7 +47,7 @@ int runMetaFlipGraph(const ArgParser &parser) {
     FlipParameters flipParameters;
     flipParameters.parse(parser);
 
-    PoolParameters poolParameters;
+    MetaPoolParameters poolParameters;
     poolParameters.parse(parser);
 
     MetaParameters metaParameters;
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     FlipParameters::addToParser(parser, "Random walk parameters");
-    PoolParameters::addToParser(parser, "Pool parameters");
+    MetaPoolParameters::addToParser(parser, "Pool parameters");
     MetaParameters::addToParser(parser, "Meta operations parameters");
 
     parser.addSection("Other parameters");
