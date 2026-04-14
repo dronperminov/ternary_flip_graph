@@ -43,6 +43,9 @@ public:
     bool tryMerge(const TernaryScheme<T> &scheme, std::mt19937 &generator, int maxN, int maxRank);
     bool tryProduct(const TernaryScheme<T> &scheme, int maxN, int maxRank);
 
+    bool isValidProject(int p, int minN) const;
+    bool isValidExtension(int p, int maxN, int maxRank) const;
+
     void fixSizes();
     void swapSizes(std::mt19937 &generator);
     void swapSizes(int p1, int p2);
@@ -74,8 +77,6 @@ protected:
     void reduceSub(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2, int sign);
 
-    bool isValidProject(int p, int minN) const;
-    bool isValidExtension(int p, int maxN, int maxRank) const;
     bool isValidProduct(const TernaryScheme<T> &scheme, int maxN, int maxRank) const;
     bool isValidMerge(int p, const TernaryScheme<T> &scheme, int maxN, int maxRank) const;
 

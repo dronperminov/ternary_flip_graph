@@ -43,6 +43,9 @@ public:
     bool tryMerge(const BinaryScheme<T> &scheme, std::mt19937 &generator, int maxN, int maxRank);
     bool tryProduct(const BinaryScheme<T> &scheme, int maxN, int maxRank);
 
+    bool isValidProject(int p, int minN) const;
+    bool isValidExtension(int p, int maxN, int maxRank) const;
+
     void fixSizes();
     void swapSizes(std::mt19937 &generator);
     void swapSizes(int p1, int p2);
@@ -76,8 +79,6 @@ protected:
     void reduce(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2);
 
-    bool isValidProject(int p, int minN) const;
-    bool isValidExtension(int p, int maxN, int maxRank) const;
     bool isValidProduct(const BinaryScheme<T> &scheme, int maxN, int maxRank) const;
     bool isValidMerge(int p, const BinaryScheme<T> &scheme, int maxN, int maxRank) const;
 
