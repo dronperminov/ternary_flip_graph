@@ -31,6 +31,7 @@ class MetaFlipGraphPool {
     std::vector<std::string> dimensions;
     std::unordered_map<std::string, SchemesRankPool<Scheme>> dimension2pools;
     std::unordered_map<std::string, int> dimension2knownRank;
+    std::unordered_map<std::string, double> dimension2priority;
 
     std::vector<Scheme> schemes;
     std::vector<int> ranks;
@@ -60,6 +61,7 @@ private:
     void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
     void showImprovements() const;
 
+    void readPriorities();
     void selectRunner(Scheme &scheme, std::mt19937 &generator);
     std::string selectDimension(std::mt19937 &generator);
     void addScheme(const Scheme &scheme, bool save);
@@ -558,6 +560,7 @@ void MetaFlipGraphPool<Scheme>::initializeKnownTernaryRanks() {
 template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::runIteration() {
     std::vector<std::vector<Scheme>> pool(threads);
+    readPriorities();
 
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
@@ -683,6 +686,44 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
 }
 
 template <typename Scheme>
+void MetaFlipGraphPool<Scheme>::readPriorities() {
+    dimension2priority.clear();
+
+    if (!std::filesystem::exists("priorities.txt"))
+        return;
+
+    std::ifstream f("priorities.txt");
+    if (!f)
+        return;
+
+    std::string line;
+
+    while (std::getline(f, line)) {
+        if (line.empty())
+            continue;
+
+        std::string dimension;
+        double priority;
+        std::stringstream ss(line);
+
+        if (!(ss >> dimension >> priority)) {
+            std::cout << "Invalid priority line: " << line << std::endl;
+            continue;
+        }
+
+        if (dimension2knownRank.find(dimension) == dimension2knownRank.end()) {
+            std::cout << "Invalid priority dimension: " << dimension << std::endl;
+            continue;
+        }
+
+        dimension2priority[dimension] = priority;
+        std::cout << "Set priority " << priority << " for " << dimension << std::endl;
+    }
+
+    f.close();
+}
+
+template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::selectRunner(Scheme &scheme, std::mt19937 &generator) {
     std::string dimension = selectDimension(generator);
     SchemesRankPool<Scheme> &pools = dimension2pools.at(dimension);
@@ -698,7 +739,11 @@ std::string MetaFlipGraphPool<Scheme>::selectDimension(std::mt19937 &generator) 
         const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimensions[i]);
         int rank = dimension2knownRank.at(dimensions[i]);
 
-        weights[i] = dimensions[i] == "2x2x2" ? 0.0 : 1.0 - pool.fillRatio(rank) + 0.1 / dimensions.size();
+        if (dimension2priority.find(dimensions[i]) != dimension2priority.end())
+            weights[i] = dimension2priority.at(dimensions[i]);
+        else
+            weights[i] = dimensions[i] == "2x2x2" ? 0.0 : 1.0 - pool.fillRatio(rank) + 0.1 / dimensions.size();
+
         total += weights[i];
     }
 
