@@ -615,7 +615,7 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
             flipsCount = 0;
     }
 
-    if (poolParameters.alternatives && iterationsCount > 0) {
+    if (iterationsCount > 0 && uniform(generator) < poolParameters.alternativesProbability) {
         Scheme poolScheme;
         poolScheme.copy(scheme);
         pool.emplace_back(poolScheme);
@@ -632,14 +632,15 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
     double meanFillRatio = 0;
 
-    std::cout << "+----------------------------+" << std::endl << std::left;
-    std::cout << "| seed: " << std::setw(20) << seed << " |" << std::endl;
-    std::cout << "| runners: " << std::setw(17) << count << " |" << std::endl;
-    std::cout << "| threads: " << std::setw(17) << threads << " |" << std::endl;
-    std::cout << "| iteration: " << std::setw(15) << iteration << " |" << std::endl;
-    std::cout << "| elapsed time: " << std::setw(12) << prettyTime(elapsed) << " |" << std::endl;
-    std::cout << "+-----------+------+---------+" << std::endl;
-    std::cout << "| dimension | rank |  count  |" << std::endl;
+    std::cout << "+----------------------------------------------------------------+" << std::endl << std::left;
+    std::cout << "| seed: " << std::setw(56) << seed << " |" << std::endl;
+    std::cout << "| runners: " << std::setw(53) << count << " |" << std::endl;
+    std::cout << "| threads: " << std::setw(53) << threads << " |" << std::endl;
+    std::cout << "| iteration: " << std::setw(51) << iteration << " |" << std::endl;
+    std::cout << "| elapsed time: " << std::setw(48) << prettyTime(elapsed) << " |" << std::endl;
+    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
+    std::cout << "|           |      |  total  |  complexity   |  available flips  |" << std::endl;
+    std::cout << "| dimension | rank |  count  |  min  |  max  |   min   |   max   |" << std::endl;
 
     for (const std::string &dimension : dimensions) {
         const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
@@ -647,7 +648,7 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
         meanFillRatio += pool.minFillRatio();
     }
 
-    std::cout << "+-----------+------+---------+" << std::endl;
+    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
     showImprovements();
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
     std::cout << "- mean fill ratio: " << std::setprecision(3) << (meanFillRatio / dimensions.size()) << std::endl;
@@ -666,16 +667,16 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
 
         if (!showed) {
             showed = true;
-            std::cout << "| improvements:              |" << std::endl;
+            std::cout << "| improvements:                                                  |" << std::endl;
         }
 
         std::stringstream ss;
         ss << dimension << ": " << curr << " (" << known << ")";
-        std::cout << "| " << std::setw(26) << ss.str() << " |" << std::endl;
+        std::cout << "| " << std::setw(62) << ss.str() << " |" << std::endl;
     }
 
     if (showed)
-        std::cout << "+----------------------------+" << std::endl << std::left;
+        std::cout << "+----------------------------------------------------------------+" << std::endl << std::left;
 }
 
 template <typename Scheme>

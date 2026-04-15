@@ -115,13 +115,19 @@ bool SchemesRankPool<Scheme>::add(const Scheme &scheme, bool save) {
 
 template <typename Scheme>
 void SchemesRankPool<Scheme>::print(int knownRank) const {
-    std::cout << "+-----------+------+---------+" << std::endl;
+    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
 
     for (size_t i = 0; i < ranks.size(); i++) {
+        const auto& pool = rank2pool.at(ranks[i]);
+
         std::cout << "| ";
         std::cout << std::setw(9) << (i == 0 ? dimension : "") << " | ";
         std::cout << std::setw(4) << ranks[i] << " | ";
-        std::cout << std::setw(7) << rank2pool.at(ranks[i]).size();
+        std::cout << std::setw(7) << pool.size() << " | ";
+        std::cout << std::setw(5) << pool.getMinComplexity() << " | ";
+        std::cout << std::setw(5) << pool.getMaxComplexity() << " | ";
+        std::cout << std::setw(7) << pool.getMinFlips() << " | ";
+        std::cout << std::setw(7) << pool.getMaxFlips();
         std::cout << " |";
 
         if (i == 0) {

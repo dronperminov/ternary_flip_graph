@@ -8,7 +8,7 @@ struct MetaPoolParameters {
     bool use;
     size_t size;
     bool uniqueOnly;
-    bool alternatives;
+    double alternativesProbability;
 
     int mergeMaxDiff;
     int extendMaxDiff;
