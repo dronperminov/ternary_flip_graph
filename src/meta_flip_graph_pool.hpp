@@ -66,10 +66,13 @@ private:
     void metaScheme(const Scheme &scheme, std::mt19937 &generator);
 
     std::string getMergeDimension(const Scheme &scheme, std::mt19937 &generator, int &n1, int &n2, int &n3) const;
+    std::string getDimension(int n1, int n2, int n3) const;
 
     void tryExtend(const Scheme &scheme, std::mt19937 &generator);
     void tryProject(const Scheme &scheme, std::mt19937 &generator);
+    void tryProduct(const Scheme &scheme, std::mt19937 &generator);
     void tryMerge(const Scheme &scheme, std::mt19937 &generator);
+
     bool compareDimension(const std::string &d1, const std::string &d2) const;
     bool canExtend(const std::string &ring, const std::string &dimension, int rank) const;
 };
@@ -741,6 +744,7 @@ void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &g
 
     tryExtend(scheme, generator);
     tryProject(scheme, generator);
+    tryProduct(scheme, generator);
     tryMerge(scheme, generator);
 }
 
@@ -756,8 +760,13 @@ std::string MetaFlipGraphPool<Scheme>::getMergeDimension(const Scheme &scheme, s
     n3 = n[2];
 
     std::sort(n, n + 3);
+    return getDimension(n[0], n[1], n[2]);
+}
+
+template <typename Scheme>
+std::string MetaFlipGraphPool<Scheme>::getDimension(int n1, int n2, int n3) const {
     std::stringstream dimension;
-    dimension << n[0] << "x" << n[1] << "x" << n[2];
+    dimension << n1 << "x" << n2 << "x" << n3;
     return dimension.str();
 }
 
@@ -798,6 +807,35 @@ void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &g
 
             if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff)
                 addScheme(poolScheme, true);
+        }
+    }
+}
+
+template <typename Scheme>
+void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::mt19937 &generator) {
+    for (int n1 = 2; scheme.getDimension(0) * n1 <= metaParameters.maxDimension; n1++) {
+        for (int n2 = 2; scheme.getDimension(1) * n2 <= metaParameters.maxDimension; n2++) {
+            for (int n3 = 2; scheme.getDimension(2) * n3 <= metaParameters.maxDimension; n3++) {
+                std::string dimension = getDimension(n1, n2, n3);
+                if (dimension2pools.find(dimension) == dimension2pools.end())
+                    continue;
+
+                Scheme scheme2;
+                dimension2pools.at(dimension).copyRandomMinRank(scheme2, generator);
+                scheme2.setSizes(n1, n2, n3);
+
+                if (!scheme.isValidProduct(scheme2, metaParameters.maxDimension, metaParameters.maxRank))
+                    continue;
+
+                Scheme poolScheme;
+                poolScheme.copy(scheme);
+                poolScheme.product(scheme2);
+
+                if (poolScheme.getRank() > dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.productMaxDiff)
+                    continue;
+
+                addScheme(poolScheme, true);
+            }
         }
     }
 }

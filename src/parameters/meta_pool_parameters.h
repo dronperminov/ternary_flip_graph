@@ -13,6 +13,7 @@ struct MetaPoolParameters {
     int mergeMaxDiff;
     int extendMaxDiff;
     int projectMaxDiff;
+    int productMaxDiff;
 
     int projectMinN1;
     int projectMinN2;

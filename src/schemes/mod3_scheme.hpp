@@ -46,6 +46,7 @@ public:
 
     bool isValidProject(int p, int minN) const;
     bool isValidExtension(int p, int maxN, int maxRank) const;
+    bool isValidProduct(const Mod3Scheme<T> &scheme, int maxN, int maxRank) const;
 
     void fixSizes();
     void setSizes(int n1, int n2, int n3);
@@ -83,7 +84,6 @@ private:
     void reduceSub(int i, int index1, int index2);
     bool checkFlipReduce(int j, int k, int index1, int index2, int sign);
 
-    bool isValidProduct(const Mod3Scheme<T> &scheme, int maxN, int maxRank) const;
     bool isValidMerge(int p, const Mod3Scheme<T> &scheme, int maxN, int maxRank) const;
 
     bool validateDimensions() const;
