@@ -67,7 +67,6 @@ private:
     void addScheme(const Scheme &scheme, bool save);
     void metaScheme(const Scheme &scheme, std::mt19937 &generator);
 
-    std::string getMergeDimension(const Scheme &scheme, std::mt19937 &generator, int &n1, int &n2, int &n3) const;
     std::string getDimension(int n1, int n2, int n3) const;
 
     void tryExtend(const Scheme &scheme, std::mt19937 &generator);
@@ -742,7 +741,7 @@ std::string MetaFlipGraphPool<Scheme>::selectDimension(std::mt19937 &generator) 
         if (dimension2priority.find(dimensions[i]) != dimension2priority.end())
             weights[i] = dimension2priority.at(dimensions[i]);
         else
-            weights[i] = dimensions[i] == "2x2x2" ? 0.0 : 1.0 - pool.fillRatio(rank) + 0.1 / dimensions.size();
+            weights[i] = 1.0 - pool.fillRatio(rank) + 0.1 / dimensions.size();
 
         total += weights[i];
     }
@@ -791,21 +790,6 @@ void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &g
     tryProject(scheme, generator);
     tryProduct(scheme, generator);
     tryMerge(scheme, generator);
-}
-
-template <typename Scheme>
-std::string MetaFlipGraphPool<Scheme>::getMergeDimension(const Scheme &scheme, std::mt19937 &generator, int &n1, int &n2, int &n3) const {
-    int n[3] = {scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2)};
-
-    int i = generator() % 3;
-    n[i] = 2 + generator() % (n[i] - 1);
-
-    n1 = n[0];
-    n2 = n[1];
-    n3 = n[2];
-
-    std::sort(n, n + 3);
-    return getDimension(n[0], n[1], n[2]);
 }
 
 template <typename Scheme>
@@ -887,30 +871,41 @@ void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::mt19937 &g
 
 template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &generator) {
-    int n1, n2, n3;
-    std::string dimension = getMergeDimension(scheme, generator, n1, n2, n3);
-    if (dimension2pools.find(dimension) == dimension2pools.end())
-        return;
+    for (int i = 0; i < 3; i++) {
+        for (int ni = 2; ni <= scheme.getDimension(i) && ni + scheme.getDimension(i) <= metaParameters.maxDimension; ni++) {
+            int n[3] = {scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2)};
+            n[i] = ni;
 
-    const auto& pool = dimension2pools.at(dimension);
-    if (pool.minRank() > dimension2knownRank.at(dimension))
-        return;
+            int n1 = n[0];
+            int n2 = n[1];
+            int n3 = n[2];
 
-    Scheme scheme2;
-    pool.copyRandomMinRank(scheme2, generator);
-    scheme2.setSizes(n1, n2, n3);
+            std::sort(n, n + 3);
+            std::string dimension = getDimension(n[0], n[1], n[2]);
 
-    Scheme poolScheme;
-    poolScheme.copy(scheme);
+            if (dimension2pools.find(dimension) == dimension2pools.end())
+                continue;
 
-    if (!poolScheme.tryMerge(scheme2, generator, metaParameters.maxDimension, metaParameters.maxRank))
-        return;
+            const auto& pool = dimension2pools.at(dimension);
 
-    poolScheme.fixSizes();
-    if (poolScheme.getRank() > dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff)
-        return;
+            Scheme scheme2;
+            pool.copyRandomMinRank(scheme2, generator);
+            scheme2.setSizes(n1, n2, n3);
 
-    addScheme(poolScheme, true);
+            if (!scheme.isValidMerge(i, scheme2, metaParameters.maxDimension, metaParameters.maxRank))
+                continue;
+
+            Scheme poolScheme;
+            poolScheme.copy(scheme);
+            poolScheme.merge(scheme2, i);
+            poolScheme.fixSizes();
+
+            if (poolScheme.getRank() > dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff)
+                continue;
+
+            addScheme(poolScheme, true);
+        }
+    }
 }
 
 template <typename Scheme>
