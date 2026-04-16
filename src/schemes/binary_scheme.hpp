@@ -184,39 +184,6 @@ bool BinaryScheme<T>::read(std::istream &is, bool checkCorrectness) {
 }
 
 template <typename T>
-int BinaryScheme<T>::getComplexity() const {
-    int count = 0;
-
-    for (int i = 0; i < 3; i++)
-        for (int index = 0; index < rank; index++)
-            count += __builtin_popcountll(uvw[i][index]);
-
-    return count - 2 * rank - elements[2];
-}
-
-template <>
-int BinaryScheme<__uint128_t>::getComplexity() const {
-    int count = 0;
-
-    for (int i = 0; i < 3; i++)
-        for (int index = 0; index < rank; index++)
-            count += __builtin_popcountll(uvw[i][index]) + __builtin_popcountll(uvw[i][index] >> 64);
-
-    return count - 2 * rank - elements[2];
-}
-
-template <>
-int BinaryScheme<uint256_t>::getComplexity() const {
-    int count = 0;
-
-    for (int i = 0; i < 3; i++)
-        for (int index = 0; index < rank; index++)
-            count += uvw[i][index].popcount();
-
-    return count - 2 * rank - elements[2];
-}
-
-template <typename T>
 std::string BinaryScheme<T>::getRing() const {
     return "Z2";
 }
@@ -714,7 +681,7 @@ void BinaryScheme<T>::product(const BinaryScheme<T> &scheme2) {
                         int row = row1 * scheme2.dimension[p] + row2;
                         int col = col1 * scheme2.dimension[p1] + col2;
 
-                        vector |= T(value1 * value2) << (row * dimension[p1] + col);
+                        vector |= T(value1 & value2) << (row * dimension[p1] + col);
                     }
                 }
 

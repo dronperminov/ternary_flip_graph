@@ -214,23 +214,6 @@ Mod3Vector<T>::operator bool() const {
 }
 
 template <typename T>
-int Mod3Vector<T>::nonZeroCount() const {
-    return __builtin_popcountll(low | high);
-}
-
-template <>
-inline int Mod3Vector<__uint128_t>::nonZeroCount() const {
-    __uint128_t values = low | high;
-    return __builtin_popcountll(values) + __builtin_popcountll(values >> 64);
-}
-
-template <>
-inline int Mod3Vector<uint256_t>::nonZeroCount() const {
-    uint256_t values = low | high;
-    return values.popcount();
-}
-
-template <typename T>
 bool Mod3Vector<T>::isCanonized() const {
     T ones = low | high;
 
