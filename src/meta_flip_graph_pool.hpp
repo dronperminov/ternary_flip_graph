@@ -55,6 +55,7 @@ private:
     void initializeKnownIntegerRanks();
     void initializeKnownTernaryRanks();
 
+    bool resume();
     void runIteration();
 
     void randomWalk(Scheme &scheme, size_t &flipsCount, int &runnerRank, size_t &iterationsCount, size_t &plusIterations, std::vector<Scheme> &pool, std::mt19937 &generator);
@@ -157,6 +158,9 @@ void MetaFlipGraphPool<Scheme>::initializeKnownRanks(const std::string &ring) {
 
 template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::run() {
+    if (poolParameters.resume && !resume())
+        return;
+
     iterations.assign(count, 0);
 
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -554,6 +558,43 @@ void MetaFlipGraphPool<Scheme>::initializeKnownTernaryRanks() {
     };
 
     std::cout << "Initialized known ZT ranks" << std::endl;
+}
+
+template <typename Scheme>
+bool MetaFlipGraphPool<Scheme>::resume() {
+    if (!std::filesystem::exists(outputPath)) {
+        std::cout << "Unable to resume: output directory does not exists (" << outputPath << ")" << std::endl;
+        return true;
+    }
+
+    std::cout << "Start adding schemes from " << outputPath << std::endl;
+    bool valid = true;
+    size_t added = 0;
+
+    for (auto it = std::filesystem::recursive_directory_iterator(outputPath); it != std::filesystem::recursive_directory_iterator(); it++) {
+        if (!it->is_regular_file()) {
+            if (it.depth() == 0)
+                std::cout << "- add schemes from " << it->path().filename() << std::endl;
+
+            continue;
+        }
+
+        std::string path = it->path().string();
+
+        Scheme scheme;
+        if (!scheme.read(path, false)) {
+            valid = false;
+            break;
+        }
+
+        addScheme(scheme, false);
+        added++;
+    }
+
+    if (added)
+        std::cout << "Added " << added << " schemes" << std::endl;
+
+    return valid;
 }
 
 template <typename Scheme>
