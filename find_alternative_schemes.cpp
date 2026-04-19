@@ -8,6 +8,7 @@
 
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
+#include "src/entities/sha1.h"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/ternary_scheme.hpp"
@@ -17,8 +18,9 @@ std::string getSavePath(const Scheme<T> &scheme, const std::string &outputPath, 
     std::stringstream ss;
     ss << outputPath << "/";
     ss << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2);
+    SHA1 sha1;
     ss << "_m" << scheme.getRank();
-    ss << "_v" << std::setw(6) << std::setfill('0') << version;
+    ss << "_" << sha1.get(scheme.getHash());
     ss << "_" << scheme.getRing();
     return ss.str();
 }
