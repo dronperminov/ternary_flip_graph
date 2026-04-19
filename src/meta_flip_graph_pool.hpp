@@ -675,6 +675,7 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     double maxTime = *std::max_element(elapsedTimes.begin(), elapsedTimes.end());
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
     double meanFillRatio = 0;
+    int rediscovered = 0;
 
     std::cout << "+------------------------------------------------------------------------+" << std::endl << std::left;
     std::cout << "| seed: " << std::setw(64) << seed << " |" << std::endl;
@@ -688,14 +689,19 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
 
     for (const std::string &dimension : dimensions) {
         SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
-        pool.print(dimension2knownRank.at(dimension));
+        int knownRank = dimension2knownRank.at(dimension);
+        pool.print(knownRank);
+
         meanFillRatio += pool.minFillRatio();
+        if (pool.minRank() == knownRank)
+            rediscovered++;
     }
 
     std::cout << "+-----------+------+-----------------+---------------+-------------------+" << std::endl;
     showImprovements();
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
     std::cout << "- mean fill ratio: " << std::setprecision(3) << (meanFillRatio / dimensions.size()) << std::endl;
+    std::cout << "- rediscovered: " << rediscovered << " / " << dimensions.size() << std::endl;
     std::cout << std::endl;
 }
 
