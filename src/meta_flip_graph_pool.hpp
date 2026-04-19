@@ -59,21 +59,21 @@ private:
     void runIteration();
 
     void randomWalk(Scheme &scheme, size_t &flipsCount, int &runnerRank, size_t &iterationsCount, size_t &plusIterations, std::vector<Scheme> &pool, std::mt19937 &generator);
-    void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
+    void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes);
     void showImprovements() const;
 
     void readPriorities();
     void selectRunner(Scheme &scheme, std::mt19937 &generator);
     std::string selectDimension(std::mt19937 &generator);
     void addScheme(const Scheme &scheme, bool save);
-    void metaScheme(const Scheme &scheme, std::mt19937 &generator);
+    void metaScheme(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator);
 
     std::string getDimension(int n1, int n2, int n3) const;
 
-    void tryExtend(const Scheme &scheme, std::mt19937 &generator);
-    void tryProject(const Scheme &scheme, std::mt19937 &generator);
-    void tryProduct(const Scheme &scheme, std::mt19937 &generator);
-    void tryMerge(const Scheme &scheme, std::mt19937 &generator);
+    void tryExtend(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator);
+    void tryProject(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator);
+    void tryProduct(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator);
+    void tryMerge(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator);
 
     bool compareDimension(const std::string &d1, const std::string &d2) const;
     bool canExtend(const std::string &ring, const std::string &dimension, int rank) const;
@@ -608,12 +608,9 @@ void MetaFlipGraphPool<Scheme>::runIteration() {
         randomWalk(schemes[i], flips[i], ranks[i], iterations[i], plusIterations[i], pool[thread], generators[thread]);
     }
 
-    for (int i = 0; i < threads; i++) {
-        for (const Scheme &scheme : pool[i]) {
+    for (int i = 0; i < threads; i++)
+        for (const Scheme &scheme : pool[i])
             addScheme(scheme, true);
-            metaScheme(scheme, generators[i]);
-        }
-    }
 }
 
 template <typename Scheme>
@@ -641,6 +638,7 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
             Scheme poolScheme;
             poolScheme.copy(scheme);
             pool.emplace_back(poolScheme);
+            metaScheme(scheme, pool, generator);
             iterationsCount = 0;
             continue;
         }
@@ -669,7 +667,7 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const {
+void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) {
     double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0;
 
     double lastTime = elapsedTimes[elapsedTimes.size() - 1];
@@ -678,23 +676,23 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
     double meanFillRatio = 0;
 
-    std::cout << "+----------------------------------------------------------------+" << std::endl << std::left;
-    std::cout << "| seed: " << std::setw(56) << seed << " |" << std::endl;
-    std::cout << "| runners: " << std::setw(53) << count << " |" << std::endl;
-    std::cout << "| threads: " << std::setw(53) << threads << " |" << std::endl;
-    std::cout << "| iteration: " << std::setw(51) << iteration << " |" << std::endl;
-    std::cout << "| elapsed time: " << std::setw(48) << prettyTime(elapsed) << " |" << std::endl;
-    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
-    std::cout << "|           |      |  total  |  complexity   |  available flips  |" << std::endl;
-    std::cout << "| dimension | rank |  count  |  min  |  max  |   min   |   max   |" << std::endl;
+    std::cout << "+------------------------------------------------------------------------+" << std::endl << std::left;
+    std::cout << "| seed: " << std::setw(64) << seed << " |" << std::endl;
+    std::cout << "| runners: " << std::setw(61) << count << " |" << std::endl;
+    std::cout << "| threads: " << std::setw(61) << threads << " |" << std::endl;
+    std::cout << "| iteration: " << std::setw(59) << iteration << " |" << std::endl;
+    std::cout << "| elapsed time: " << std::setw(56) << prettyTime(elapsed) << " |" << std::endl;
+    std::cout << "+-----------+------+-----------------+---------------+-------------------+" << std::endl;
+    std::cout << "|           |      |                 |  complexity   |  available flips  |" << std::endl;
+    std::cout << "| dimension | rank |   total count   |  min  |  max  |   min   |   max   |" << std::endl;
 
     for (const std::string &dimension : dimensions) {
-        const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
+        SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
         pool.print(dimension2knownRank.at(dimension));
         meanFillRatio += pool.minFillRatio();
     }
 
-    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
+    std::cout << "+-----------+------+-----------------+---------------+-------------------+" << std::endl;
     showImprovements();
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
     std::cout << "- mean fill ratio: " << std::setprecision(3) << (meanFillRatio / dimensions.size()) << std::endl;
@@ -713,16 +711,16 @@ void MetaFlipGraphPool<Scheme>::showImprovements() const {
 
         if (!showed) {
             showed = true;
-            std::cout << "| improvements:                                                  |" << std::endl;
+            std::cout << "| improvements:                                                          |" << std::endl;
         }
 
         std::stringstream ss;
         ss << dimension << ": " << curr << " (" << known << ")";
-        std::cout << "| " << std::setw(62) << ss.str() << " |" << std::endl;
+        std::cout << "| " << std::setw(70) << ss.str() << " |" << std::endl;
     }
 
     if (showed)
-        std::cout << "+----------------------------------------------------------------+" << std::endl << std::left;
+        std::cout << "+------------------------------------------------------------------------+" << std::endl << std::left;
 }
 
 template <typename Scheme>
@@ -739,7 +737,7 @@ void MetaFlipGraphPool<Scheme>::readPriorities() {
     std::string line;
 
     while (std::getline(f, line)) {
-        if (line.empty())
+        if (line.empty() || line[0] == '#')
             continue;
 
         std::string dimension;
@@ -777,7 +775,7 @@ std::string MetaFlipGraphPool<Scheme>::selectDimension(std::mt19937 &generator) 
 
     for (size_t i = 0; i < dimensions.size(); i++) {
         const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimensions[i]);
-        int rank = dimension2knownRank.at(dimensions[i]);
+        int rank = std::min(dimension2knownRank.at(dimensions[i]), pool.minRank());
 
         if (dimension2priority.find(dimensions[i]) != dimension2priority.end())
             weights[i] = dimension2priority.at(dimensions[i]);
@@ -816,7 +814,7 @@ void MetaFlipGraphPool<Scheme>::addScheme(const Scheme &scheme, bool save) {
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator) {
     std::string dimension = scheme.getDimension();
     int rank = scheme.getRank();
 
@@ -827,10 +825,17 @@ void MetaFlipGraphPool<Scheme>::metaScheme(const Scheme &scheme, std::mt19937 &g
     if (rank > minRank + metaParameters.maxRankDiff || !canExtend(scheme.getRing(), dimension, rank) || uniform(generator) >= metaParameters.probability * pow(poolParameters.metaRankScale, rank - minRank))
         return;
 
-    tryExtend(scheme, generator);
-    tryProject(scheme, generator);
-    tryProduct(scheme, generator);
-    tryMerge(scheme, generator);
+    if (uniform(generator) < poolParameters.extendProbability)
+        tryExtend(scheme, schemesPool, generator);
+
+    if (uniform(generator) < poolParameters.projectProbability)
+        tryProject(scheme, schemesPool, generator);
+
+    if (uniform(generator) < poolParameters.productProbability)
+        tryProduct(scheme, schemesPool, generator);
+
+    if (uniform(generator) < poolParameters.mergeProbability)
+        tryMerge(scheme, schemesPool, generator);
 }
 
 template <typename Scheme>
@@ -841,7 +846,7 @@ std::string MetaFlipGraphPool<Scheme>::getDimension(int n1, int n2, int n3) cons
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::tryExtend(const Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::tryExtend(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator) {
     for (int i = 0; i < 3; i++) {
         if (!scheme.isValidExtension(i, metaParameters.maxDimension, metaParameters.maxRank))
             continue;
@@ -852,12 +857,12 @@ void MetaFlipGraphPool<Scheme>::tryExtend(const Scheme &scheme, std::mt19937 &ge
         poolScheme.fixSizes();
 
         if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.extendMaxDiff)
-            addScheme(poolScheme, true);
+            schemesPool.emplace_back(poolScheme);
     }
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator) {
     int n1 = scheme.getDimension(0);
     int n2 = scheme.getDimension(1);
     int n3 = scheme.getDimension(2);
@@ -876,13 +881,13 @@ void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::mt19937 &g
             poolScheme.fixSizes();
 
             if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff)
-                addScheme(poolScheme, true);
+                schemesPool.emplace_back(poolScheme);
         }
     }
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator) {
     for (int n1 = 2; scheme.getDimension(0) * n1 <= metaParameters.maxDimension; n1++) {
         for (int n2 = 2; scheme.getDimension(1) * n2 <= metaParameters.maxDimension; n2++) {
             for (int n3 = 2; scheme.getDimension(2) * n3 <= metaParameters.maxDimension; n3++) {
@@ -901,17 +906,15 @@ void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::mt19937 &g
                 poolScheme.copy(scheme);
                 poolScheme.product(scheme2);
 
-                if (poolScheme.getRank() > dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.productMaxDiff)
-                    continue;
-
-                addScheme(poolScheme, true);
+                if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.productMaxDiff)
+                    schemesPool.emplace_back(poolScheme);
             }
         }
     }
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &generator) {
+void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::vector<Scheme> &schemesPool, std::mt19937 &generator) {
     for (int i = 0; i < 3; i++) {
         for (int ni = 2; ni <= scheme.getDimension(i) && ni + scheme.getDimension(i) <= metaParameters.maxDimension; ni++) {
             int n[3] = {scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2)};
@@ -941,10 +944,8 @@ void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::mt19937 &gen
             poolScheme.merge(scheme2, i);
             poolScheme.fixSizes();
 
-            if (poolScheme.getRank() > dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff)
-                continue;
-
-            addScheme(poolScheme, true);
+            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff)
+                schemesPool.emplace_back(poolScheme);
         }
     }
 }

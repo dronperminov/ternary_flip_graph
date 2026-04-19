@@ -37,7 +37,7 @@ public:
     bool add(const Scheme &scheme, bool save = false);
     void copyRandom(Scheme &scheme, std::mt19937 &generator, double alpha) const;
     void copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const;
-    void print(int knownRank) const;
+    void print(int knownRank);
 private:
     int getRandomRank(std::mt19937 &generator, double alpha) const;
 };
@@ -114,16 +114,21 @@ bool SchemesRankPool<Scheme>::add(const Scheme &scheme, bool save) {
 }
 
 template <typename Scheme>
-void SchemesRankPool<Scheme>::print(int knownRank) const {
-    std::cout << "+-----------+------+---------+---------------+-------------------+" << std::endl;
+void SchemesRankPool<Scheme>::print(int knownRank) {
+    std::cout << "+-----------+------+-----------------+---------------+-------------------+" << std::endl;
 
     for (size_t i = 0; i < ranks.size(); i++) {
-        const auto& pool = rank2pool.at(ranks[i]);
+        auto& pool = rank2pool.at(ranks[i]);
+        size_t diff = pool.getDiff();
+        std::stringstream size;
+        size << pool.size();
+        if (diff)
+            size << " (+" << diff << ")";
 
         std::cout << "| ";
         std::cout << std::setw(9) << (i == 0 ? dimension : "") << " | ";
         std::cout << std::setw(4) << ranks[i] << " | ";
-        std::cout << std::setw(7) << pool.size() << " | ";
+        std::cout << std::setw(15) << size.str() << " | ";
         std::cout << std::setw(5) << pool.getMinComplexity() << " | ";
         std::cout << std::setw(5) << pool.getMaxComplexity() << " | ";
         std::cout << std::setw(7) << pool.getMinFlips() << " | ";

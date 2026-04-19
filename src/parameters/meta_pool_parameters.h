@@ -16,6 +16,11 @@ struct MetaPoolParameters {
     int projectMaxDiff;
     int productMaxDiff;
 
+    double mergeProbability;
+    double extendProbability;
+    double projectProbability;
+    double productProbability;
+
     int projectMinN1;
     int projectMinN2;
     int projectMinN3;

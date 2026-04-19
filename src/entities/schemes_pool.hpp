@@ -15,9 +15,11 @@ class SchemesPool {
     bool uniqueOnly;
     std::string path;
     std::string format;
-    size_t maxSave;
-    size_t saved;
+
     std::vector<Scheme> schemes;
+    std::vector<int> schemeFlips;
+    size_t totalFlips;
+    size_t changes;
     size_t index;
     bool hasDirectory;
 
@@ -29,9 +31,10 @@ class SchemesPool {
     std::unordered_set<std::string> hashes;
     SHA1 sha1;
 public:
-    SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format, size_t maxSave = 32768);
+    SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format);
 
     size_t size() const;
+    size_t getDiff();
     int getMinComplexity() const;
     int getMaxComplexity() const;
     int getMinFlips() const;
@@ -44,14 +47,14 @@ private:
 };
 
 template <typename Scheme>
-SchemesPool<Scheme>::SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format, size_t maxSave) {
+SchemesPool<Scheme>::SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format) {
     this->maxSize = maxSize;
     this->uniqueOnly = uniqueOnly;
     this->path = path;
     this->format = format;
-    this->maxSave = maxSave;
-    this->saved = 0;
     this->index = 0;
+    this->totalFlips = 0;
+    this->changes = 0;
     this->hasDirectory = false;
 
     this->minComplexity = INT_MAX;
@@ -63,6 +66,13 @@ SchemesPool<Scheme>::SchemesPool(size_t maxSize, bool uniqueOnly, const std::str
 template <typename Scheme>
 size_t SchemesPool<Scheme>::size() const {
     return schemes.size();
+}
+
+template <typename Scheme>
+size_t SchemesPool<Scheme>::getDiff() {
+    size_t diff = changes;
+    changes = 0;
+    return diff;
 }
 
 template <typename Scheme>
@@ -95,28 +105,50 @@ bool SchemesPool<Scheme>::add(const Scheme &scheme, bool save) {
         hashes.insert(hash);
     }
 
-    if (schemes.size() < maxSize)
+    int complexity = scheme.getComplexity();
+    int flips = scheme.getAvailableFlips();
+
+    if (schemes.size() < maxSize) {
         schemes.emplace_back(Scheme());
+        schemeFlips.push_back(flips);
+
+        if (save)
+            saveScheme(scheme);
+    }
+    else {
+        totalFlips -= schemeFlips[index];
+        schemeFlips[index] = flips;
+    }
 
     schemes[index].copy(scheme);
     index = (index + 1) % maxSize;
-
-    if (save && saved < maxSave)
-        saveScheme(scheme);
-
-    int complexity = scheme.getComplexity();
-    int flips = scheme.getAvailableFlips();
 
     minComplexity = std::min(minComplexity, complexity);
     maxComplexity = std::max(maxComplexity, complexity);
     minFlips = std::min(minFlips, flips);
     maxFlips = std::max(maxFlips, flips);
+    totalFlips += flips;
+    changes++;
 
     return true;
 }
 
 template <typename Scheme>
 void SchemesPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
+    std::uniform_int_distribution<size_t> uniform(0, totalFlips);
+
+    size_t randomWeight = uniform(generator);
+    size_t sum = 0;
+
+    for (size_t i = 0; i < schemes.size(); i++) {
+        sum += schemeFlips[i];
+
+        if (randomWeight <= sum) {
+            scheme.copy(schemes[i]);
+            return;
+        }
+    }
+
     scheme.copy(schemes[generator() % schemes.size()]);
 }
 
@@ -139,6 +171,4 @@ void SchemesPool<Scheme>::saveScheme(const Scheme &scheme) {
         scheme.saveJson(ss.str());
     else
         scheme.saveTxt(ss.str());
-
-    saved++;
 }
