@@ -100,7 +100,6 @@ int main(int argc, char **argv) {
     parser.add("--count", "-c", ArgType::Natural, "Number of parallel runners", "8");
     parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
-    parser.addChoices("--metric", ArgType::String, "Metric for optimization", {"complexity", "flips"}, "complexity");
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
@@ -119,7 +118,7 @@ int main(int argc, char **argv) {
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--maximize-flips", ArgType::Flag, "Maximize number of potential flips");
     parser.add("--copy-best-probability", ArgType::Real, "Probability to replace scheme with best scheme after improvement, from 0.0 to 1.0", "0.5");
-    parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without metric improvement before termination", "3");
+    parser.add("--max-no-improvements", ArgType::Natural, "Maximum iterations without improvement before termination", "3");
 
     if (!parser.parse(argc, argv))
         return 0;
