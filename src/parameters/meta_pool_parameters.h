@@ -27,6 +27,7 @@ struct MetaPoolParameters {
 
     double selectRankScale;
     double metaRankScale;
+    std::string prioritiesPath;
 
     void parse(const ArgParser &parser);
     void writeJSON(std::ostream &os) const;

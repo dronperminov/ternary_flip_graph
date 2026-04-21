@@ -23,6 +23,8 @@ void MetaPoolParameters::parse(const ArgParser &parser) {
 
     selectRankScale = std::stod(parser["--select-rank-scale"]);
     metaRankScale = std::stod(parser["--meta-rank-scale"]);
+
+    prioritiesPath = parser["--priorities-path"];
 }
 
 void MetaPoolParameters::writeJSON(std::ostream &os) const {
@@ -42,6 +44,7 @@ void MetaPoolParameters::writeJSON(std::ostream &os) const {
     os << "\"project_min_n\": [" << projectMinN1 << ", " << projectMinN2 << ", " << projectMinN3 << "], ";
     os << "\"select_rank_scale\": " << selectRankScale << ", ";
     os << "\"meta_rank_scale\": " << metaRankScale << ", ";
+    os << "\"priorities_path\": " << prioritiesPath;
     os << "}";
 }
 
@@ -59,6 +62,7 @@ std::ostream& operator<<(std::ostream& os, const MetaPoolParameters &parameters)
         os << "- project min N: " << parameters.projectMinN1 << ", " << parameters.projectMinN2 << ", " << parameters.projectMinN3 << std::endl;
         os << "- select rank scale: " << parameters.selectRankScale << std::endl;
         os << "- meta rank scale: " << parameters.metaRankScale << std::endl;
+        os << "- priorities path: " << parameters.prioritiesPath << std::endl;
     }
 
     return os;
@@ -70,7 +74,7 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
     parser.add("--pool-unique-only", ArgType::Flag, "Save only unique schemes");
     parser.add("--resume", ArgType::Flag, "Read schemes from output directories as initial");
-    parser.add("--save-alternatives-probability", ArgType::Real, "Save alternative schemes after runner end probability", "0.1");
+    parser.add("--save-alternatives-probability", ArgType::Real, "Save alternative schemes after runner end probability", "0.01");
 
     parser.add("--merge-max-diff", ArgType::UInt, "Max rank difference for merge operator", "4");
     parser.add("--extend-max-diff", ArgType::UInt, "Max rank difference for extend operator", "4");
@@ -82,10 +86,12 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.add("--project-probability", ArgType::Real, "Probability of project operator", "0.8");
     parser.add("--product-probability", ArgType::Real, "Probability of product operator", "0.1");
 
-    parser.add("--project-min-n1", ArgType::Natural, "Min first dimension for project", "4");
-    parser.add("--project-min-n2", ArgType::Natural, "Min second dimension for project", "5");
-    parser.add("--project-min-n3", ArgType::Natural, "Min third dimension for project", "6");
+    parser.add("--project-min-n1", ArgType::Natural, "Min first dimension for project", "2");
+    parser.add("--project-min-n2", ArgType::Natural, "Min second dimension for project", "3");
+    parser.add("--project-min-n3", ArgType::Natural, "Min third dimension for project", "4");
 
     parser.add("--select-rank-scale", ArgType::Real, "Scale for pool rank selection", "0.7");
     parser.add("--meta-rank-scale", ArgType::Real, "Scale for make meta operator", "0.5");
+
+    parser.add("--priorities-path", ArgType::String, "Path to file with priorities", "priorities.txt");
 }

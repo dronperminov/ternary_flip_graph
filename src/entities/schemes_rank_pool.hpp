@@ -30,6 +30,7 @@ public:
 
     size_t minRankSize() const;
     size_t size(int rank) const;
+    size_t size() const;
 
     double minFillRatio() const;
     double fillRatio(int rank) const;
@@ -37,7 +38,8 @@ public:
     bool add(const Scheme &scheme, bool save = false);
     void copyRandom(Scheme &scheme, std::mt19937 &generator, double alpha) const;
     void copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const;
-    void print(int knownRank);
+    void resetDiff();
+    size_t print(int knownRank) const;
 private:
     int getRandomRank(std::mt19937 &generator, double alpha) const;
 };
@@ -84,6 +86,16 @@ size_t SchemesRankPool<Scheme>::size(int rank) const {
 }
 
 template <typename Scheme>
+size_t SchemesRankPool<Scheme>::size() const {
+    size_t total = 0;
+
+    for (const auto& pair : rank2pool)
+        total += pair.second.size();
+
+    return total;
+}
+
+template <typename Scheme>
 double SchemesRankPool<Scheme>::minFillRatio() const {
     if (ranks.empty())
         return 0;
@@ -114,12 +126,15 @@ bool SchemesRankPool<Scheme>::add(const Scheme &scheme, bool save) {
 }
 
 template <typename Scheme>
-void SchemesRankPool<Scheme>::print(int knownRank) {
+size_t SchemesRankPool<Scheme>::print(int knownRank) const {
+    size_t totalDiff = 0;
     std::cout << "+-----------+------+-----------------+---------------+-------------------+" << std::endl;
 
     for (size_t i = 0; i < ranks.size(); i++) {
-        auto& pool = rank2pool.at(ranks[i]);
+        const auto& pool = rank2pool.at(ranks[i]);
         size_t diff = pool.getDiff();
+        totalDiff += diff;
+
         std::stringstream size;
         size << pool.size();
         if (diff)
@@ -144,6 +159,8 @@ void SchemesRankPool<Scheme>::print(int knownRank) {
 
         std::cout << std::endl;
     }
+
+    return totalDiff;
 }
 
 template <typename Scheme>
@@ -182,4 +199,10 @@ void SchemesRankPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator
 template <typename Scheme>
 void SchemesRankPool<Scheme>::copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const {
     rank2pool.at(ranks[0]).copyRandom(scheme, generator);
+}
+
+template <typename Scheme>
+void SchemesRankPool<Scheme>::resetDiff() {
+    for (auto& pair : rank2pool)
+        pair.second.resetDiff();
 }

@@ -59,7 +59,7 @@ private:
     void runIteration();
 
     void randomWalk(Scheme &scheme, size_t &flipsCount, int &runnerRank, size_t &iterationsCount, size_t &plusIterations, std::vector<Scheme> &pool, std::mt19937 &generator);
-    void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes);
+    void report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const;
     void showImprovements() const;
 
     void readPriorities();
@@ -602,6 +602,9 @@ void MetaFlipGraphPool<Scheme>::runIteration() {
     std::vector<std::vector<Scheme>> pool(threads);
     readPriorities();
 
+    for (auto& pair : dimension2pools)
+        pair.second.resetDiff();
+
     #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < count; i++) {
         int thread = omp_get_thread_num();
@@ -663,19 +666,23 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
         Scheme poolScheme;
         poolScheme.copy(scheme);
         pool.emplace_back(poolScheme);
+        metaScheme(scheme, pool, generator);
     }
 }
 
 template <typename Scheme>
-void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) {
+void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resolution_clock::time_point startTime, const std::vector<double> &elapsedTimes) const {
     double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0;
 
     double lastTime = elapsedTimes[elapsedTimes.size() - 1];
     double minTime = *std::min_element(elapsedTimes.begin(), elapsedTimes.end());
     double maxTime = *std::max_element(elapsedTimes.begin(), elapsedTimes.end());
     double meanTime = std::accumulate(elapsedTimes.begin(), elapsedTimes.end(), 0.0) / elapsedTimes.size();
+
     double meanFillRatio = 0;
-    int rediscovered = 0;
+    size_t rediscovered = 0;
+    size_t total = 0;
+    size_t diff = 0;
 
     std::cout << "+------------------------------------------------------------------------+" << std::endl << std::left;
     std::cout << "| seed: " << std::setw(64) << seed << " |" << std::endl;
@@ -688,9 +695,10 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     std::cout << "| dimension | rank |   total count   |  min  |  max  |   min   |   max   |" << std::endl;
 
     for (const std::string &dimension : dimensions) {
-        SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
+        const SchemesRankPool<Scheme> &pool = dimension2pools.at(dimension);
         int knownRank = dimension2knownRank.at(dimension);
-        pool.print(knownRank);
+        diff += pool.print(knownRank);
+        total += pool.size();
 
         meanFillRatio += pool.minFillRatio();
         if (pool.minRank() == knownRank)
@@ -701,6 +709,10 @@ void MetaFlipGraphPool<Scheme>::report(size_t iteration, std::chrono::high_resol
     showImprovements();
     std::cout << "- iteration time (last / min / max / mean): " << prettyTime(lastTime) << " / " << prettyTime(minTime) << " / " << prettyTime(maxTime) << " / " << prettyTime(meanTime) << std::endl;
     std::cout << "- mean fill ratio: " << std::setprecision(3) << (meanFillRatio / dimensions.size()) << std::endl;
+    std::cout << "- total schemes: " << total;
+    if (diff)
+        std::cout << " (+" << diff << ")";
+    std::cout << std::endl;
     std::cout << "- rediscovered: " << rediscovered << " / " << dimensions.size() << std::endl;
     std::cout << std::endl;
 }
@@ -733,10 +745,10 @@ template <typename Scheme>
 void MetaFlipGraphPool<Scheme>::readPriorities() {
     dimension2priority.clear();
 
-    if (!std::filesystem::exists("priorities.txt"))
+    if (!std::filesystem::exists(poolParameters.prioritiesPath))
         return;
 
-    std::ifstream f("priorities.txt");
+    std::ifstream f(poolParameters.prioritiesPath);
     if (!f)
         return;
 

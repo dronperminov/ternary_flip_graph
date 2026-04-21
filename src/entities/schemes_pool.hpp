@@ -34,7 +34,7 @@ public:
     SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format);
 
     size_t size() const;
-    size_t getDiff();
+    size_t getDiff() const;
     int getMinComplexity() const;
     int getMaxComplexity() const;
     int getMinFlips() const;
@@ -42,6 +42,7 @@ public:
 
     bool add(const Scheme &scheme, bool save);
     void copyRandom(Scheme &scheme, std::mt19937 &generator) const;
+    void resetDiff();
 private:
     void saveScheme(const Scheme &scheme);
 };
@@ -69,10 +70,8 @@ size_t SchemesPool<Scheme>::size() const {
 }
 
 template <typename Scheme>
-size_t SchemesPool<Scheme>::getDiff() {
-    size_t diff = changes;
-    changes = 0;
-    return diff;
+size_t SchemesPool<Scheme>::getDiff() const {
+    return changes;
 }
 
 template <typename Scheme>
@@ -135,6 +134,11 @@ bool SchemesPool<Scheme>::add(const Scheme &scheme, bool save) {
 
 template <typename Scheme>
 void SchemesPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
+    if (totalFlips == 0) {
+        scheme.copy(schemes[generator() % schemes.size()]);
+        return;
+    }
+
     std::uniform_int_distribution<size_t> uniform(0, totalFlips);
 
     size_t randomWeight = uniform(generator);
@@ -149,7 +153,12 @@ void SchemesPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) co
         }
     }
 
-    scheme.copy(schemes[generator() % schemes.size()]);
+    scheme.copy(schemes.back());
+}
+
+template <typename Scheme>
+void SchemesPool<Scheme>::resetDiff() {
+    changes = 0;
 }
 
 template <typename Scheme>
