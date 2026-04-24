@@ -874,7 +874,7 @@ void MetaFlipGraphPool<Scheme>::tryExtend(const Scheme &scheme, std::vector<Sche
         poolScheme.extend(i);
         poolScheme.fixSizes();
 
-        if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.extendMaxDiff)
+        if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.extendMaxDiff && (!poolParameters.liftOnly || poolScheme.canLift()))
             schemesPool.emplace_back(poolScheme);
     }
 }
@@ -898,7 +898,7 @@ void MetaFlipGraphPool<Scheme>::tryProject(const Scheme &scheme, std::vector<Sch
             poolScheme.project(i, j);
             poolScheme.fixSizes();
 
-            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff)
+            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.projectMaxDiff && (!poolParameters.liftOnly || poolScheme.canLift()))
                 schemesPool.emplace_back(poolScheme);
         }
     }
@@ -924,7 +924,7 @@ void MetaFlipGraphPool<Scheme>::tryProduct(const Scheme &scheme, std::vector<Sch
                 poolScheme.copy(scheme);
                 poolScheme.product(scheme2);
 
-                if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.productMaxDiff)
+                if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.productMaxDiff && (!poolParameters.liftOnly || poolScheme.canLift()))
                     schemesPool.emplace_back(poolScheme);
             }
         }
@@ -962,7 +962,7 @@ void MetaFlipGraphPool<Scheme>::tryMerge(const Scheme &scheme, std::vector<Schem
             poolScheme.merge(scheme2, i);
             poolScheme.fixSizes();
 
-            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff)
+            if (poolScheme.getRank() <= dimension2knownRank.at(poolScheme.getDimension()) + poolParameters.mergeMaxDiff && (!poolParameters.liftOnly || poolScheme.canLift()))
                 schemesPool.emplace_back(poolScheme);
         }
     }
