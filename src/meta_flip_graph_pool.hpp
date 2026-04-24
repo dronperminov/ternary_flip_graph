@@ -637,7 +637,7 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
             continue;
         }
 
-        if (scheme.getRank() == runnerRank - 1) {
+        if (scheme.getRank() == runnerRank - 1 && (!poolParameters.liftOnly || scheme.canLift())) {
             Scheme poolScheme;
             poolScheme.copy(scheme);
             pool.emplace_back(poolScheme);
@@ -662,7 +662,7 @@ void MetaFlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, i
             flipsCount = 0;
     }
 
-    if (iterationsCount > 0 && uniform(generator) < poolParameters.alternativesProbability) {
+    if (iterationsCount > 0 && uniform(generator) < poolParameters.alternativesProbability && (!poolParameters.liftOnly || scheme.canLift())) {
         Scheme poolScheme;
         poolScheme.copy(scheme);
         pool.emplace_back(poolScheme);

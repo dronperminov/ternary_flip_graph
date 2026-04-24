@@ -66,6 +66,7 @@ public:
     bool reconstruct(FractionalScheme &scheme) const;
 
     BinaryLifter toLift() const;
+    bool canLift() const;
 protected:
     void initFlips();
     void removeZeroes();
@@ -794,6 +795,11 @@ BinaryLifter BinaryScheme<T>::toLift() const {
     }
 
     return BinaryLifter(dimension[0], dimension[1], dimension[2], rank, u, v, w, getJakobian());
+}
+
+template <typename T>
+bool BinaryScheme<T>::canLift() const {
+    return toLift().canLift();
 }
 
 template <typename T>

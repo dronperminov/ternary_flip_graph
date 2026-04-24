@@ -41,6 +41,13 @@ bool BinaryLifter::lift() {
     return true;
 }
 
+bool BinaryLifter::canLift() {
+    for (int i = 0; i < tensorSize; i++)
+        b[i] = ((T0[i] - E[i]) >> exponent) & 1;
+
+    return jakobian.solve(b, x);
+}
+
 bool BinaryLifter::reconstruct(FractionalScheme &lifted) {
     return lifted.reconstruct(dimension[0], dimension[1], dimension[2], rank, u, v, w, mod, bound);
 }

@@ -63,6 +63,8 @@ public:
 
     bool validate() const;
     bool validateParallel() const;
+
+    bool canLift() const;
 protected:
     void initFlips();
     void removeZeroes();
@@ -870,6 +872,11 @@ bool TernaryScheme<T>::validateParallel() const {
                 valid = valid && validateEquation(i, j, k);
 
     return valid;
+}
+
+template <typename T>
+bool TernaryScheme<T>::canLift() const {
+    return true;
 }
 
 template <typename T>

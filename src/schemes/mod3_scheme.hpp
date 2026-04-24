@@ -67,6 +67,7 @@ public:
     bool reconstruct(FractionalScheme &scheme) const;
 
     Mod3Lifter toLift() const;
+    bool canLift() const;
 private:
     void initFlips();
     void removeZeroes();
@@ -865,6 +866,11 @@ Mod3Lifter Mod3Scheme<T>::toLift() const {
     }
 
     return Mod3Lifter(dimension[0], dimension[1], dimension[2], rank, u, v, w, getJakobian());
+}
+
+template <typename T>
+bool Mod3Scheme<T>::canLift() const {
+    return toLift().canLift();
 }
 
 template <typename T>

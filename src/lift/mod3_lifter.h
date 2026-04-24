@@ -30,6 +30,7 @@ public:
     Mod3Lifter(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, const Mod3Solver &jakobian);
 
     bool lift();
+    bool canLift();
     bool reconstruct(FractionalScheme &lifted);
 
     int64_t getMod() const;

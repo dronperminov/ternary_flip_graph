@@ -5,6 +5,7 @@ void MetaPoolParameters::parse(const ArgParser &parser) {
     size = parseNatural(parser["--pool-size"]);
     uniqueOnly = parser.isSet("--pool-unique-only");
     resume = parser.isSet("--resume");
+    liftOnly = parser.isSet("--lift-only");
     alternativesProbability = std::stod(parser["--save-alternatives-probability"]);
 
     mergeMaxDiff = std::stoi(parser["--merge-max-diff"]);
@@ -32,6 +33,7 @@ void MetaPoolParameters::writeJSON(std::ostream &os) const {
     os << "\"size\": " << size << ", ";
     os << "\"unique_only\": " << (uniqueOnly ? "true" : "false") << ", ";
     os << "\"resume\": " << (resume ? "true" : "false") << ", ";
+    os << "\"lift_only\": " << (liftOnly ? "true" : "false") << ", ";
     os << "\"save_alternatives_probability\": " << alternativesProbability << ", ";
     os << "\"merge_max_diff\": " << mergeMaxDiff << ", ";
     os << "\"extend_max_diff\": " << extendMaxDiff << ", ";
@@ -53,6 +55,7 @@ std::ostream& operator<<(std::ostream& os, const MetaPoolParameters &parameters)
         os << "Pool parameters:" << std::endl;
         os << "- size: " << parameters.size << std::endl;
         os << "- unique only: " << (parameters.uniqueOnly ? "yes" : "no") << std::endl;
+        os << "- liftable only: " << (parameters.liftOnly ? "yes" : "no") << std::endl;
         os << "- resume: " << (parameters.resume ? "yes" : "no") << std::endl;
         os << "- save alternatives probability: " << parameters.alternativesProbability << std::endl;
         os << "- merge parameters (max diff: " << parameters.mergeMaxDiff << ", probability: " << parameters.mergeProbability << ")" << std::endl;
@@ -74,6 +77,7 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
     parser.add("--pool-unique-only", ArgType::Flag, "Save only unique schemes");
     parser.add("--resume", ArgType::Flag, "Read schemes from output directories as initial");
+    parser.add("--lift-only", ArgType::Flag, "Save only schemes that can lift");
     parser.add("--save-alternatives-probability", ArgType::Real, "Save alternative schemes after runner end probability", "0.01");
 
     parser.add("--merge-max-diff", ArgType::UInt, "Max rank difference for merge operator", "4");

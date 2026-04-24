@@ -41,6 +41,13 @@ bool Mod3Lifter::lift() {
     return true;
 }
 
+bool Mod3Lifter::canLift() {
+    for (int i = 0; i < tensorSize; i++)
+        b[i] = (((T0[i] - E[i]) / mod) % 3 + 3) % 3;
+
+    return jakobian.solve(b, x);
+}
+
 bool Mod3Lifter::reconstruct(FractionalScheme &lifted) {
     return lifted.reconstruct(dimension[0], dimension[1], dimension[2], rank, u, v, w, mod, bound);
 }

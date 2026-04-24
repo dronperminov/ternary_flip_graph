@@ -77,7 +77,6 @@ bool BinarySolver::solve(const std::vector<uint8_t> &b, std::vector<uint8_t> &x)
                 std::swap(augmented[offset1++], augmented[offset2++]);
         }
 
-        #pragma omp parallel for
         for (uint64_t row = 0; row < rows; row++) {
             if (row != rank && (augmented[row * wordsPerRow + word] & mask)) {
                 uint64_t offset1 = row * wordsPerRow + word;
