@@ -567,32 +567,36 @@ bool MetaFlipGraphPool<Scheme>::resume() {
         return true;
     }
 
-    std::cout << "Start adding schemes from " << outputPath << std::endl;
+    std::vector<std::string> paths;
+    for (auto it = std::filesystem::recursive_directory_iterator(outputPath); it != std::filesystem::recursive_directory_iterator(); it++)
+        if (it->is_regular_file())
+            paths.push_back(it->path().string());
+
+    std::cout << "Start adding " << paths.size() << " schemes from " << outputPath << std::endl;
+    std::vector<std::vector<Scheme>> pool(threads);
+
     bool valid = true;
-    size_t added = 0;
 
-    for (auto it = std::filesystem::recursive_directory_iterator(outputPath); it != std::filesystem::recursive_directory_iterator(); it++) {
-        if (!it->is_regular_file()) {
-            if (it.depth() == 0)
-                std::cout << "- add schemes from " << it->path().filename() << std::endl;
-
-            continue;
-        }
-
-        std::string path = it->path().string();
-
+    #pragma omp parallel for num_threads(threads)
+    for (size_t i = 0; i < paths.size(); i++) {
         Scheme scheme;
-        if (!scheme.read(path, false)) {
+        if (!scheme.read(paths[i], false))
             valid = false;
-            break;
-        }
 
-        addScheme(scheme, false);
-        added++;
+        int thread = omp_get_thread_num();
+        pool[thread].emplace_back(scheme);
+
+        if (thread == 0 && pool[thread].size() % 1000 == 0)
+            std::cout << "Thread 1 read " << pool[thread].size() << " schemes" << std::endl;
     }
 
-    if (added)
-        std::cout << "Added " << added << " schemes" << std::endl;
+    if (valid) {
+        for (int i = 0; i < threads; i++)
+            for (const Scheme &scheme : pool[i])
+                addScheme(scheme, false);
+
+        std::cout << "All schemes have been read" << std::endl;
+    }
 
     return valid;
 }
