@@ -52,7 +52,7 @@ bool SandwichFlipOptimizer::initializeFromFile(const std::string &path, bool che
     std::cout << "- flips: " << bestWeight.flips << " (" << bestWeight.flips3[0] << " / " << bestWeight.flips3[1] << " / " << bestWeight.flips3[2] << ")" << std::endl;
     std::cout << "- values: " << scheme.getUniqueValues() << std::endl;
     std::cout << "- fractions: " << bestWeight.fractions << std::endl;
-    std::cout << "- max denominator: " << bestWeight.denominator << std::endl;
+    std::cout << "- max denominator: " << bestWeight.denominator << " (count: " << bestWeight.denominatorCount << ")" << std::endl;
     std::cout << "- max abs value: " << bestWeight.numerator << " (count: " << bestWeight.numeratorCount << ")" << std::endl;
     std::cout << "- weight: " << bestWeight.weight << std::endl;
     std::cout << "- complexity: " << bestWeight.complexity << std::endl;
@@ -111,7 +111,8 @@ void SandwichFlipOptimizer::run(size_t maxNoImprovements) {
             std::cout << std::setw(3) << bestWeight.flips3[1] << " | ";
             std::cout << std::setw(3) << bestWeight.flips3[2] << " | ";
             std::cout << std::setw(9) << bestWeight.fractions << " | ";
-            std::cout << std::setw(5) << bestWeight.denominator << " | ";
+            std::cout << std::setw(7) << bestWeight.denominator << " | ";
+            std::cout << std::setw(7) << bestWeight.denominatorCount << " | ";
             std::cout << std::setw(7) << bestWeight.numerator << " | ";
             std::cout << std::setw(7) << bestWeight.numeratorCount << " | ";
             std::cout << std::setw(10) << bestWeight.weight << " | ";
@@ -340,6 +341,7 @@ void SandwichFlipOptimizer::saveScheme(const FractionalScheme &scheme, const Wei
         ss << "_f" << weight.flips << "_" << weight.flips3[0] << "_" << weight.flips3[1] << "_" << weight.flips3[2];
 
     ss << "_md" << weight.denominator;
+    ss << "_dc" << weight.denominatorCount;
     ss << "_fr" << weight.fractions << "_" << weight.fractions3[0] << "_" << weight.fractions3[1] << "_" << weight.fractions3[2];;
     ss << "_mn" << weight.numerator;
     ss << "_nc" << weight.numeratorCount;
@@ -376,8 +378,8 @@ void SandwichFlipOptimizer::printHeader() const {
     headers1.push_back("fractions");
     headers2.push_back("  count  ");
 
-    headers1.push_back(" max ");
-    headers2.push_back(" den ");
+    headers1.push_back(" max denominator ");
+    headers2.push_back(" value  |  count ");
 
     headers1.push_back("max abs numerator");
     headers2.push_back(" value  |  count ");
@@ -423,6 +425,7 @@ Weight SandwichFlipOptimizer::getWeight(const FractionalScheme &scheme, std::mt1
     }
 
     weight.denominator = scheme.getMaxDenominator();
+    weight.denominatorCount = scheme.getDenominatorCount(weight.denominator);
     weight.numerator = scheme.getMaxAbsNumerator();
     weight.numeratorCount = scheme.getAbsNumeratorCount(weight.numerator);
     weight.weight = scheme.getWeight();
@@ -444,8 +447,13 @@ bool SandwichFlipOptimizer::compareWeight(const Weight &w1, const Weight &w2) {
         return w1.flips > w2.flips;
 
     for (const char& c : sandwichFlipParameters.check) {
-        if (c == 'd' && w1.denominator != w2.denominator)
-            return w1.denominator < w2.denominator;
+        if (c == 'd') {
+            if (w1.denominator != w2.denominator)
+                return w1.denominator < w2.denominator;
+
+            if (w1.denominatorCount != w2.denominatorCount)
+                return w1.denominatorCount < w2.denominatorCount;
+        }
 
         if (c == 'f') {
             if (w1.fractions != w2.fractions)

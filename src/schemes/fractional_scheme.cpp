@@ -189,6 +189,17 @@ int FractionalScheme::getMaxDenominator() const {
     return denominator;
 }
 
+int FractionalScheme::getDenominatorCount(int denominator) const {
+    int count = 0;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            if (uvw[i][j].denominator() == denominator)
+                count++;
+
+    return count;
+}
+
 std::string FractionalScheme::getRing() const {
     if (isTernary())
         return "ZT";

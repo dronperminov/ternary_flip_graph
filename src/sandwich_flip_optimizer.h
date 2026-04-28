@@ -22,6 +22,7 @@ struct Weight {
     int fractions;
     int fractions3[3];
     int denominator;
+    int denominatorCount;
     int numerator;
     int numeratorCount;
     int weight;

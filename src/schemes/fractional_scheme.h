@@ -36,8 +36,9 @@ public:
     int getComplexity() const;
     int64_t getWeight() const;
     int getMaxAbsNumerator() const;
-    int getAbsNumeratorCount(int value) const;
+    int getAbsNumeratorCount(int numerator) const;
     int getMaxDenominator() const;
+    int getDenominatorCount(int denominator) const;
     std::string getRing() const;
     std::string getHash() const;
     std::string getUniqueValues() const;
