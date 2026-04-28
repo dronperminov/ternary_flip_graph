@@ -7,6 +7,7 @@
 #include "../utils.h"
 
 struct ScaleParameters {
+    int maxRows;
     double probability;
     double fullProbability;
     std::vector<Fraction> values;

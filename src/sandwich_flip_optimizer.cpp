@@ -265,6 +265,18 @@ void SandwichFlipOptimizer::makeScale(FractionalScheme &scheme, std::mt19937 &ge
         for (int index = 0; index < scheme.getRank(); index++)
             scheme.scale(index, alpha, beta, gamma);
     }
+    else if (scaleParameters.maxRows > 1) {
+        int rank = scheme.getRank();
+        int rowsCount = 1 + generator() % std::min(scaleParameters.maxRows, rank);
+
+        std::vector<int> rows(rank);
+        for (int i = 0; i < rank; i++)
+            rows[i] = i;
+        std::shuffle(rows.begin(), rows.end(), generator);
+
+        for (int i = 0; i < rowsCount; i++)
+            scheme.scale(rows[i], alpha, beta, gamma);
+    }
     else {
         scheme.scale(generator() % scheme.getRank(), alpha, beta, gamma);
     }
