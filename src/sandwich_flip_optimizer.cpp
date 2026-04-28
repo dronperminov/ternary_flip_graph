@@ -252,13 +252,13 @@ void SandwichFlipOptimizer::makeScale(FractionalScheme &scheme, std::mt19937 &ge
     int variant = generator() % 3;
 
     if (variant == 0) {
-        gamma = 1 / (alpha * beta);
+        gamma = Fraction(1) / (alpha * beta);
     }
     else if (variant == 1) {
-        beta = 1 / (alpha * gamma);
+        beta = Fraction(1) / (alpha * gamma);
     }
     else {
-        alpha = 1 / (beta * gamma);
+        alpha = Fraction(1) / (beta * gamma);
     }
 
     if (uniform(generator) < scaleParameters.fullProbability) {
