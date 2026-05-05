@@ -205,3 +205,48 @@ FlipStructure FlipStructureOptimizer::optimize(std::mt19937 &generator, int iter
 
     return optimized;
 }
+
+int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) {
+    std::string dim = getDimension(dimension[0], dimension[1], dimension[2], true);
+    if (dimension2rank.find(dim) == dimension2rank.end())
+        return -1;
+
+    int bestRank = 10000000;
+
+    for (int iteration = 0; iteration < iterations; iteration++) {
+        std::vector<Flip> selected = selectRandomFlips(generator);
+        std::vector<std::unordered_set<int>> u = groupFlips(selected, 0);
+        std::vector<std::unordered_set<int>> v = groupFlips(selected, 1);
+        std::unordered_set<int> flipIndices;
+
+        for (const Flip& flip: selected) {
+            if (flip.p != 2) {
+                flipIndices.insert(flip.i);
+                flipIndices.insert(flip.j);
+            }
+        }
+
+        int serendipitousRank = (rank - flipIndices.size()) * dimension2rank.at(dim);
+
+        for (const auto& group : u) {
+            std::string groupDimension = getDimension(dimension[0], dimension[1], dimension[2] * group.size(), true);
+            if (dimension2rank.find(groupDimension) == dimension2rank.end())
+                return -1;
+
+            serendipitousRank += dimension2rank.at(groupDimension);
+        }
+
+        for (const auto& group : v) {
+            std::string groupDimension = getDimension(dimension[0] * group.size(), dimension[1], dimension[2], true);
+            if (dimension2rank.find(groupDimension) == dimension2rank.end())
+                return -1;
+
+            serendipitousRank += dimension2rank.at(groupDimension);
+        }
+
+        if (serendipitousRank < bestRank)
+            bestRank = serendipitousRank;
+    }
+
+    return bestRank;
+}

@@ -1,11 +1,14 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 #include <random>
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
+#include "../utils.h"
 
 struct Flip {
     int p;
@@ -45,4 +48,5 @@ public:
     void add(int p, int i, int j);
 
     FlipStructure optimize(std::mt19937 &generator, int iterations, double eps);
+    int getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations);
 };

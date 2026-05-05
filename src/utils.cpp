@@ -138,3 +138,14 @@ std::vector<std::mt19937> initRandomGenerators(int seed, int count) {
 
     return generators;
 }
+
+std::string getDimension(int n1, int n2, int n3, bool sorted) {
+    int n[3] = {n1, n2, n3};
+
+    if (sorted)
+        std::sort(n, n + 3);
+
+    std::stringstream dimension;
+    dimension << n[0] << "x" << n[1] << "x" << n[2];
+    return dimension.str();
+}
