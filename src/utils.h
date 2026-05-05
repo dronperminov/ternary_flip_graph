@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <algorithm>
 #include <filesystem>
 #include "algebra/fraction.h"
 
