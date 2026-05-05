@@ -19,6 +19,7 @@ struct Weight {
     double omega;
     int flips;
     int flips3[3];
+    int independentFlips;
     int fractions;
     int fractions3[3];
     int denominator;

@@ -23,11 +23,13 @@ public:
     BaseScheme();
 
     int getRank() const;
+    int getCoefficientsCount() const;
     int getDimension(int index) const;
     std::string getDimension() const;
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;
+    int getIndependentFlips() const;
     double getOmega() const;
 
-    FlipStructure getOptimalStructure(std::mt19937 &generator, int iterations = 250, double eps = 1e-15) const;
+    FlipStructureOptimizer getStructureOptimizer() const;
 };

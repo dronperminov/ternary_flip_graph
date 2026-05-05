@@ -123,6 +123,30 @@ int FractionalScheme::getAvailableFlips(int index) const {
     return flips[index].size() + flipsNeg[index].size();
 }
 
+int FractionalScheme::getIndependentFlips() const {
+    std::vector<int> used(rank, 0);
+
+    for (int i = 0; i < 3; i++) {
+        for (size_t j = 0; j < flips[i].size(); j++) {
+            used[flips[i].index1(j)] |= 1 << i;
+            used[flips[i].index2(j)] |= 1 << i;
+        }
+
+        for (size_t j = 0; j < flipsNeg[i].size(); j++) {
+            used[flipsNeg[i].index1(j)] |= 1 << i;
+            used[flipsNeg[i].index2(j)] |= 1 << i;
+        }
+    }
+
+    int independent = 0;
+
+    for (int i = 0; i < rank; i++)
+        if (used[i] && !(used[i] & (used[i] - 1)))
+            independent++;
+
+    return independent;
+}
+
 int FractionalScheme::getFractionsCount() const {
     return getFractionsCount(0) + getFractionsCount(1) + getFractionsCount(2);
 }
@@ -277,7 +301,7 @@ double FractionalScheme::getFrobeniusNorm() const {
     return norm;
 }
 
-FlipStructure FractionalScheme::getOptimalStructure(std::mt19937 &generator, int iterations, double eps) const {
+FlipStructureOptimizer FractionalScheme::getStructureOptimizer() const {
     FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
 
     for (int i = 0; i < 3; i++) {
@@ -288,7 +312,7 @@ FlipStructure FractionalScheme::getOptimalStructure(std::mt19937 &generator, int
             optimizer.add(i, flipsNeg[i].index1(j), flipsNeg[i].index2(j));
     }
 
-    return optimizer.optimize(generator, iterations, eps);
+    return optimizer;
 }
 
 std::string FractionalScheme::getTypeInvariant() const {

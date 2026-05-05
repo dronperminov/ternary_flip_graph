@@ -31,6 +31,7 @@ public:
 
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;
+    int getIndependentFlips() const;
     int getFractionsCount() const;
     int getFractionsCount(int index) const;
     int getComplexity() const;
@@ -44,7 +45,7 @@ public:
     std::string getUniqueValues() const;
     double getFrobeniusNorm() const;
 
-    FlipStructure getOptimalStructure(std::mt19937 &generator, int iterations = 250, double eps = 1e-15) const;
+    FlipStructureOptimizer getStructureOptimizer() const;
 
     std::string getTypeInvariant() const;
 

@@ -13,6 +13,10 @@ int BaseScheme::getRank() const {
     return rank;
 }
 
+int BaseScheme::getCoefficientsCount() const {
+    return rank * (elements[0] + elements[1] + elements[2]);
+}
+
 int BaseScheme::getDimension(int index) const {
     return dimension[index];
 }
@@ -31,16 +35,45 @@ int BaseScheme::getAvailableFlips(int index) const {
     return flips[index].size();
 }
 
+int BaseScheme::getIndependentFlips() const {
+    std::vector<int> used(rank, 0);
+
+    for (int i = 0; i < 3; i++) {
+        for (size_t j = 0; j < flips[i].size(); j++) {
+            used[flips[i].index1(j)] |= 1 << i;
+            used[flips[i].index2(j)] |= 1 << i;
+        }
+    }
+
+    int independent = 0;
+
+    for (int i = 0; i < rank; i++)
+        if (used[i] && !(used[i] & (used[i] - 1)))
+            independent++;
+
+    return independent;
+}
+
 double BaseScheme::getOmega() const {
     return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
 }
 
-FlipStructure BaseScheme::getOptimalStructure(std::mt19937 &generator, int iterations, double eps) const {
+std::vector<std::vector<std::pair<int, int>>> BaseScheme::getFlipIndices() const {
+    std::vector<std::vector<std::pair<int, int>>> indices(3);
+
+    for (int i = 0; i < 3; i++)
+        for (size_t j = 0; j < flips[i].size(); j++)
+            indices[i].push_back({flips[i].index1(j), flips[i].index2(j)});
+
+    return indices;
+}
+
+FlipStructureOptimizer BaseScheme::getStructureOptimizer(std::mt19937 &generator, int iterations, double eps) const {
     FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
 
     for (int i = 0; i < 3; i++)
         for (size_t j = 0; j < flips[i].size(); j++)
             optimizer.add(i, flips[i].index1(j), flips[i].index2(j));
 
-    return optimizer.optimize(generator, iterations, eps);
+    return optimizer;
 }
