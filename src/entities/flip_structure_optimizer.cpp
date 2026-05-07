@@ -217,13 +217,12 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
         std::vector<Flip> selected = selectRandomFlips(generator);
         std::vector<std::unordered_set<int>> u = groupFlips(selected, 0);
         std::vector<std::unordered_set<int>> v = groupFlips(selected, 1);
+        std::vector<std::unordered_set<int>> w = groupFlips(selected, 2);
         std::unordered_set<int> flipIndices;
 
         for (const Flip& flip: selected) {
-            if (flip.p != 2) {
-                flipIndices.insert(flip.i);
-                flipIndices.insert(flip.j);
-            }
+            flipIndices.insert(flip.i);
+            flipIndices.insert(flip.j);
         }
 
         int serendipitousRank = (rank - flipIndices.size()) * dimension2rank.at(dim);
@@ -238,6 +237,14 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
 
         for (const auto& group : v) {
             std::string groupDimension = getDimension(dimension[0] * group.size(), dimension[1], dimension[2], true);
+            if (dimension2rank.find(groupDimension) == dimension2rank.end())
+                return -1;
+
+            serendipitousRank += dimension2rank.at(groupDimension);
+        }
+
+        for (const auto& group : w) {
+            std::string groupDimension = getDimension(dimension[0], dimension[1] * group.size(), dimension[2], true);
             if (dimension2rank.find(groupDimension) == dimension2rank.end())
                 return -1;
 
