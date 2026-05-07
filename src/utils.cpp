@@ -92,6 +92,13 @@ bool makeDirectory(const std::string &path) {
     return false;
 }
 
+bool endsWith(const std::string &s, const std::string &substr) {
+    if (substr.length() > s.length())
+        return false;
+
+    return !s.compare(s.length() - substr.length(), substr.length(), substr);
+}
+
 int getMaxMatrixElements(const std::string &path, bool multiple) {
     if (std::filesystem::is_directory(path)) {
         std::cout << "Warning: max matrix elements set by default to 64 for directory \"" << path << "\"" << std::endl;
