@@ -5,7 +5,7 @@ ENTITIES_OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o src/entitie
 PARAMETERS_OBJECTS = src/parameters/flip_parameters.o src/parameters/meta_parameters.o src/parameters/pool_parameters.o src/parameters/meta_pool_parameters.o src/parameters/metrics_parameters.o src/parameters/sandwiching_parameters.o src/parameters/sandwich_flip_parameters.o src/parameters/scale_parameters.o src/parameters/plus_parameters.o
 LIFT_OBJECTS = src/lift/binary_lifter.o src/lift/mod3_lifter.o
 SCHEMES_OBJECTS = src/schemes/base_scheme.o src/schemes/binary_scheme.o src/schemes/mod3_scheme.o src/schemes/ternary_scheme.o src/schemes/fractional_scheme.o
-OBJECTS = $(ALGEBRA_OBJECTS) ${ENTITIES_OBJECTS} ${PARAMETERS_OBJECTS} $(LIFT_OBJECTS) $(SCHEMES_OBJECTS) src/utils.o src/sandwich_flip_optimizer.o
+OBJECTS = $(ALGEBRA_OBJECTS) ${ENTITIES_OBJECTS} ${PARAMETERS_OBJECTS} $(LIFT_OBJECTS) $(SCHEMES_OBJECTS) src/utils.o src/known_ranks.o src/sandwich_flip_optimizer.o
 
 all: flip_graph meta_flip_graph optimize_scheme find_alternative_schemes validate_schemes lift
 
