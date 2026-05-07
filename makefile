@@ -30,6 +30,9 @@ validate_schemes: $(OBJECTS)
 lift: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) lift.cpp -o lift
 
+check_serendipitous_product: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) check_serendipitous_product.cpp -o check_serendipitous_product
+
 %.o: %.cpp
 	$(CXX) $(FLAGS) -c $< -o $@
 
