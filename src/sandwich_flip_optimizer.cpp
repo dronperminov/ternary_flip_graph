@@ -459,15 +459,25 @@ bool SandwichFlipOptimizer::compareWeight(const Weight &w1, const Weight &w2) {
     if (sandwichFlipParameters.minimizeOmega && w1.omega != w2.omega)
         return w1.omega < w2.omega;
 
-    if (sandwichFlipParameters.maximizeFlips) {
-        if (w1.independentFlips != w2.independentFlips)
-            return w1.independentFlips > w2.independentFlips;
-
-        if (w1.flips != w2.flips)
-            return w1.flips > w2.flips;
-    }
+    if (sandwichFlipParameters.maximizeFlips && w1.flips != w2.flips)
+        return w1.flips > w2.flips;
 
     for (const char& c : sandwichFlipParameters.check) {
+        if (c == 'u' && w1.flips3[0] != w2.flips3[0])
+            return w1.flips3[0] > w2.flips3[0];
+
+        if (c == 'v' && w1.flips3[1] != w2.flips3[1])
+            return w1.flips3[1] > w2.flips3[1];
+
+        if (c == 'w' && w1.flips3[2] != w2.flips3[2])
+            return w1.flips3[2] > w2.flips3[2];
+
+        if (c == 'i' && w1.independentFlips != w2.independentFlips)
+            return w1.independentFlips > w2.independentFlips;
+
+        if (c == 'b' && w1.flips != w2.flips)
+            return w1.flips > w2.flips;
+
         if (c == 'd') {
             if (w1.denominator != w2.denominator)
                 return w1.denominator < w2.denominator;
