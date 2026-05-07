@@ -14,47 +14,17 @@
 #include "src/entities/sha1.h"
 #include "src/schemes/fractional_scheme.h"
 
-bool isValidPath(const std::string &path) {
-    return endsWith(path, "ZT.txt") || endsWith(path, "Z.txt") || endsWith(path, "Q.txt");
-}
-
-std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath) {
-    std::vector<std::string> paths;
-
-    for (auto it = std::filesystem::recursive_directory_iterator(inputPath); it != std::filesystem::recursive_directory_iterator(); it++) {
-        if (!it->is_regular_file())
-            continue;
-
-        std::string path = it->path().string();
-        if (isValidPath(path))
-            paths.push_back(path);
-    }
-
-    return paths;
-}
-
-std::vector<std::string> getSchemePathsFromFile(const std::string &inputPath) {
-    std::vector<std::string> paths;
-    std::ifstream f(inputPath);
-    std::string path;
-
-    while (std::getline(f, path))
-        if (isValidPath(path))
-            paths.push_back(path);
-
-    return paths;
-}
-
 std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuffle, std::mt19937 &generator) {
     std::vector<std::string> paths;
+    std::vector<std::string> extensions = {"ZT.txt", "Z.txt", "Q.txt"};
 
     if (std::filesystem::is_directory(inputPath)) {
-        std::cout << "Start reading input directory \"" << inputPath << "\"" << std::endl;
-        paths = getSchemePathsFromDirectory(inputPath);
+        std::cout << "Start reading files from directory \"" << inputPath << "\"" << std::endl;
+        paths = getSchemePathsFromDirectory(inputPath, extensions);
     }
     else {
         std::cout << "Start reading paths file \"" << inputPath << "\"" << std::endl;
-        paths = getSchemePathsFromFile(inputPath);
+        paths = getSchemePathsFromFile(inputPath, extensions);
     }
 
     if (shuffle)
@@ -82,17 +52,6 @@ std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
     }
 
     return knownRanks;
-}
-
-int getDigitsCount(size_t n) {
-    int digits = 0;
-
-    while (n) {
-        digits++;
-        n /= 10;
-    }
-
-    return digits;
 }
 
 bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &generator, std::unordered_map<std::string, int> &knownRanks, int iterations) {
@@ -129,18 +88,6 @@ bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &gen
     }
 
     return found;
-}
-
-void saveScheme(const FractionalScheme &scheme, const std::string &outputPath, const std::string &format) {
-    std::stringstream ss;
-    ss << outputPath << "/";
-    ss << scheme.getDimension();
-    ss << "_m" << scheme.getRank();
-    ss << "_" << SHA1().get(scheme.getHash());
-    ss << "_" << scheme.getRing();
-    ss << "." << format;
-
-    scheme.save(ss.str());
 }
 
 int runCheckSerendipitousProduct(const ArgParser &parser) {
@@ -186,7 +133,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
     }
 
     std::cout << "Found " << paths.size() << " files" << std::endl;
-    int digits = getDigitsCount(paths.size());
+    int digits = digitsCount(paths.size());
 
     std::unordered_map<std::string, int> knownRanks = getKnownRanks(ring);
 
@@ -203,7 +150,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
             continue;
 
         if (checkSerendipitousProduct(scheme, generators[omp_get_thread_num()], knownRanks, iterations))
-            saveScheme(scheme, outputPath, format);
+            scheme.save(outputPath + "/" + scheme.getFilename(format));
     }
 
     return 0;

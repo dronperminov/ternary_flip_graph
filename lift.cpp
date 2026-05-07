@@ -17,67 +17,16 @@
 #include "src/lift/binary_lifter.h"
 #include "src/lift/mod3_lifter.h"
 
-template <typename Scheme>
-bool readSchemesFromDirectory(const std::string &inputPath, std::vector<Scheme> &schemes, bool checkCorrectness) {
-    bool valid = true;
-    std::cout << "Start reading schemes from directory \"" << inputPath << "\"" << std::endl;
+std::vector<std::string> getSchemePaths(const std::string &inputPath) {
+    if (std::filesystem::is_regular_file(inputPath))
+        return {inputPath};
 
-    for (const auto& entry : std::filesystem::directory_iterator(inputPath)) {
-        std::string filename = entry.path().filename().string();
+    std::cout << "Start reading files from directory \"" << inputPath << "\"" << std::endl;
+    std::vector<std::string> paths = getSchemePathsFromDirectory(inputPath, {".txt"});
+    if (paths.empty())
+        std::cout << "Directory is empty: nothing to lift" << std::endl;
 
-        Scheme scheme;
-        if (!scheme.read(inputPath + "/" + filename, checkCorrectness)) {
-            valid = false;
-            break;
-        }
-
-        schemes.emplace_back(scheme);
-    }
-
-    return valid;
-}
-
-template <typename Scheme>
-bool readSchemesFromFile(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
-    std::ifstream f(inputPath);
-    if (!f) {
-        std::cerr << "Unable to open file \"" << inputPath << "\"" << std::endl;
-        return false;
-    }
-
-    int count = 1;
-    if (multiple)
-        f >> count;
-
-    std::cout << "Start reading " << count << " schemes" << std::endl;
-    schemes.resize(count);
-
-    bool valid = true;
-    for (int i = 0; i < count && valid; i++)
-        valid = schemes[i].read(f, checkCorrectness);
-
-    f.close();
-    return valid;
-}
-
-template <typename Scheme>
-bool readSchemes(const std::string &inputPath, std::vector<Scheme> &schemes, bool multiple, bool checkCorrectness) {
-    if (std::filesystem::is_directory(inputPath))
-        return readSchemesFromDirectory(inputPath, schemes, checkCorrectness);
-
-    return readSchemesFromFile(inputPath, schemes, multiple, checkCorrectness);
-}
-
-std::string getSavePath(const FractionalScheme &scheme, int index, const std::string &outputPath, const std::string &format) {
-    SHA1 sha1;
-    std::stringstream ss;
-    ss << outputPath << "/";
-    ss << scheme.getDimension();
-    ss << "_m" << scheme.getRank();
-    ss << "_" << sha1.get(scheme.getHash());
-    ss << "_" << scheme.getRing();
-    ss << "." << format;
-    return ss.str();
+    return paths;
 }
 
 template <template<typename> typename Scheme, typename T>
@@ -108,68 +57,76 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl << std::endl;
 
-    std::vector<Scheme<T>> schemes;
-    if (!readSchemes(inputPath, schemes, parser.isSet("--multiple"), !parser.isSet("--no-verify")))
-        return -1;
+    std::vector<std::string> paths = getSchemePaths(inputPath);
+    if (paths.empty())
+        return 0;
 
-    std::cout << "Successfully read " << schemes.size() << " schemes from \"" << inputPath << "\"" << std::endl;
+    std::cout << "Start lift " << paths.size() << " schemes from \"" << inputPath << "\"" << std::endl;
     std::cout << std::endl;
 
     std::cout << "+--------+-----------+------+----------------------------+-------+--------------+" << std::endl;
     std::cout << "| scheme | dimension | rank |           status           | steps | elapsed time |" << std::endl;
     std::cout << "+--------+-----------+------+----------------------------+-------+--------------+" << std::endl;
 
-    std::vector<double> elapsedTimes(schemes.size(), 0);
+    std::vector<double> elapsedTimes(paths.size(), 0);
     auto startTime = std::chrono::high_resolution_clock::now();
 
     #pragma omp parallel for num_threads(threads)
-    for (size_t i = 0; i < schemes.size(); i++) {
+    for (size_t i = 0; i < paths.size(); i++) {
+        std::string status;
+        int step = 0;
+
         auto t1 = std::chrono::high_resolution_clock::now();
 
-        FractionalScheme liftedScheme;
+        Scheme<T> scheme;
+        if (!scheme.read(paths[i], !parser.isSet("--no-verify"))) {
+            status = "invalid scheme";
+            steps = -1;
+        }
+        else {
+            FractionalScheme liftedScheme;
 
-        int step = 0;
-        bool reconstructed = schemes[i].reconstruct(liftedScheme) && liftedScheme.validateParallel();
+            bool reconstructed = scheme.reconstruct(liftedScheme) && liftedScheme.validateParallel();
 
-        if (!reconstructed) {
-            auto lifter = schemes[i].toLift();
+            if (!reconstructed) {
+                auto lifter = scheme.toLift();
 
-            while (step < steps && !reconstructed && lifter.lift()) {
-                reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validateParallel();
-                step++;
+                while (step < steps && !reconstructed && lifter.lift()) {
+                    reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validateParallel();
+                    step++;
+                }
+            }
+
+            if (reconstructed) {
+                if (fixFractions)
+                    liftedScheme.fixFractions();
+
+                if (canonize)
+                    liftedScheme.canonize();
+
+                status = "reconstructed in " + liftedScheme.getRing();
+                std::string path = outputPath + "/" + liftedScheme.getFilename(format);
+
+                if (format == "txt")
+                    liftedScheme.saveTxt(path);
+                else
+                    liftedScheme.saveJson(path);
+            }
+            else if (step == steps) {
+                status = "no rational reconstruction";
+            }
+            else {
+                status = "lifting failed";
             }
         }
 
         auto t2 = std::chrono::high_resolution_clock::now();
         elapsedTimes[i] = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
-        std::string status;
-
-        if (reconstructed) {
-            if (fixFractions)
-                liftedScheme.fixFractions();
-
-            if (canonize)
-                liftedScheme.canonize();
-
-            status = "reconstructed in " + liftedScheme.getRing();
-            std::string path = getSavePath(liftedScheme, i, outputPath, format);
-
-            if (format == "txt")
-                liftedScheme.saveTxt(path);
-            else
-                liftedScheme.saveJson(path);
-        }
-        else if (step == steps) {
-            status = "no rational reconstruction";
-        }
-        else {
-            status = "lifting failed";
-        }
 
         std::stringstream ss;
         ss << "| " << std::setw(6) << (i + 1) << " | ";
-        ss << std::setw(9) << schemes[i].getDimension() << " | ";
-        ss << std::setw(4) << schemes[i].getRank() << " | ";
+        ss << std::setw(9) << scheme.getDimension() << " | ";
+        ss << std::setw(4) << scheme.getRank() << " | ";
         ss << std::setw(26) << status << " | ";
         ss << std::setw(5) << step << " | ";
         ss << std::setw(12) << prettyTime(elapsedTimes[i]) << " |" << std::endl;
@@ -187,7 +144,7 @@ int runLiftSchemes(const ArgParser &parser) {
 
 template <template<typename> typename Scheme>
 int runLiftSchemesSizes(const ArgParser &parser) {
-    int maxMatrixElements = parser["--int-width"] == "auto" ? getMaxMatrixElements(parser["--input-path"], parser.isSet("--multiple")) : std::stoi(parser["--int-width"]);
+    int maxMatrixElements = parser["--int-width"] == "auto" ? getMaxMatrixElements(parser["--input-path"], false) : std::stoi(parser["--int-width"]);
     if (maxMatrixElements < 0)
         return -1;
 
@@ -213,9 +170,8 @@ int main(int argc, char *argv[]) {
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
     parser.addSection("Input / output");
-    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme(s)", "", true);
+    parser.add("--input-path", "-i", ArgType::Path, "Path to input file with scheme or directory with schemes", "", true);
     parser.add("--output-path", "-o", ArgType::Path, "Output directory for lifted schemes", "schemes/lifted");
-    parser.add("--multiple", "-m", ArgType::Flag, "Read multiple schemes from file, with total count on first line");
     parser.add("--no-verify", ArgType::Flag, "Skip checking Brent equations for correctness");
 
     parser.addSection("Lifting parameters");

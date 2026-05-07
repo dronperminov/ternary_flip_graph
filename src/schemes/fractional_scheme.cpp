@@ -274,6 +274,16 @@ std::string FractionalScheme::getUniqueValues() const {
     return ss.str();
 }
 
+std::string FractionalScheme::getFilename(const std::string &format) const {
+    std::stringstream ss;
+    ss << getDimension();
+    ss << "_m" << getRank();
+    ss << "_" << SHA1().get(getHash());
+    ss << "_" << getRing();
+    ss << "." << format;
+    return ss.str();
+}
+
 double FractionalScheme::getFrobeniusNorm() const {
     double norm = 0;
 

@@ -99,6 +99,14 @@ bool endsWith(const std::string &s, const std::string &substr) {
     return !s.compare(s.length() - substr.length(), substr.length(), substr);
 }
 
+bool endsWith(const std::string &s, const std::vector<std::string> &substrs) {
+    for (const std::string &substr : substrs)
+        if (endsWith(s, substr))
+            return true;
+
+    return false;
+}
+
 int getMaxMatrixElements(const std::string &path, bool multiple) {
     if (std::filesystem::is_directory(path)) {
         std::cout << "Warning: max matrix elements set by default to 64 for directory \"" << path << "\"" << std::endl;
@@ -155,4 +163,57 @@ std::string getDimension(int n1, int n2, int n3, bool sorted) {
     std::stringstream dimension;
     dimension << n[0] << "x" << n[1] << "x" << n[2];
     return dimension.str();
+}
+
+int digitsCount(size_t n) {
+    int digits = 0;
+
+    while (n) {
+        digits++;
+        n /= 10;
+    }
+
+    return digits;
+}
+
+std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath, const std::vector<std::string> &extensions) {
+    std::vector<std::string> paths;
+
+    for (auto it = std::filesystem::directory_iterator(inputPath); it != std::filesystem::directory_iterator(); it++) {
+        if (!it->is_regular_file())
+            continue;
+
+        std::string path = it->path().string();
+        if (endsWith(path, extensions))
+            paths.push_back(path);
+    }
+
+    return paths;
+}
+
+std::vector<std::string> getSchemePathsFromDirectoryRecursive(const std::string &inputPath, const std::vector<std::string> &extensions) {
+    std::vector<std::string> paths;
+
+    for (auto it = std::filesystem::recursive_directory_iterator(inputPath); it != std::filesystem::recursive_directory_iterator(); it++) {
+        if (!it->is_regular_file())
+            continue;
+
+        std::string path = it->path().string();
+        if (endsWith(path, extensions))
+            paths.push_back(path);
+    }
+
+    return paths;
+}
+
+std::vector<std::string> getSchemePathsFromFile(const std::string &inputPath, const std::vector<std::string> &extensions) {
+    std::vector<std::string> paths;
+    std::ifstream f(inputPath);
+    std::string path;
+
+    while (std::getline(f, path))
+        if (endsWith(path, extensions))
+            paths.push_back(path);
+
+    return paths;
 }

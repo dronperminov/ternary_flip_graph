@@ -12,6 +12,7 @@
 #include "../algebra/fraction.h"
 #include "../algebra/matrix.h"
 #include "../entities/ranks.h"
+#include "../entities/sha1.h"
 #include "base_scheme.h"
 
 class FractionalScheme : public BaseScheme {
@@ -43,6 +44,7 @@ public:
     std::string getRing() const;
     std::string getHash() const;
     std::string getUniqueValues() const;
+    std::string getFilename(const std::string &format) const;
     double getFrobeniusNorm() const;
 
     FlipStructureOptimizer getStructureOptimizer() const;
