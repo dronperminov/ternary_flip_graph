@@ -20,7 +20,7 @@ std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuff
 
     if (std::filesystem::is_directory(inputPath)) {
         std::cout << "Start reading files from directory \"" << inputPath << "\"" << std::endl;
-        paths = getSchemePathsFromDirectory(inputPath, extensions);
+        paths = getSchemePathsFromDirectoryRecursive(inputPath, extensions);
     }
     else {
         std::cout << "Start reading paths file \"" << inputPath << "\"" << std::endl;
