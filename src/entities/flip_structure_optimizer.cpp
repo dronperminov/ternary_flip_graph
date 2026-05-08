@@ -129,31 +129,45 @@ std::vector<FlipStructureNode> FlipStructureOptimizer::selectRandomStructure(std
 }
 
 double FlipStructureOptimizer::f(double omega, const std::vector<FlipStructureNode> &structure) const {
-    int n = dimension[0];
-    int m = dimension[1];
-    int p = dimension[2];
+    double n = dimension[0];
+    double m = dimension[1];
+    double p = dimension[2];
 
     double score = -std::pow(n * m * p, omega);
 
-    for (const auto &a : structure)
-        for (const auto &b : structure)
-            for (const auto &c : structure)
-                score += a.s * b.s * c.s * std::pow(a.n * b.m * c.p, omega - 2) * b.n * c.n * a.m * c.m * a.p * b.p;
+    for (const auto &a : structure) {
+        for (const auto &b : structure) {
+            for (const auto &c : structure) {
+                double as = a.s;
+                double bs = b.s;
+                double cs = c.s;
+
+                score += as * bs * cs * std::pow(a.n * b.m * c.p, omega - 2) * b.n * c.n * a.m * c.m * a.p * b.p;
+            }
+        }
+    }
 
     return score;
 }
 
 double FlipStructureOptimizer::df(double omega, const std::vector<FlipStructureNode> &structure) const {
-    int n = dimension[0];
-    int m = dimension[1];
-    int p = dimension[2];
+    double n = dimension[0];
+    double m = dimension[1];
+    double p = dimension[2];
 
     double score = -std::log(n * m * p) * std::pow(n * m * p, omega);
 
-    for (const auto &a : structure)
-        for (const auto &b : structure)
-            for (const auto &c : structure)
-                score += a.s * b.s * c.s * std::log(a.n * b.m * c.p) * std::pow(a.n * b.m * c.p, omega - 2) * b.n * c.n * a.m * c.m * a.p * b.p;
+    for (const auto &a : structure) {
+        for (const auto &b : structure) {
+            for (const auto &c : structure) {
+                double as = a.s;
+                double bs = b.s;
+                double cs = c.s;
+
+                score += as * bs * cs * std::log(a.n * b.m * c.p) * std::pow(a.n * b.m * c.p, omega - 2) * b.n * c.n * a.m * c.m * a.p * b.p;
+            }
+        }
+    }
 
     return score;
 }
@@ -256,4 +270,16 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
     }
 
     return bestRank;
+}
+
+std::ostream& operator<<(std::ostream &os, const FlipStructure &structure) {
+    os << "[";
+
+    for (size_t i = 0; i < structure.structure.size(); i++) {
+        FlipStructureNode node = structure.structure[i];
+        os << (i > 0 ? ", " : "") << "[" << node.s << ", [" << node.n << ", " << node.m << ", " << node.p << "]]";
+    }
+
+    os << "]";
+    return os;
 }

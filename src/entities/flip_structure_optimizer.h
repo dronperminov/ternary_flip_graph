@@ -50,3 +50,5 @@ public:
     FlipStructure optimize(std::mt19937 &generator, int iterations, double eps);
     int getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations);
 };
+
+std::ostream& operator<<(std::ostream &os, const FlipStructure &structure);
