@@ -325,6 +325,18 @@ FlipStructureOptimizer FractionalScheme::getStructureOptimizer() const {
     return optimizer;
 }
 
+FlipStructureOptimizer FractionalScheme::getFullStructureOptimizer() const {
+    FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
+
+    for (int i = 0; i < 3; i++)
+        for (int index1 = 0; index1 < rank; index1++)
+            for (int index2 = index1 + 1; index2 < rank; index2++)
+                if (isLinearlyDependentMatrices(i, index1, index2))
+                    optimizer.add(i, index1, index2);
+
+    return optimizer;
+}
+
 std::string FractionalScheme::getTypeInvariant() const {
     std::vector<Ranks> ranks;
 
@@ -704,6 +716,31 @@ bool FractionalScheme::isZeroMatrix(int p, int index) const {
     for (int i = 0; i < elements[p]; i++)
         if (uvw[p][index * elements[p] + i])
             return false;
+
+    return true;
+}
+
+bool FractionalScheme::isLinearlyDependentMatrices(int p, int index1, int index2) const {
+    Fraction k = 0;
+
+    for (int i = 0; i < elements[p]; i++) {
+        Fraction v1 = uvw[p][index1 * elements[p] + i];
+        Fraction v2 = uvw[p][index2 * elements[p] + i];
+
+        if ((!v1) != (!v2))
+            return false;
+
+        if (!v1)
+            continue;
+
+        if (k == 0) {
+            k = v2 / v1;
+            continue;
+        }
+
+        if (v2 != k * v1)
+            return false;
+    }
 
     return true;
 }

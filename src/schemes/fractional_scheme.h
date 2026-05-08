@@ -48,6 +48,7 @@ public:
     double getFrobeniusNorm() const;
 
     FlipStructureOptimizer getStructureOptimizer() const;
+    FlipStructureOptimizer getFullStructureOptimizer() const;
 
     std::string getTypeInvariant() const;
 
@@ -76,6 +77,7 @@ private:
     bool isInverseMatrices(int p, int index1, int index2) const;
     int compareMatrices(int p, int index1, int index2) const;
     bool isZeroMatrix(int p, int index) const;
+    bool isLinearlyDependentMatrices(int p, int index1, int index2) const;
 
     void selectFlip(FlipSet *flips, size_t index, int &i, int &j, int &k, int &index1, int &index2, std::mt19937 &generator);
     void flip(int i, int j, int k, int index1, int index2, bool inverse);
