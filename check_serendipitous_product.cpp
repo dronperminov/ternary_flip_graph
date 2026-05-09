@@ -12,6 +12,7 @@
 #include "src/known_ranks.h"
 #include "src/entities/arg_parser.h"
 #include "src/entities/sha1.h"
+#include "src/entities/buffer_writer.h"
 #include "src/schemes/fractional_scheme.h"
 
 std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuffle, std::mt19937 &generator) {
@@ -31,6 +32,13 @@ std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuff
         std::shuffle(paths.begin(), paths.end(), generator);
 
     return paths;
+}
+
+std::string getLogPath(const std::string &outputPath, int thread) {
+    std::stringstream ss;
+    ss << outputPath << "/";
+    ss << "checked_paths_thread" << std::setw(2) << std::setfill('0') << thread << ".txt";
+    return ss.str();
 }
 
 std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
@@ -55,7 +63,7 @@ std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
 }
 
 bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &generator, std::unordered_map<std::string, int> &knownRanks, int iterations) {
-    FlipStructureOptimizer optimizer = scheme.getStructureOptimizer();
+    FlipStructureOptimizer optimizer = scheme.getFullStructureOptimizer();
     int n[3] = {
         scheme.getDimension(0),
         scheme.getDimension(1),
@@ -114,6 +122,10 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
         return -1;
 
     std::vector<std::mt19937> generators = initRandomGenerators(seed, threads);
+    std::vector<BufferWriter> writers;
+
+    for (int i = 0; i < threads; i++)
+        writers.emplace_back(BufferWriter(getLogPath(outputPath, i), 512));
 
     std::cout << "Parsed parameters of the check_serendipitous_product tool:" << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
@@ -137,19 +149,21 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
 
     std::unordered_map<std::string, int> knownRanks = getKnownRanks(ring);
 
-    #pragma omp parallel for num_threads(threads)
+    #pragma omp parallel for schedule(dynamic, std::max(1, std::min(64, (int)paths.size() / threads))) num_threads(threads)
     for (size_t i = 0; i < paths.size(); i++) {
         std::string path = paths[i];
+        int thread = omp_get_thread_num();
 
         std::stringstream ss;
         ss << std::setw(digits) << (i + 1) << " / " << paths.size() << ". " << path << std::endl;
         std::cout << ss.str();
+        writers[thread].add(paths[i]);
 
         FractionalScheme scheme;
         if (!scheme.read(path, verify, !endsWith(path, "Q.txt")))
             continue;
 
-        if (checkSerendipitousProduct(scheme, generators[omp_get_thread_num()], knownRanks, iterations))
+        if (checkSerendipitousProduct(scheme, generators[thread], knownRanks, iterations))
             scheme.save(outputPath + "/" + scheme.getFilename(format));
     }
 
