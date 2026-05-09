@@ -30,7 +30,10 @@ int runMetaFlipGraph(MetaFlipGraph &metaFlipGraph, const ArgParser &parser) {
     if (!valid)
         return -1;
 
-    metaFlipGraph.initializeKnownRanks(parser["--improve-ring"]);
+    std::string improveRing = parser["--improve-ring"];
+    if (improveRing != "")
+        metaFlipGraph.initializeKnownRanks(improveRing);
+
     metaFlipGraph.run();
     return 0;
 }
