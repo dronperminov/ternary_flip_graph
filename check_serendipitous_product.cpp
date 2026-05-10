@@ -88,7 +88,7 @@ bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &gen
 
                 if (serendipitousRank < knownRank) {
                     std::cout << "Serendipitous for " << dimension << ": " << serendipitousRank << " < " << knownRank << std::endl;
-                    knownRanks[dimension] = serendipitousRank;
+                    knownRanks[dimension] = serendipitousRank + 1;
                     found = true;
                 }
             }
