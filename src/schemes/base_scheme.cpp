@@ -96,5 +96,6 @@ FlipStructureOptimizer BaseScheme::getStructureOptimizer() const {
         for (size_t j = 0; j < flips[i].size(); j++)
             optimizer.add(i, flips[i].index1(j), flips[i].index2(j));
 
+    optimizer.preprocess();
     return optimizer;
 }

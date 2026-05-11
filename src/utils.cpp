@@ -176,6 +176,10 @@ int digitsCount(size_t n) {
     return digits;
 }
 
+bool isPowerOfTwo(int n) {
+    return n > 0 && !(n & (n - 1));
+}
+
 std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath, const std::vector<std::string> &extensions) {
     std::vector<std::string> paths;
 

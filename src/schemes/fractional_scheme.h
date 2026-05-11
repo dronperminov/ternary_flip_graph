@@ -20,6 +20,10 @@ protected:
     std::vector<Fraction> uvw[3];
     FlipSet flipsNeg[3];
 public:
+    FractionalScheme();
+    FractionalScheme(int n1, int n2, int n3);
+    FractionalScheme(int n1, int n2, int n3, int rank, const std::vector<Fraction> &u, const std::vector<Fraction> &v, const std::vector<Fraction> &w);
+
     bool reconstruct(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, int64_t mod, int64_t bound);
     bool validate() const;
     bool validateParallel() const;
@@ -58,6 +62,9 @@ public:
     void sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1);
     void scale(int index, const Fraction &alpha, const Fraction &beta, const Fraction &gamma);
     void fixFractions();
+
+    bool setDimension(int n1, int n2, int n3);
+    void swapDimension(int p1, int p2);
 
     void copy(const FractionalScheme &scheme);
     void canonize();

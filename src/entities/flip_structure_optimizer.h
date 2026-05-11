@@ -32,8 +32,10 @@ class FlipStructureOptimizer {
     int dimension[3];
     int rank;
     std::vector<Flip> flips;
+    std::vector<Flip> independentFlips;
+    std::vector<Flip> dependentFlips;
 
-    std::vector<Flip> selectRandomFlips(std::mt19937 &generator) const;
+    std::vector<Flip> selectRandomFlips(const std::vector<Flip> &flips, std::mt19937 &generator) const;
     std::vector<std::unordered_set<int>> groupFlips(const std::vector<Flip> &flips, int p) const;
     std::vector<int> countSizes(const std::vector<std::unordered_set<int>> &components) const;
     std::vector<FlipStructureNode> selectRandomStructure(std::mt19937 &generator) const;
@@ -46,6 +48,7 @@ public:
     FlipStructureOptimizer(int n1, int n2, int n3, int rank);
 
     void add(int p, int i, int j);
+    void preprocess();
 
     FlipStructure optimize(std::mt19937 &generator, int iterations, double eps);
     int getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations);

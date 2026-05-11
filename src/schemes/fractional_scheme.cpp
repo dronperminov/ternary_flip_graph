@@ -1,5 +1,50 @@
 #include "fractional_scheme.h"
 
+FractionalScheme::FractionalScheme() {
+
+}
+
+FractionalScheme::FractionalScheme(int n1, int n2, int n3) {
+    this->dimension[0] = n1;
+    this->dimension[1] = n2;
+    this->dimension[2] = n3;
+    this->rank = n1 * n2 * n3;
+
+    for (int i = 0; i < 3; i++) {
+        elements[i] = dimension[i] * dimension[(i + 1) % 3];
+        uvw[i].assign(rank * elements[i], 0);
+    }
+
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < n3; j++) {
+            for (int k = 0; k < n2; k++) {
+                int index = (i * n3 + j) * n2 + k;
+                uvw[0][index * elements[0] + i * n2 + k] = 1;
+                uvw[1][index * elements[1] + k * n3 + j] = 1;
+                uvw[2][index * elements[2] + j * n1 + i] = 1;
+            }
+        }
+    }
+
+    initFlips();
+}
+
+FractionalScheme::FractionalScheme(int n1, int n2, int n3, int rank, const std::vector<Fraction> &u, const std::vector<Fraction> &v, const std::vector<Fraction> &w) {
+    this->dimension[0] = n1;
+    this->dimension[1] = n2;
+    this->dimension[2] = n3;
+    this->rank = rank;
+
+    for (int i = 0; i < 3; i++)
+        elements[i] = dimension[i] * dimension[(i + 1) % 3];
+
+    uvw[0] = u;
+    uvw[1] = v;
+    uvw[2] = w;
+
+    initFlips();
+}
+
 bool FractionalScheme::reconstruct(int n1, int n2, int n3, int rank, const std::vector<uint64_t> &u, const std::vector<uint64_t> &v, const std::vector<uint64_t> &w, int64_t mod, int64_t bound) {
     this->dimension[0] = n1;
     this->dimension[1] = n2;
@@ -322,6 +367,7 @@ FlipStructureOptimizer FractionalScheme::getStructureOptimizer() const {
             optimizer.add(i, flipsNeg[i].index1(j), flipsNeg[i].index2(j));
     }
 
+    optimizer.preprocess();
     return optimizer;
 }
 
@@ -334,6 +380,7 @@ FlipStructureOptimizer FractionalScheme::getFullStructureOptimizer() const {
                 if (isLinearlyDependentMatrices(i, index1, index2))
                     optimizer.add(i, index1, index2);
 
+    optimizer.preprocess();
     return optimizer;
 }
 
@@ -525,6 +572,75 @@ void FractionalScheme::fixFractions() {
         Fraction gamma(lcm[2], std::gcd(lcmP, gcd[2]));
 
         scale(index, alpha, beta, gamma);
+    }
+}
+
+bool FractionalScheme::setDimension(int n1, int n2, int n3) {
+    if (dimension[0] == n1 && dimension[1] == n3 && dimension[2] == n2) {
+        swapDimension(1, 2);
+    }
+    else if (dimension[0] == n2 && dimension[1] == n1 && dimension[2] == n3) {
+        swapDimension(0, 1);
+    }
+    else if (dimension[0] == n2 && dimension[1] == n3 && dimension[2] == n1) {
+        swapDimension(0, 1);
+        swapDimension(0, 2);
+    }
+    else if (dimension[0] == n3 && dimension[1] == n1 && dimension[2] == n2) {
+        swapDimension(0, 1);
+        swapDimension(1, 2);
+    }
+    else if (dimension[0] == n3 && dimension[1] == n2 && dimension[2] == n1) {
+        swapDimension(0, 2);
+    }
+
+    return dimension[0] == n1 && dimension[1] == n2 && dimension[2] == n3;
+}
+
+void FractionalScheme::swapDimension(int p1, int p2) {
+    if (p1 == p2)
+        return;
+
+    if (p1 > p2)
+        std::swap(p1, p2);
+
+    int indices[3] = {2, 0, 1};
+    int dimensionNew[3];
+    int elementsNew[3];
+
+    std::swap(indices[p1], indices[p2]);
+
+    for (int i = 0; i < 3; i++)
+        dimensionNew[i] = dimension[(indices[i] + 1) % 3];
+
+    for (int i = 0; i < 3; i++)
+        elementsNew[i] = dimensionNew[i] * dimensionNew[(i + 1) % 3];
+
+    std::vector<Fraction> u(rank * elementsNew[0]);
+    std::vector<Fraction> v(rank * elementsNew[1]);
+    std::vector<Fraction> w(rank * elementsNew[2]);
+
+    for (int index = 0; index < rank; index++) {
+        for (int i = 0; i < dimensionNew[0]; i++)
+            for (int j = 0; j < dimensionNew[1]; j++)
+                u[index * elementsNew[0] + (i * dimensionNew[1] + j)] = uvw[indices[0]][index * elements[indices[0]] + (j * dimensionNew[0] + i)];
+
+        for (int i = 0; i < dimensionNew[1]; i++)
+            for (int j = 0; j < dimensionNew[2]; j++)
+                v[index * elementsNew[1] + (i * dimensionNew[2] + j)] = uvw[indices[1]][index * elements[indices[1]] + (j * dimensionNew[1] + i)];
+
+        for (int i = 0; i < dimensionNew[2]; i++)
+            for (int j = 0; j < dimensionNew[0]; j++)
+                w[index * elementsNew[2] + (i * dimensionNew[0] + j)] = uvw[indices[2]][index * elements[indices[2]] + (j * dimensionNew[2] + i)];
+    }
+
+    uvw[0] = u;
+    uvw[1] = v;
+    uvw[2] = w;
+
+    for (int i = 0; i < 3; i++) {
+        dimension[i] = dimensionNew[i];
+        elements[i] = dimensionNew[i] * dimensionNew[(i + 1) % 3];
     }
 }
 

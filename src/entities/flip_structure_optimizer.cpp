@@ -11,7 +11,25 @@ void FlipStructureOptimizer::add(int p, int i, int j) {
     flips.push_back({p, i, j});
 }
 
-std::vector<Flip> FlipStructureOptimizer::selectRandomFlips(std::mt19937 &generator) const {
+void FlipStructureOptimizer::preprocess() {
+    std::vector<int> used(rank, 0);
+    for (const Flip &flip : flips) {
+        used[flip.i] |= 1 << flip.p;
+        used[flip.j] |= 1 << flip.p;
+    }
+
+    independentFlips.clear();
+    dependentFlips.clear();
+
+    for (const Flip &flip : flips) {
+        if (isPowerOfTwo(used[flip.i]) && isPowerOfTwo(used[flip.j]))
+            independentFlips.push_back(flip);
+        else
+            dependentFlips.push_back(flip);
+    }
+}
+
+std::vector<Flip> FlipStructureOptimizer::selectRandomFlips(const std::vector<Flip> &flips, std::mt19937 &generator) const {
     std::vector<Flip> available(flips);
     std::unordered_set<int> ignored[3];
     std::vector<Flip> selected;
@@ -95,7 +113,7 @@ std::vector<int> FlipStructureOptimizer::countSizes(const std::vector<std::unord
 }
 
 std::vector<FlipStructureNode> FlipStructureOptimizer::selectRandomStructure(std::mt19937 &generator) const {
-    std::vector<Flip> selected = selectRandomFlips(generator);
+    std::vector<Flip> selected = selectRandomFlips(flips, generator);
     std::vector<std::unordered_set<int>> u = groupFlips(selected, 0);
     std::vector<std::unordered_set<int>> v = groupFlips(selected, 1);
     std::vector<std::unordered_set<int>> w = groupFlips(selected, 2);
@@ -225,10 +243,16 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
     if (dimension2rank.find(dim) == dimension2rank.end())
         return -1;
 
+    if (dependentFlips.empty())
+        iterations = 1;
+
     int bestRank = 10000000;
 
     for (int iteration = 0; iteration < iterations; iteration++) {
-        std::vector<Flip> selected = selectRandomFlips(generator);
+        std::vector<Flip> selected = selectRandomFlips(dependentFlips, generator);
+        for (const Flip &flip : independentFlips)
+            selected.push_back(flip);
+
         std::vector<std::unordered_set<int>> u = groupFlips(selected, 0);
         std::vector<std::unordered_set<int>> v = groupFlips(selected, 1);
         std::vector<std::unordered_set<int>> w = groupFlips(selected, 2);

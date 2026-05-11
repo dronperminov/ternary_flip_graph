@@ -26,6 +26,7 @@ std::vector<std::mt19937> initRandomGenerators(int seed, int count);
 
 std::string getDimension(int n1, int n2, int n3, bool sorted = false);
 int digitsCount(size_t n);
+bool isPowerOfTwo(int n);
 
 std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath, const std::vector<std::string> &extensions);
 std::vector<std::string> getSchemePathsFromDirectoryRecursive(const std::string &inputPath, const std::vector<std::string> &extensions);
