@@ -58,6 +58,37 @@ double BaseScheme::getOmega() const {
     return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
 }
 
+std::string BaseScheme::getStructureHash() const {
+    std::vector<bool> used(rank, 0);
+    for (int i = 0; i < 3; i++) {
+        for (size_t j = 0; j < flips[i].size(); j++) {
+            used[flips[i].index1(j)] = true;
+            used[flips[i].index2(j)] = true;
+        }
+    }
+
+    std::unordered_map<int, int> index2offset;
+    for (int i = 0; i < rank; i++)
+        if (used[i])
+            index2offset[i] = index2offset.size();
+
+    std::vector<std::string> lines;
+    for (int i = 0; i < 3; i++) {
+        for (size_t j = 0; j < flips[i].size(); j++) {
+            std::stringstream line;
+            line << i << "-" << index2offset.at(flips[i].index1(j)) << "-" << index2offset.at(flips[i].index2(j));
+            lines.push_back(line.str());
+        }
+    }
+
+    std::sort(lines.begin(), lines.end());
+
+    std::stringstream hash;
+    for (const std::string &line : lines)
+        hash << line << "_";
+    return hash.str();
+}
+
 FlipStructureOptimizer BaseScheme::getStructureOptimizer() const {
     FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
 

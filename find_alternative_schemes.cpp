@@ -13,8 +13,8 @@
 #include "src/schemes/mod3_scheme.hpp"
 #include "src/schemes/ternary_scheme.hpp"
 
-template <template<typename> typename Scheme, typename T>
-std::string getSavePath(const Scheme<T> &scheme, const std::string &outputPath, int version) {
+template <typename Scheme>
+std::string getSavePath(const Scheme &scheme, const std::string &outputPath, int version) {
     std::stringstream ss;
     ss << outputPath << "/";
     ss << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2);
@@ -25,12 +25,21 @@ std::string getSavePath(const Scheme<T> &scheme, const std::string &outputPath, 
     return ss.str();
 }
 
+template <typename Scheme>
+std::string getHash(const Scheme &scheme, const std::string &unique) {
+    if (unique == "structure")
+        return scheme.getStructureHash();
+
+    return scheme.getHash();
+}
+
 template <template<typename> typename Scheme, typename T>
 int runFindAlternativeSchemes(const ArgParser &parser) {
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
 
     std::string ring = parser["--ring"];
+    std::string unique = parser["--unique-check"];
     double sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
     double plusProbability = std::stod(parser["--plus-probability"]);
     int plusDiff = std::stoi(parser["--plus-diff"]);
@@ -47,6 +56,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- ring: " << ring << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
+    std::cout << "- unique check: " << unique << std::endl;
     std::cout << std::endl;
     std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
     std::cout << "- plus probability: " << plusProbability << std::endl;
@@ -82,7 +92,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
     std::unordered_set<std::string> hashes;
-    hashes.insert(scheme.getHash());
+    hashes.insert(getHash(scheme, unique));
 
     size_t count = 0;
 
@@ -100,7 +110,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
         if (scheme.getRank() != targetRank)
             continue;
 
-        std::string hash = scheme.getHash();
+        std::string hash = getHash(scheme, unique);
         if (hashes.find(hash) != hashes.end())
             continue;
 
@@ -151,6 +161,7 @@ int main(int argc, char **argv) {
     parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2} or ZT - {-1, 0, 1}", {"ZT", "Z2", "Z3"}, "ZT");
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
     parser.add("--max-count", "-n", ArgType::Natural, "Number of alternative schemes", "10K");
+    parser.addChoices("--unique-check", "-u", ArgType::String, "Unique schemes comparator", {"coefficients", "structure"}, "coefficients");
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme", "", true);
