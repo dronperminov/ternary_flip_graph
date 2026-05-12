@@ -59,26 +59,28 @@ double BaseScheme::getOmega() const {
 }
 
 std::string BaseScheme::getStructureHash() const {
-    std::vector<bool> used(rank, 0);
+    std::vector<std::vector<int>> counts(rank, std::vector<int>(3, 0));
     for (int i = 0; i < 3; i++) {
         for (size_t j = 0; j < flips[i].size(); j++) {
-            used[flips[i].index1(j)] = true;
-            used[flips[i].index2(j)] = true;
+            counts[flips[i].index1(j)][i]++;
+            counts[flips[i].index2(j)][i]++;
         }
     }
 
-    std::unordered_map<int, int> index2offset;
+    int max = 0;
     for (int i = 0; i < rank; i++)
-        if (used[i])
-            index2offset[i] = index2offset.size();
+        for (int j = 0; j < 3; j++)
+            max = std::max(max, counts[i][j]);
 
+    int digits = digitsCount(max);
     std::vector<std::string> lines;
-    for (int i = 0; i < 3; i++) {
-        for (size_t j = 0; j < flips[i].size(); j++) {
-            std::stringstream line;
-            line << i << "-" << index2offset.at(flips[i].index1(j)) << "-" << index2offset.at(flips[i].index2(j));
-            lines.push_back(line.str());
-        }
+
+    for (int i = 0; i < rank; i++) {
+        std::stringstream line;
+        line << std::setw(digits) << std::setfill('0') << counts[i][0] << "-";
+        line << std::setw(digits) << std::setfill('0') << counts[i][1] << "-";
+        line << std::setw(digits) << std::setfill('0') << counts[i][2];
+        lines.push_back(line.str());
     }
 
     std::sort(lines.begin(), lines.end());
