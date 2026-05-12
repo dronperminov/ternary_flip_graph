@@ -58,37 +58,29 @@ double BaseScheme::getOmega() const {
     return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
 }
 
-std::string BaseScheme::getStructureHash() const {
-    std::vector<std::vector<int>> counts(rank, std::vector<int>(3, 0));
+std::string BaseScheme::getStructureHash(std::mt19937 &generator) const {
+    FlipStructureOptimizer optimizer = getStructureOptimizer();
+    std::vector<std::vector<std::unordered_set<int>>> groups = optimizer.getGroups(generator);
+
+    std::vector<std::vector<size_t>> groupSizes(3);
     for (int i = 0; i < 3; i++) {
-        for (size_t j = 0; j < flips[i].size(); j++) {
-            counts[flips[i].index1(j)][i]++;
-            counts[flips[i].index2(j)][i]++;
-        }
+        for (const auto &group : groups[i])
+            groupSizes[i].push_back(group.size());
+
+        std::sort(groupSizes[i].begin(), groupSizes[i].end());
     }
 
-    int max = 0;
-    for (int i = 0; i < rank; i++)
-        for (int j = 0; j < 3; j++)
-            max = std::max(max, counts[i][j]);
+    std::stringstream ss;
+    for (size_t size : groupSizes[0])
+        ss << "u" << size;
 
-    int digits = digitsCount(max);
-    std::vector<std::string> lines;
+    for (size_t size : groupSizes[1])
+        ss << "v" << size;
 
-    for (int i = 0; i < rank; i++) {
-        std::stringstream line;
-        line << std::setw(digits) << std::setfill('0') << counts[i][0] << "-";
-        line << std::setw(digits) << std::setfill('0') << counts[i][1] << "-";
-        line << std::setw(digits) << std::setfill('0') << counts[i][2];
-        lines.push_back(line.str());
-    }
+    for (size_t size : groupSizes[2])
+        ss << "w" << size;
 
-    std::sort(lines.begin(), lines.end());
-
-    std::stringstream hash;
-    for (const std::string &line : lines)
-        hash << line << "_";
-    return hash.str();
+    return ss.str();
 }
 
 FlipStructureOptimizer BaseScheme::getStructureOptimizer() const {

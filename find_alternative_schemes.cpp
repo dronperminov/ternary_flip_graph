@@ -5,6 +5,7 @@
 #include <random>
 #include <ctime>
 #include <unordered_set>
+#include <omp.h>
 
 #include "src/utils.h"
 #include "src/entities/arg_parser.h"
@@ -26,9 +27,9 @@ std::string getSavePath(const Scheme &scheme, const std::string &outputPath, int
 }
 
 template <typename Scheme>
-std::string getHash(const Scheme &scheme, const std::string &unique) {
+std::string getHash(const Scheme &scheme, const std::string &unique, std::mt19937 &generator) {
     if (unique == "structure")
-        return scheme.getStructureHash();
+        return scheme.getStructureHash(generator);
 
     return scheme.getHash();
 }
@@ -43,6 +44,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     double sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
     double plusProbability = std::stod(parser["--plus-probability"]);
     int plusDiff = std::stoi(parser["--plus-diff"]);
+    int threads = std::stoi(parser["--threads"]);
 
     size_t maxCount = parseNatural(parser["--max-count"]);
     int seed = std::stoi(parser["--seed"]);
@@ -56,6 +58,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- ring: " << ring << std::endl;
     std::cout << "- input path: " << inputPath << std::endl;
     std::cout << "- output path: " << outputPath << std::endl;
+    std::cout << "- threads: " << threads << std::endl;
     std::cout << "- unique check: " << unique << std::endl;
     std::cout << std::endl;
     std::cout << "- sandwiching probability: " << sandwichingProbability << std::endl;
@@ -68,19 +71,19 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl << std::endl;
 
-    Scheme<T> scheme;
-    if (!scheme.read(inputPath, !parser.isSet("--no-verify")))
+    Scheme<T> initialScheme;
+    if (!initialScheme.read(inputPath, !parser.isSet("--no-verify")))
         return -1;
 
     if (!makeDirectory(outputPath))
         return -1;
 
-    int schemeRank = scheme.getRank();
+    int schemeRank = initialScheme.getRank();
     int targetRank = parser.isSet("--target-rank") ? std::stoi(parser["--target-rank"]) : schemeRank;
 
     std::cout << "Readed scheme parameters:" << std::endl;
-    std::cout << "- dimension: " << scheme.getDimension(0) << "x" << scheme.getDimension(1) << "x" << scheme.getDimension(2) << std::endl;
-    std::cout << "- rank: " << scheme.getRank();
+    std::cout << "- dimension: " << initialScheme.getDimension() << std::endl;
+    std::cout << "- rank: " << initialScheme.getRank();
 
     if (targetRank != schemeRank)
         std::cout << " (target: " << targetRank << ")";
@@ -88,11 +91,15 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << std::endl;
     std::cout << std::endl;
 
-    std::mt19937 generator(seed);
+    std::vector<std::mt19937> generators = initRandomGenerators(seed, threads);
     std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
     std::unordered_set<std::string> hashes;
-    hashes.insert(getHash(scheme, unique));
+    hashes.insert(getHash(initialScheme, unique, generators[0]));
+
+    std::vector<Scheme<T>> schemes(threads);
+    for (int i = 0; i < threads; i++)
+        schemes[i].copy(initialScheme);
 
     size_t count = 0;
 
@@ -101,34 +108,48 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
 
     for (size_t iteration = 1; count < maxCount; iteration++) {
-        if (!scheme.tryFlip(generator) || (scheme.getRank() < targetRank + plusDiff && uniform(generator) < plusProbability))
-            scheme.tryExpand(generator);
+        std::vector<std::string> hashesThreads(threads, "");
 
-        if (uniform(generator) < sandwichingProbability)
-            scheme.trySandwiching(generator);
+        #pragma omp parallel for num_threads(threads)
+        for (int i = 0; i < threads; i++) {
+            Scheme<T>& scheme = schemes[i];
+            std::mt19937& generator = generators[i];
 
-        if (scheme.getRank() != targetRank)
-            continue;
+            if (!scheme.tryFlip(generator) || (scheme.getRank() < targetRank + plusDiff && uniform(generator) < plusProbability))
+                scheme.tryExpand(generator);
 
-        std::string hash = getHash(scheme, unique);
-        if (hashes.find(hash) != hashes.end())
-            continue;
+            if (uniform(generator) < sandwichingProbability)
+                scheme.trySandwiching(generator);
 
-        count++;
-        std::cout << "| ";
-        std::cout << std::setw(9) << iteration << " | ";
-        std::cout << std::setw(11) << count << " | ";
-        std::cout << std::setw(10) << scheme.getComplexity() << " | ";
-        std::cout << std::setw(15) << scheme.getAvailableFlips() << " |";
-        std::cout << std::endl;
+            if (scheme.getRank() != targetRank)
+                continue;
 
-        std::string path = getSavePath(scheme, outputPath, count);
-        if (format == "json")
-            scheme.saveJson(path + ".json");
-        else
-            scheme.saveTxt(path + ".txt");
+            std::string hash = getHash(scheme, unique, generator);
+            if (hashes.find(hash) == hashes.end())
+                hashesThreads[i] = hash;
+        }
 
-        hashes.insert(hash);
+        for (int i = 0; i < threads; i++) {
+            std::string hash = hashesThreads[i];
+            if (hash.empty() || hashes.find(hash) != hashes.end())
+                continue;
+
+            count++;
+            std::cout << "| ";
+            std::cout << std::setw(9) << iteration << " | ";
+            std::cout << std::setw(11) << count << " | ";
+            std::cout << std::setw(10) << schemes[i].getComplexity() << " | ";
+            std::cout << std::setw(15) << schemes[i].getAvailableFlips() << " |";
+            std::cout << std::endl;
+
+            std::string path = getSavePath(schemes[i], outputPath, count);
+            if (format == "json")
+                schemes[i].saveJson(path + ".json");
+            else
+                schemes[i].saveTxt(path + ".txt");
+
+            hashes.insert(hash);
+        }
     }
 
     std::cout << "+-----------+-------------+------------+-----------------+" << std::endl;
@@ -162,6 +183,7 @@ int main(int argc, char **argv) {
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
     parser.add("--max-count", "-n", ArgType::Natural, "Number of alternative schemes", "10K");
     parser.addChoices("--unique-check", "-u", ArgType::String, "Unique schemes comparator", {"coefficients", "structure"}, "coefficients");
+    parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input file with initial scheme", "", true);

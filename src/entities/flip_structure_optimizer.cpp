@@ -238,7 +238,7 @@ FlipStructure FlipStructureOptimizer::optimize(std::mt19937 &generator, int iter
     return optimized;
 }
 
-int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) {
+int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) const {
     std::string dim = getDimension(dimension[0], dimension[1], dimension[2], true);
     if (dimension2rank.find(dim) == dimension2rank.end())
         return -1;
@@ -294,6 +294,18 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
     }
 
     return bestRank;
+}
+
+std::vector<std::vector<std::unordered_set<int>>> FlipStructureOptimizer::getGroups(std::mt19937 &generator) const {
+    std::vector<Flip> selected = selectRandomFlips(dependentFlips, generator);
+    for (const Flip &flip : independentFlips)
+        selected.push_back(flip);
+
+    std::vector<std::vector<std::unordered_set<int>>> groups;
+    for (int i = 0; i < 3; i++)
+        groups.push_back(groupFlips(selected, i));
+
+    return groups;
 }
 
 std::ostream& operator<<(std::ostream &os, const FlipStructure &structure) {
