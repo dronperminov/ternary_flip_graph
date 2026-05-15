@@ -15,9 +15,14 @@
 #include "src/entities/buffer_writer.h"
 #include "src/schemes/fractional_scheme.h"
 
-std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuffle, std::mt19937 &generator) {
+std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuffle, std::mt19937 &generator, const std::string &ring) {
     std::vector<std::string> paths;
-    std::vector<std::string> extensions = {"ZT.txt", "Z.txt", "Q.txt"};
+    std::unordered_map<std::string, std::vector<std::string>> ring2extensions = {
+        {"ZT", {"ZT.txt"}},
+        {"Z", {"ZT.txt", "Z.txt"}},
+        {"Q", {"ZT.txt", "Z.txt", "Q.txt"}}
+    };
+    std::vector<std::string> extensions = ring2extensions.at(ring);
 
     if (std::filesystem::is_directory(inputPath)) {
         std::cout << "Start reading files from directory \"" << inputPath << "\"" << std::endl;
@@ -138,7 +143,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
     std::cout << "- seed: " << seed << std::endl;
     std::cout << std::endl;
 
-    std::vector<std::string> paths = getSchemePaths(inputPath, shuffle, generators[0]);
+    std::vector<std::string> paths = getSchemePaths(inputPath, shuffle, generators[0], ring);
     if (paths.empty()) {
         std::cout << "There are no scheme files" << std::endl;
         return 0;
