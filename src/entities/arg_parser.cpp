@@ -128,7 +128,7 @@ bool Argument::isNatural(const std::string &value) const {
         if (value[i] < '0' || value[i] > '9')
             return false;
 
-    return std::stoul(value) > 0;
+    return std::stoull(value) > 0;
 }
 
 bool Argument::isReal(const std::string &value) const {

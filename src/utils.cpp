@@ -50,7 +50,7 @@ size_t parseNatural(std::string value) {
     if (multiplier > 1)
         value.pop_back();
 
-    return std::stoul(value) * multiplier;
+    return std::stoull(value) * multiplier;
 }
 
 Fraction parseFraction(const std::string &value) {
