@@ -67,7 +67,7 @@ std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
     return knownRanks;
 }
 
-bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &generator, std::unordered_map<std::string, int> &knownRanks, int iterations) {
+bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &generator, std::unordered_map<std::string, int> &knownRanks, int iterations, bool showEqualBest) {
     FlipStructureOptimizer optimizer = scheme.getFullStructureOptimizer();
     int n[3] = {
         scheme.getDimension(0),
@@ -91,7 +91,7 @@ bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &gen
                 std::string dimension = getDimension(n1 * n[0], n2 * n[1], n3 * n[2], true);
                 int knownRank = knownRanks.at(dimension);
 
-                if (serendipitousRank < knownRank) {
+                if (serendipitousRank < knownRank && (!showEqualBest || serendipitousRank <= KNOWN_RANKS_Q.at(dimension))) {
                     std::cout << "Serendipitous for " << dimension << ": " << serendipitousRank << " < " << knownRank << std::endl;
                     knownRanks[dimension] = serendipitousRank + 1;
                     found = true;
@@ -113,6 +113,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
     int threads = std::stoi(parser["--threads"]);
     bool verify = !parser.isSet("--no-verify");
     int iterations = std::stoi(parser["--iterations"]);
+    bool showEqualBest = parser.isSet("--show-equal-best");
 
     int seed = std::stoi(parser["--seed"]);
     if (seed == 0)
@@ -141,6 +142,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- iterations: " << iterations << std::endl;
     std::cout << "- seed: " << seed << std::endl;
+    std::cout << "- show equal best: " << (showEqualBest ? "yes" : "no") << std::endl;
     std::cout << std::endl;
 
     std::vector<std::string> paths = getSchemePaths(inputPath, shuffle, generators[0], ring);
@@ -168,7 +170,7 @@ int runCheckSerendipitousProduct(const ArgParser &parser) {
         if (!scheme.read(path, verify, !endsWith(path, "Q.txt")))
             continue;
 
-        if (checkSerendipitousProduct(scheme, generators[thread], knownRanks, iterations))
+        if (checkSerendipitousProduct(scheme, generators[thread], knownRanks, iterations, showEqualBest))
             scheme.save(outputPath + "/" + scheme.getFilename(format));
     }
 
@@ -190,6 +192,7 @@ int main(int argc, char *argv[]) {
     parser.addSection("Other parameters");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
     parser.add("--iterations", ArgType::Natural, "Iterations of random checking", "25");
+    parser.add("--show-equal-best", ArgType::Flag, "Show only schemes with equal ranks to best known in {Q, Z, ZT} rings");
 
     if (!parser.parse(argc, argv))
         return 0;
