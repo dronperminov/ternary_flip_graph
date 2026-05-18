@@ -476,6 +476,27 @@ void FractionalScheme::plus(std::mt19937 &generator) {
     plus(permutation[0], permutation[1], permutation[2], index1, index2, generator() % 3);
 }
 
+void FractionalScheme::split(std::mt19937 &generator) {
+    int index1, index2, i;
+
+    do {
+        index1 = generator() % rank;
+        index2 = generator() % rank;
+        i = generator() % 3;
+    } while (index1 == index2 || uvw[i][index1] == uvw[i][index2]);
+
+    split(i, (i + 1) % 3, (i + 2) % 3, index1, index2);
+}
+
+void FractionalScheme::expand(std::mt19937 &generator) {
+    if (generator() % 2) {
+        plus(generator);
+    }
+    else {
+        split(generator);
+    }
+}
+
 void FractionalScheme::split(std::mt19937 &generator, const std::vector<Fraction> &values) {
     int permutation[3] = {0, 1, 2};
     std::shuffle(permutation, permutation + 3, generator);
@@ -975,6 +996,21 @@ void FractionalScheme::plus(int i, int j, int k, int index1, int index2, int var
         std::copy(cSub.begin(), cSub.end(), uvw[k].begin() + index2 * elements[k]);
         addTriplet(i, j, k, a2, bSub, c1);
     }
+
+    removeZeroes();
+    initFlips();
+}
+
+void FractionalScheme::split(int i, int j, int k, int index1, int index2) {
+    std::vector<Fraction> v2(uvw[j].begin() + index2 * elements[j], uvw[j].begin() + (index2 + 1) * elements[j]);
+    std::vector<Fraction> w2(uvw[k].begin() + index2 * elements[k], uvw[k].begin() + (index2 + 1) * elements[k]);
+
+    std::vector<Fraction> diff(elements[i]);
+    for (int index = 0; index < elements[i]; index++)
+        diff[index] = uvw[i][index2 * elements[i] + index] - uvw[i][index1 * elements[i] + index];
+
+    std::copy(uvw[i].begin() + index1 * elements[i], uvw[i].begin() + (index1 + 1) * elements[i], uvw[i].begin() + index2 * elements[i]);
+    addTriplet(i, j, k, diff, v2, w2);
 
     removeZeroes();
     initFlips();

@@ -58,6 +58,8 @@ public:
 
     bool tryFlip(std::mt19937 &generator);
     void plus(std::mt19937 &generator);
+    void split(std::mt19937 &generator);
+    void expand(std::mt19937 &generator);
     void split(std::mt19937 &generator, const std::vector<Fraction> &values);
     void sandwiching(const Matrix &u, const Matrix &v, const Matrix &w, const Matrix &u1, const Matrix &v1, const Matrix &w1);
     void scale(int index, const Fraction &alpha, const Fraction &beta, const Fraction &gamma);
@@ -89,6 +91,7 @@ private:
     void selectFlip(FlipSet *flips, size_t index, int &i, int &j, int &k, int &index1, int &index2, std::mt19937 &generator);
     void flip(int i, int j, int k, int index1, int index2, bool inverse);
     void plus(int i, int j, int k, int index1, int index2, int variant);
+    void split(int i, int j, int k, int index1, int index2);
     bool reduce(int i, int index1, int index2, int sign);
     void reduceAdd(int i, int index1, int index2);
     void reduceSub(int i, int index1, int index2);
