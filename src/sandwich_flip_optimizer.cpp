@@ -288,7 +288,7 @@ void SandwichFlipOptimizer::makePlus(FractionalScheme &scheme, std::mt19937 &gen
     int rank = scheme.getRank();
 
     if (generator() % 2) {
-        scheme.plus(generator);
+        scheme.expand(generator);
     }
     else {
         scheme.split(generator, plusParameters.values);
