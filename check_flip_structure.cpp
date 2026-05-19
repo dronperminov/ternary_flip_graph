@@ -41,11 +41,34 @@ std::string getLogPath(const std::string &outputPath, int thread) {
     return ss.str();
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<Flip> &flips) {
+    os << "[";
+
+    for (int p = 0; p < 3; p++) {
+        os << (p > 0 ? ", " : "") << "[";
+
+        bool printed = false;
+        for (const Flip& flip : flips) {
+            if (flip.p != p)
+                continue;
+
+            os << (printed ? ", " : "") << "[" << flip.i << ", " << flip.j << "]";
+            printed = true;
+        }
+
+        os << "]";
+    }
+
+    os << "]";
+    return os;
+}
+
 int runCheckFlipStructure(const ArgParser &parser) {
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
     bool shuffle = parser.isSet("--shuffle-paths");
     bool onlyOptimal = parser.isSet("--only-optimal");
+    bool onlyBuds = parser.isSet("--only-buds");
 
     int threads = std::stoi(parser["--threads"]);
     bool verify = !parser.isSet("--no-verify");
@@ -69,6 +92,7 @@ int runCheckFlipStructure(const ArgParser &parser) {
     std::cout << "- output path: " << outputPath << std::endl;
     std::cout << "- shuffle paths: " << (shuffle ? "yes" : "no") << std::endl;
     std::cout << "- only optimal: " << (onlyOptimal ? "yes" : "no") << std::endl;
+    std::cout << "- only buds: " << (onlyBuds ? "yes" : "no") << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- iterations: " << iterations << std::endl;
     std::cout << "- eps: " << eps << std::endl;
@@ -84,7 +108,6 @@ int runCheckFlipStructure(const ArgParser &parser) {
 
     std::cout << "Found " << paths.size() << " files" << std::endl;
 
-    std::unordered_map<std::string, int> dimension2rank = KNOWN_RANKS.at("Q");
     std::vector<BufferWriter> writers;
 
     for (int i = 0; i < threads; i++)
@@ -103,12 +126,13 @@ int runCheckFlipStructure(const ArgParser &parser) {
         if (!scheme.read(path, verify, !endsWith(path, "Q.txt")))
             continue;
 
-        std::string dimension = scheme.getDimension();
-        if (dimension2rank.find(dimension) == dimension2rank.end() || (onlyOptimal && scheme.getRank() > dimension2rank.at(dimension)))
+        std::string dimension = getDimension(scheme.getDimension(0), scheme.getDimension(1), scheme.getDimension(2), true);
+        if (KNOWN_RANKS_Q.find(dimension) == KNOWN_RANKS_Q.end() || (onlyOptimal && scheme.getRank() > KNOWN_RANKS_Q.at(dimension)))
             continue;
 
         FlipStructureOptimizer optimizer = scheme.getFullStructureOptimizer();
-        FlipStructure structure = optimizer.optimize(generators[thread], iterations, eps);
+        std::vector<Flip> flips = optimizer.getFlips();
+        FlipStructure structure = optimizer.optimize(generators[thread], onlyBuds ? 0 : iterations, eps);
 
         std::stringstream ss;
         ss << "| ";
@@ -122,12 +146,15 @@ int runCheckFlipStructure(const ArgParser &parser) {
 
         std::stringstream line;
         line << "{";
-        line << "\"path\": \"" << path << "\", ";
-        line << "\"dimension\": [" << scheme.getDimension(0) << ", " << scheme.getDimension(1) << ", " << scheme.getDimension(2) << "], ";
-        line << "\"rank\": " << scheme.getRank() << ", ";
-        line << "\"omega\": " << std::setprecision(15) << scheme.getOmega() << ", ";
-        line << "\"structure_omega\": " << std::setprecision(15) << structure.omega << ", ";
-        line << "\"structure\": " << structure;
+        line << "\"path\": \"" << path << "\"";
+        line << ", \"dimension\": [" << scheme.getDimension(0) << ", " << scheme.getDimension(1) << ", " << scheme.getDimension(2) << "]";
+        line << ", \"rank\": " << scheme.getRank() << "";
+        line << ", \"omega\": " << std::setprecision(15) << scheme.getOmega();
+        if (!onlyBuds) {
+            line << ", \"structure_omega\": " << std::setprecision(15) << structure.omega;
+            line << ", \"structure\": " << structure;
+        }
+        line << ", \"buds\": " << flips; 
         line << "}";
 
         writers[thread].add(line.str());        
@@ -142,6 +169,7 @@ int main(int argc, char *argv[]) {
     ArgParser parser("check_serendipitous_product", "Check existing schemes for serendipitous product");
     parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.add("--only-optimal", ArgType::Flag, "Check only schemes with optimal rank");
+    parser.add("--only-buds", ArgType::Flag, "Save only buds info without structure optimization");
 
     parser.addSection("Input / output");
     parser.add("--input-path", "-i", ArgType::Path, "Path to input directory with schemes or .txt file with paths for check", "", true);

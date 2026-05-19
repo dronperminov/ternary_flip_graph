@@ -238,6 +238,10 @@ FlipStructure FlipStructureOptimizer::optimize(std::mt19937 &generator, int iter
     return optimized;
 }
 
+std::vector<Flip> FlipStructureOptimizer::getFlips() const {
+    return flips;
+}
+
 int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) const {
     std::string dim = getDimension(dimension[0], dimension[1], dimension[2], true);
     if (dimension2rank.find(dim) == dimension2rank.end())
