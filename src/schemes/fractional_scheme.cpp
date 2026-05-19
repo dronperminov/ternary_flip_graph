@@ -681,24 +681,20 @@ void FractionalScheme::copy(const FractionalScheme &scheme) {
 }
 
 void FractionalScheme::canonize() {
-    int64_t gcdV = gcdNumerators(uvw[1]);
-    int64_t lcmV = lcmDenominators(uvw[1]);
+    for (int index = 0; index < rank; index++) {
+        bool u = isPositiveFirstNonZero(0, index);
+        bool v = isPositiveFirstNonZero(1, index);
 
-    int64_t gcdW = gcdNumerators(uvw[2]);
-    int64_t lcmW = lcmDenominators(uvw[2]);
-
-    Fraction scaleV(gcdV, lcmV);
-    Fraction scaleW(gcdW, lcmW);
-    Fraction scaleU = scaleV * scaleW;
-
-    for (auto &u : uvw[0])
-        u *= scaleU;
-
-    for (auto &v : uvw[1])
-        v /= scaleV;
-
-    for (auto &w : uvw[2])
-        w /= scaleW;
+        if (!u && !v) {
+            scale(index, Fraction(-1), Fraction(-1), Fraction(1));
+        }
+        else if (!u) {
+            scale(index, Fraction(-1), Fraction(1), Fraction(-1));
+        }
+        else if (!v) {
+            scale(index, Fraction(1), Fraction(-1), Fraction(-1));
+        }
+    }
 }
 
 void FractionalScheme::saveJson(const std::string &path, bool withInvariants) const {
@@ -878,6 +874,14 @@ bool FractionalScheme::isLinearlyDependentMatrices(int p, int index1, int index2
         if (v2 != k * v1)
             return false;
     }
+
+    return true;
+}
+
+bool FractionalScheme::isPositiveFirstNonZero(int p, int index) const {
+    for (int i = 0; i < elements[p]; i++)
+        if (uvw[p][index * elements[p] + i])
+            return uvw[p][index * elements[p] + i].isPositive();
 
     return true;
 }
