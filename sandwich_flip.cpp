@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     parser.add("--max-improvements", ArgType::Natural, "Number of last improved schemes", "8");
     parser.add("--max-no-improvements", ArgType::Natural, "Maximum number of iterations without improvement", "10M");
     parser.add("--seed", ArgType::Natural, "Random seed, 0 uses time-based seed", "0");
-    parser.addChoices("--format", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
+    parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "txt");
 
     if (!parser.parse(argc, argv))
         return 0;
