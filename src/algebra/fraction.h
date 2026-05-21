@@ -20,6 +20,7 @@ public:
 
     double toDouble() const;
 
+    bool isPositive() const;
     bool isInteger() const;
     bool isTernaryInteger() const;
     bool reconstruct(uint64_t a, int64_t mod, int64_t bound);

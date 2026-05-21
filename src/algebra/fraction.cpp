@@ -32,6 +32,10 @@ double Fraction::toDouble() const {
     return double(num) / den;
 }
 
+bool Fraction::isPositive() const {
+    return num > 0;
+}
+
 bool Fraction::isInteger() const {
     return den == 1;
 }
