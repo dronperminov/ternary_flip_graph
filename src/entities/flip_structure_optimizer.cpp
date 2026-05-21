@@ -312,6 +312,15 @@ std::vector<std::vector<std::unordered_set<int>>> FlipStructureOptimizer::getGro
     return groups;
 }
 
+std::ostream& operator<<(std::ostream &os, const std::vector<FlipStructureNode> &structure) {
+    for (size_t i = 0; i < structure.size(); i++) {
+        FlipStructureNode node = structure[i];
+        os << (i > 0 ? "+" : "") << node.s << "<" << node.n << "," << node.m << "," << node.p << ">";
+    }
+
+    return os;
+}
+
 std::ostream& operator<<(std::ostream &os, const FlipStructure &structure) {
     os << "[";
 

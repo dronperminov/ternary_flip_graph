@@ -57,3 +57,4 @@ public:
 };
 
 std::ostream& operator<<(std::ostream &os, const FlipStructure &structure);
+std::ostream& operator<<(std::ostream &os, const std::vector<FlipStructureNode> &structure);
