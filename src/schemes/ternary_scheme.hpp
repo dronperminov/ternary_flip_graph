@@ -64,7 +64,7 @@ public:
     bool validate() const;
     bool validateParallel() const;
 
-    bool canLift() const;
+    bool canLift(int steps) const;
 protected:
     void initFlips();
     void removeZeroes();
@@ -875,7 +875,7 @@ bool TernaryScheme<T>::validateParallel() const {
 }
 
 template <typename T>
-bool TernaryScheme<T>::canLift() const {
+bool TernaryScheme<T>::canLift(int steps) const {
     return true;
 }
 

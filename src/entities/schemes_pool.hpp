@@ -41,7 +41,7 @@ public:
     int getMaxFlips() const;
 
     bool add(const Scheme &scheme, bool save);
-    void copyRandom(Scheme &scheme, std::mt19937 &generator) const;
+    void copyRandom(Scheme &scheme, std::mt19937 &generator, bool selectUniform = true) const;
     void resetDiff();
 private:
     void saveScheme(const Scheme &scheme);
@@ -133,8 +133,8 @@ bool SchemesPool<Scheme>::add(const Scheme &scheme, bool save) {
 }
 
 template <typename Scheme>
-void SchemesPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator) const {
-    if (totalFlips == 0) {
+void SchemesPool<Scheme>::copyRandom(Scheme &scheme, std::mt19937 &generator, bool selectUniform) const {
+    if (totalFlips == 0 || selectUniform) {
         scheme.copy(schemes[generator() % schemes.size()]);
         return;
     }

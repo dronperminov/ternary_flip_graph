@@ -66,7 +66,7 @@ public:
     bool reconstruct(FractionalScheme &scheme) const;
 
     BinaryLifter toLift() const;
-    bool canLift() const;
+    bool canLift(int steps) const;
 protected:
     void initFlips();
     void removeZeroes();
@@ -798,8 +798,15 @@ BinaryLifter BinaryScheme<T>::toLift() const {
 }
 
 template <typename T>
-bool BinaryScheme<T>::canLift() const {
-    return toLift().canLift();
+bool BinaryScheme<T>::canLift(int steps) const {
+    FractionalScheme liftedScheme;
+    BinaryLifter lifter = toLift();
+    bool reconstructed = false;
+
+    for (int step = 0; step < steps && !reconstructed && lifter.lift(); step++)
+        reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
+
+    return reconstructed;
 }
 
 template <typename T>
