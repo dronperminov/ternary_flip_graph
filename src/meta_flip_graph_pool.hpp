@@ -230,6 +230,10 @@ void MetaFlipGraphPool<Scheme>::runIteration() {
         int thread = omp_get_thread_num();
         randomWalk(schemes[i], flips[i], ranks[i], iterations[i], plusIterations[i], pool[thread], generators[thread]);
     }
+
+    for (int i = 0; i < threads; i++)
+        for (const Scheme &scheme : pool[i])
+            addScheme(scheme, true);
 }
 
 template <typename Scheme>
