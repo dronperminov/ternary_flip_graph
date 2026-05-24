@@ -158,6 +158,14 @@ bool FractionalScheme::isTernary() const {
     return true;
 }
 
+bool FractionalScheme::isSignCanonized() const {
+    for (int index = 0; index < rank; index++)
+        if (!isPositiveFirstNonZero(0, index) || !isPositiveFirstNonZero(1, index))
+            return false;
+
+    return true;
+}
+
 int FractionalScheme::getAvailableFlips() const {
     size_t sizePos = flips[0].size() + flips[1].size() + flips[2].size();
     size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();

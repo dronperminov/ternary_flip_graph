@@ -33,6 +33,7 @@ public:
 
     bool isInteger() const;
     bool isTernary() const;
+    bool isSignCanonized() const;
 
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;

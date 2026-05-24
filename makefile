@@ -33,8 +33,8 @@ lift: $(OBJECTS)
 check_serendipitous_product: $(OBJECTS)
 	$(CXX) $(FLAGS) $(OBJECTS) check_serendipitous_product.cpp -o check_serendipitous_product
 
-check_flip_structure: $(OBJECTS)
-	$(CXX) $(FLAGS) $(OBJECTS) check_flip_structure.cpp -o check_flip_structure
+analyze_schemes: $(OBJECTS)
+	$(CXX) $(FLAGS) $(OBJECTS) analyze_schemes.cpp -o analyze_schemes
 
 %.o: %.cpp
 	$(CXX) $(FLAGS) -c $< -o $@
