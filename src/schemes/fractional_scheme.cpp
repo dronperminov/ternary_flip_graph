@@ -364,6 +364,45 @@ double FractionalScheme::getFrobeniusNorm() const {
     return norm;
 }
 
+Fraction FractionalScheme::get(int p, int row, int i, int j) const {
+    int index = i * dimension[p] + j;
+    if (index < 0 || index >= elements[p])
+        throw std::runtime_error("get(p, row, i, j)");
+
+    return uvw[p][row * elements[p] + (i * dimension[p] + j)];
+}
+
+Fraction FractionalScheme::get(int p, int row, int index) const {
+    if (index < 0 || index >= elements[p])
+        throw std::runtime_error("get(p, row, index)");
+    return uvw[p][row * elements[p] + index];
+}
+
+Fraction FractionalScheme::getPairScale(int p, int index1, int index2) const {
+    Fraction k = 0;
+
+    for (int i = 0; i < elements[p]; i++) {
+        Fraction v1 = uvw[p][index1 * elements[p] + i];
+        Fraction v2 = uvw[p][index2 * elements[p] + i];
+
+        if ((!v1) != (!v2))
+            return false;
+
+        if (!v1)
+            continue;
+
+        if (k == 0) {
+            k = v2 / v1;
+            continue;
+        }
+
+        if (v2 != k * v1)
+            return Fraction(0);
+    }
+
+    return k;
+}
+
 FlipStructureOptimizer FractionalScheme::getStructureOptimizer() const {
     FlipStructureOptimizer optimizer(dimension[0], dimension[1], dimension[2], rank);
 
@@ -862,28 +901,7 @@ bool FractionalScheme::isZeroMatrix(int p, int index) const {
 }
 
 bool FractionalScheme::isLinearlyDependentMatrices(int p, int index1, int index2) const {
-    Fraction k = 0;
-
-    for (int i = 0; i < elements[p]; i++) {
-        Fraction v1 = uvw[p][index1 * elements[p] + i];
-        Fraction v2 = uvw[p][index2 * elements[p] + i];
-
-        if ((!v1) != (!v2))
-            return false;
-
-        if (!v1)
-            continue;
-
-        if (k == 0) {
-            k = v2 / v1;
-            continue;
-        }
-
-        if (v2 != k * v1)
-            return false;
-    }
-
-    return true;
+    return getPairScale(p, index1, index2);
 }
 
 bool FractionalScheme::isPositiveFirstNonZero(int p, int index) const {

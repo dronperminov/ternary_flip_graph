@@ -52,6 +52,10 @@ public:
     std::string getFilename(const std::string &format) const;
     double getFrobeniusNorm() const;
 
+    Fraction get(int p, int row, int i, int j) const;
+    Fraction get(int p, int row, int index) const;
+    Fraction getPairScale(int p, int index1, int index2) const;
+
     FlipStructureOptimizer getStructureOptimizer() const;
     FlipStructureOptimizer getFullStructureOptimizer() const;
 

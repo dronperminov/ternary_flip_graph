@@ -26,6 +26,7 @@ public:
     int getCoefficientsCount() const;
     int getDimension(int index) const;
     std::string getDimension() const;
+    int getElements(int index) const;
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;
     int getIndependentFlips() const;

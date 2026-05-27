@@ -27,6 +27,10 @@ std::string BaseScheme::getDimension() const {
     return ss.str();
 }
 
+int BaseScheme::getElements(int index) const {
+    return elements[index];
+}
+
 int BaseScheme::getAvailableFlips() const {
     return flips[0].size() + flips[1].size() + flips[2].size();
 }
