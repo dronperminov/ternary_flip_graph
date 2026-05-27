@@ -644,6 +644,9 @@ void FractionalScheme::fixFractions() {
 }
 
 bool FractionalScheme::setDimension(int n1, int n2, int n3) {
+    if (dimension[0] == n1 && dimension[1] == n2 && dimension[2] == n3)
+        return true;
+
     if (dimension[0] == n1 && dimension[1] == n3 && dimension[2] == n2) {
         swapDimension(1, 2);
     }
@@ -710,6 +713,17 @@ void FractionalScheme::swapDimension(int p1, int p2) {
         dimension[i] = dimensionNew[i];
         elements[i] = dimensionNew[i] * dimensionNew[(i + 1) % 3];
     }
+}
+
+void FractionalScheme::sortDimension() {
+    if (dimension[0] > dimension[1])
+        swapDimension(0, 1);
+
+    if (dimension[1] > dimension[2])
+        swapDimension(1, 2);
+
+    if (dimension[0] > dimension[1])
+        swapDimension(0, 1);
 }
 
 void FractionalScheme::copy(const FractionalScheme &scheme) {
