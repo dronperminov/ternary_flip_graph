@@ -181,6 +181,9 @@ bool isPowerOfTwo(int n) {
 }
 
 std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath, const std::vector<std::string> &extensions) {
+    if (!std::filesystem::exists(inputPath) || !std::filesystem::is_directory(inputPath))
+        return {};
+
     std::vector<std::string> paths;
 
     for (auto it = std::filesystem::directory_iterator(inputPath); it != std::filesystem::directory_iterator(); it++) {
@@ -196,6 +199,9 @@ std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPat
 }
 
 std::vector<std::string> getSchemePathsFromDirectoryRecursive(const std::string &inputPath, const std::vector<std::string> &extensions) {
+    if (!std::filesystem::exists(inputPath) || !std::filesystem::is_directory(inputPath))
+        return {};
+
     std::vector<std::string> paths;
 
     for (auto it = std::filesystem::recursive_directory_iterator(inputPath); it != std::filesystem::recursive_directory_iterator(); it++) {
@@ -211,13 +217,17 @@ std::vector<std::string> getSchemePathsFromDirectoryRecursive(const std::string 
 }
 
 std::vector<std::string> getSchemePathsFromFile(const std::string &inputPath, const std::vector<std::string> &extensions) {
-    std::vector<std::string> paths;
     std::ifstream f(inputPath);
+    if (!f)
+        return {};
+
+    std::vector<std::string> paths;
     std::string path;
 
     while (std::getline(f, path))
         if (endsWith(path, extensions))
             paths.push_back(path);
 
+    f.close();
     return paths;
 }
