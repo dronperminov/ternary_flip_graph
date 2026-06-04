@@ -52,7 +52,7 @@ public:
 
     FlipStructure optimize(std::mt19937 &generator, int iterations, double eps);
     std::vector<Flip> getFlips() const;
-    int getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) const;
+    std::unordered_map<std::string, int> getSerendipitousRanks(std::mt19937 &generator, const std::unordered_map<std::string, int> &dimension2rank, int iterations, int maxN = 16) const;
     std::vector<std::vector<std::unordered_set<int>>> getGroups(std::mt19937 &generator) const;
 };
 

@@ -242,15 +242,16 @@ std::vector<Flip> FlipStructureOptimizer::getFlips() const {
     return flips;
 }
 
-int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int dimension[3], const std::unordered_map<std::string, int> &dimension2rank, int iterations) const {
-    std::string dim = getDimension(dimension[0], dimension[1], dimension[2], true);
-    if (dimension2rank.find(dim) == dimension2rank.end())
-        return -1;
+std::unordered_map<std::string, int> FlipStructureOptimizer::getSerendipitousRanks(std::mt19937 &generator, const std::unordered_map<std::string, int> &dimension2rank, int iterations, int maxN) const {
+    std::unordered_map<std::string, int> dimension2serendipitousRank;
+
+    for (int n1 = 1; n1 <= maxN; n1++)
+        for (int n2 = n1; n2 <= maxN; n2++)
+            for (int n3 = n2; n3 <= maxN; n3++)
+                dimension2serendipitousRank[getDimension(n1, n2, n3)] = n1*n2*n3;
 
     if (dependentFlips.empty())
         iterations = 1;
-
-    int bestRank = 10000000;
 
     for (int iteration = 0; iteration < iterations; iteration++) {
         std::vector<Flip> selected = selectRandomFlips(dependentFlips, generator);
@@ -267,37 +268,37 @@ int FlipStructureOptimizer::getSerendipitousRank(std::mt19937 &generator, int di
             flipIndices.insert(flip.j);
         }
 
-        int serendipitousRank = (rank - flipIndices.size()) * dimension2rank.at(dim);
+        for (int n1 = 1; n1 <= maxN && dimension[0] * n1 <= maxN; n1++) {
+            for (int n2 = 1; n2 <= maxN && dimension[1] * n2 <= maxN; n2++) {
+                for (int n3 = 1; n3 <= maxN && dimension[2] * n3 <= maxN; n3++) {
+                    if (n1 == 1 && n2 == 1 && n3 == 1)
+                        continue;
 
-        for (const auto& group : u) {
-            std::string groupDimension = getDimension(dimension[0], dimension[1], dimension[2] * group.size(), true);
-            if (dimension2rank.find(groupDimension) == dimension2rank.end())
-                return -1;
+                    int serendipitousRank = (rank - flipIndices.size()) * dimension2rank.at(getDimension(n1, n2, n3, true));
 
-            serendipitousRank += dimension2rank.at(groupDimension);
+                    for (const auto& group : u) {
+                        auto it = dimension2rank.find(getDimension(n1, n2, n3 * group.size(), true));
+                        serendipitousRank += it == dimension2rank.end() ? n1 * n2 * n3 * group.size() : it->second;
+                    }
+
+                    for (const auto& group : v) {
+                        auto it = dimension2rank.find(getDimension(n1 * group.size(), n2, n3, true));
+                        serendipitousRank += it == dimension2rank.end() ? n1 * n2 * n3 * group.size() : it->second;
+                    }
+
+                    for (const auto& group : w) {
+                        auto it = dimension2rank.find(getDimension(n1, n2 * group.size(), n3, true));
+                        serendipitousRank += it == dimension2rank.end() ? n1 * n2 * n3 * group.size() : it->second;
+                    }
+
+                    std::string key = getDimension(dimension[0] * n1, dimension[1] * n2, dimension[2] * n3, true);
+                    dimension2serendipitousRank[key] = std::min(dimension2serendipitousRank.at(key), serendipitousRank);
+                }
+            }
         }
-
-        for (const auto& group : v) {
-            std::string groupDimension = getDimension(dimension[0] * group.size(), dimension[1], dimension[2], true);
-            if (dimension2rank.find(groupDimension) == dimension2rank.end())
-                return -1;
-
-            serendipitousRank += dimension2rank.at(groupDimension);
-        }
-
-        for (const auto& group : w) {
-            std::string groupDimension = getDimension(dimension[0], dimension[1] * group.size(), dimension[2], true);
-            if (dimension2rank.find(groupDimension) == dimension2rank.end())
-                return -1;
-
-            serendipitousRank += dimension2rank.at(groupDimension);
-        }
-
-        if (serendipitousRank < bestRank)
-            bestRank = serendipitousRank;
     }
 
-    return bestRank;
+    return dimension2serendipitousRank;
 }
 
 std::vector<std::vector<std::unordered_set<int>>> FlipStructureOptimizer::getGroups(std::mt19937 &generator) const {

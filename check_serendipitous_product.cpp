@@ -46,20 +46,15 @@ std::string getLogPath(const std::string &outputPath, int thread) {
     return ss.str();
 }
 
-std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
+std::unordered_map<std::string, int> getKnownRanks(const std::string &ring, int maxN = 16) {
     std::unordered_map<std::string, int> dimension2ranks = KNOWN_RANKS.at(ring);
     std::unordered_map<std::string, int> knownRanks;
 
-    for (int i = 1; i <= 16; i++) {
-        for (int j = 1; j <= 16; j++) {
-            for (int k = 1; k <= 16; k++) {
-                std::string key = getDimension(i, j, k, true);
-                std::string dimension = getDimension(i, j, k);
-
-                if (dimension2ranks.find(key) == dimension2ranks.end())
-                    knownRanks[dimension] = i * j * k;
-                else
-                    knownRanks[dimension] = dimension2ranks.at(key);
+    for (int i = 1; i <= maxN; i++) {
+        for (int j = 1; j <= maxN; j++) {
+            for (int k = 1; k <= maxN; k++) {
+                auto it = dimension2ranks.find(getDimension(i, j, k, true));
+                knownRanks[getDimension(i, j, k)] = it == dimension2ranks.end() ? i * j * k : it->second;
             }
         }
     }
@@ -69,34 +64,17 @@ std::unordered_map<std::string, int> getKnownRanks(const std::string &ring) {
 
 bool checkSerendipitousProduct(const FractionalScheme &scheme, std::mt19937 &generator, std::unordered_map<std::string, int> &knownRanks, int iterations, bool showEqualBest) {
     FlipStructureOptimizer optimizer = scheme.getFullStructureOptimizer();
-    int n[3] = {
-        scheme.getDimension(0),
-        scheme.getDimension(1),
-        scheme.getDimension(2)
-    };
-
     bool found = false;
 
-    for (int n1 = 1; n1 <= 16 && n[0] * n1 <= 16; n1++) {
-        for (int n2 = 1; n2 <= 16 && n[1] * n2 <= 16; n2++) {
-            for (int n3 = 1; n3 <= 16 && n[2] * n3 <= 16; n3++) {
-                if (n1 == 1 && n2 == 1 && n3 == 1)
-                    continue;
+    for (const auto& pair : optimizer.getSerendipitousRanks(generator, knownRanks, iterations, 16)) {
+        std::string dimension = pair.first;
+        int serendipitousRank = pair.second;
+        int knownRank = knownRanks.at(dimension);
 
-                int d[3] = {n1, n2, n3};
-                int serendipitousRank = optimizer.getSerendipitousRank(generator, d, knownRanks, iterations);
-                if (serendipitousRank == -1)
-                    continue;
-
-                std::string dimension = getDimension(n1 * n[0], n2 * n[1], n3 * n[2], true);
-                int knownRank = knownRanks.at(dimension);
-
-                if (serendipitousRank < knownRank && (!showEqualBest || serendipitousRank <= KNOWN_RANKS_Q.at(dimension))) {
-                    std::cout << "Serendipitous for " << dimension << ": " << serendipitousRank << " < " << knownRank << std::endl;
-                    knownRanks[dimension] = serendipitousRank + 1;
-                    found = true;
-                }
-            }
+        if (serendipitousRank < knownRank && (!showEqualBest || serendipitousRank <= KNOWN_RANKS_Q.at(dimension))) {
+            std::cout << "Serendipitous for " << dimension << ": " << serendipitousRank << " < " << knownRank << std::endl;
+            knownRanks[dimension] = serendipitousRank + 1;
+            found = true;
         }
     }
 
