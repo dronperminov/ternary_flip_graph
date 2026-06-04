@@ -20,7 +20,7 @@ std::vector<std::string> getSchemePaths(const std::string &inputPath, bool shuff
     std::unordered_map<std::string, std::vector<std::string>> ring2extensions = {
         {"ZT", {"ZT.txt"}},
         {"Z", {"ZT.txt", "Z.txt"}},
-        {"Q", {"ZT.txt", "Z.txt", "Q.txt"}}
+        {"Q", {"ZT.txt", "Z.txt", "Q.txt", "Z2.txt", "Z3.txt"}}
     };
     std::vector<std::string> extensions = ring2extensions.at(ring);
 
