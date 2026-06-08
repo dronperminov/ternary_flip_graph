@@ -32,7 +32,7 @@ public:
     int getIndependentFlips() const;
     double getOmega() const;
 
-    std::string getStructureHash(std::mt19937 &generator) const;
+    std::string getStructureHash() const;
 
     FlipStructureOptimizer getStructureOptimizer() const;
 };

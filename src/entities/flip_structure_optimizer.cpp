@@ -60,7 +60,7 @@ std::vector<std::unordered_set<int>> FlipStructureOptimizer::groupFlips(const st
     std::vector<std::unordered_set<int>> components;
 
     for (const auto &flip : flips) {
-        if (flip.p != p)
+        if (p > -1 && flip.p != p)
             continue;
 
         if (index2component.find(flip.i) == index2component.end()) {
@@ -75,7 +75,7 @@ std::vector<std::unordered_set<int>> FlipStructureOptimizer::groupFlips(const st
     }
 
     for (const auto &flip : flips) {
-        if (flip.p != p)
+        if (p > -1 && flip.p != p)
             continue;
 
         int ci = index2component[flip.i];
@@ -240,6 +240,77 @@ FlipStructure FlipStructureOptimizer::optimize(std::mt19937 &generator, int iter
 
 std::vector<Flip> FlipStructureOptimizer::getFlips() const {
     return flips;
+}
+
+std::string FlipStructureOptimizer::getBudsInvariant() const {
+    std::vector<std::unordered_set<int>> components = groupFlips(flips, -1);
+    std::vector<std::vector<int>> counts(rank, std::vector<int>(3, 0));
+
+    for (const Flip& flip : flips) {
+        counts[flip.i][flip.p] += 1;
+        counts[flip.j][flip.p] += 1;
+    }
+
+    std::unordered_map<std::string, int> part2count;
+    std::string letters = "uvw";
+
+    for (const std::unordered_set<int>& component : components) {
+        std::unordered_map<std::string, int> key2count;
+
+        for (int index : component) {
+            std::vector<std::string> triplet;
+
+            for (int i = 0; i < 3; i++) {
+                int count = counts[index][i];
+
+                if (count > 0)
+                    triplet.push_back((count == 1 ? "" : std::to_string(count)) + letters[i]);
+            }
+
+            std::string key = join(triplet, "");
+
+            if (key2count.find(key) == key2count.end())
+                key2count[key] = 1;
+            else
+                key2count[key] += 1;
+        }
+
+        std::vector<std::string> keys;
+        keys.reserve(key2count.size());
+
+        for (const auto& pair : key2count)
+            keys.push_back(pair.first);
+
+        std::sort(keys.begin(), keys.end());
+        std::vector<std::string> parts;
+
+        for (const std::string& key : keys) {
+            int count = key2count.at(key);
+            parts.push_back((count > 1 ? std::to_string(count) : "") + "<" + key + ">");
+        }
+
+        std::string part = join(parts, "+");
+        if (part2count.find(part) == part2count.end())
+            part2count[part] = 1;
+        else
+            part2count[part] += 1;
+    }
+
+    std::vector<std::string> partKeys;
+    partKeys.reserve(part2count.size());
+
+    for (const auto& pair : part2count)
+        partKeys.push_back(pair.first);
+
+    std::sort(partKeys.begin(), partKeys.end());
+    std::vector<std::string> invariant;
+
+    for (const std::string& key : partKeys) {
+        int count = part2count.at(key);
+        invariant.push_back(key + (count > 1 ? std::to_string(count) : ""));
+    }
+
+    return join(invariant, ", ");
 }
 
 std::unordered_map<std::string, int> FlipStructureOptimizer::getSerendipitousRanks(std::mt19937 &generator, const std::unordered_map<std::string, int> &dimension2rank, int iterations, int maxN) const {

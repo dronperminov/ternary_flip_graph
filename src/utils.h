@@ -21,6 +21,7 @@ std::vector<Fraction> parseFractions(const std::string &values);
 bool makeDirectory(const std::string &path);
 bool endsWith(const std::string &s, const std::string &substr);
 bool endsWith(const std::string &s, const std::vector<std::string> &substrs);
+std::string join(const std::vector<std::string> &values, const std::string& delimeter = "");
 int getMaxMatrixElements(const std::string &path, bool multiple);
 std::vector<std::mt19937> initRandomGenerators(int seed, int count);
 

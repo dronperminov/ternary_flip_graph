@@ -62,29 +62,9 @@ double BaseScheme::getOmega() const {
     return 3 * log(rank) / log(dimension[0] * dimension[1] * dimension[2]);
 }
 
-std::string BaseScheme::getStructureHash(std::mt19937 &generator) const {
+std::string BaseScheme::getStructureHash() const {
     FlipStructureOptimizer optimizer = getStructureOptimizer();
-    std::vector<std::vector<std::unordered_set<int>>> groups = optimizer.getGroups(generator);
-
-    std::vector<std::vector<size_t>> groupSizes(3);
-    for (int i = 0; i < 3; i++) {
-        for (const auto &group : groups[i])
-            groupSizes[i].push_back(group.size());
-
-        std::sort(groupSizes[i].begin(), groupSizes[i].end());
-    }
-
-    std::stringstream ss;
-    for (size_t size : groupSizes[0])
-        ss << "u" << size;
-
-    for (size_t size : groupSizes[1])
-        ss << "v" << size;
-
-    for (size_t size : groupSizes[2])
-        ss << "w" << size;
-
-    return ss.str();
+    return optimizer.getBudsInvariant();
 }
 
 FlipStructureOptimizer BaseScheme::getStructureOptimizer() const {

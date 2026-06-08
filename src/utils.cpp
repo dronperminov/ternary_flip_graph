@@ -107,6 +107,22 @@ bool endsWith(const std::string &s, const std::vector<std::string> &substrs) {
     return false;
 }
 
+std::string join(const std::vector<std::string> &values, const std::string& delimeter) {
+    if (values.empty())
+        return "";
+
+    std::ostringstream os;
+
+    for (auto it = values.begin(); it != values.end(); it++) {
+        os << *it;
+
+        if (std::next(it) != values.end())
+            os << delimeter;
+    }
+
+    return os.str();
+}
+
 int getMaxMatrixElements(const std::string &path, bool multiple) {
     if (std::filesystem::is_directory(path)) {
         std::cout << "Warning: max matrix elements set by default to 64 for directory \"" << path << "\"" << std::endl;

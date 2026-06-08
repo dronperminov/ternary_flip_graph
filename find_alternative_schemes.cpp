@@ -27,9 +27,9 @@ std::string getSavePath(const Scheme &scheme, const std::string &outputPath, int
 }
 
 template <typename Scheme>
-std::string getHash(const Scheme &scheme, const std::string &unique, std::mt19937 &generator) {
+std::string getHash(const Scheme &scheme, const std::string &unique) {
     if (unique == "structure")
-        return scheme.getStructureHash(generator);
+        return scheme.getStructureHash();
 
     return scheme.getHash();
 }
@@ -95,7 +95,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
     std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
     std::unordered_set<std::string> hashes;
-    hashes.insert(getHash(initialScheme, unique, generators[0]));
+    hashes.insert(getHash(initialScheme, unique));
 
     std::vector<Scheme<T>> schemes(threads);
     for (int i = 0; i < threads; i++)
@@ -124,9 +124,7 @@ int runFindAlternativeSchemes(const ArgParser &parser) {
             if (scheme.getRank() != targetRank)
                 continue;
 
-            std::string hash = getHash(scheme, unique, generator);
-            if (hashes.find(hash) == hashes.end())
-                hashesThreads[i] = hash;
+            hashesThreads[i] = getHash(scheme, unique);
         }
 
         for (int i = 0; i < threads; i++) {
