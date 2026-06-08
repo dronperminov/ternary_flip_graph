@@ -76,6 +76,7 @@ int runAnalyzeSchemes(const ArgParser &parser) {
     bool saveBuds = parser.isSet("--save-buds");
     bool saveCoefficientSet = parser.isSet("--save-coefficient-set");
     bool saveTypeInvariant = parser.isSet("--save-type-invariant");
+    bool saveBudsInvariant = parser.isSet("--save-buds-invariant");
     bool saveSignCanonized = parser.isSet("--save-sign-canonized");
     bool saveAll = parser.isSet("--save-all");
 
@@ -99,6 +100,7 @@ int runAnalyzeSchemes(const ArgParser &parser) {
     std::cout << "- buds: " << (saveBuds || saveAll ? "yes" : "no") << std::endl;
     std::cout << "- coefficient set: " << (saveCoefficientSet || saveAll ? "yes" : "no") << std::endl;
     std::cout << "- type invariant: " << (saveTypeInvariant || saveAll ? "yes" : "no") << std::endl;
+    std::cout << "- buds invariant: " << (saveBudsInvariant || saveAll ? "yes" : "no") << std::endl;
 
     std::mt19937 generator(seed);
     std::vector<std::string> paths = getSchemePaths(inputPath, shuffle, generator);
@@ -151,10 +153,14 @@ int runAnalyzeSchemes(const ArgParser &parser) {
         if (saveRing || saveAll)
             line << ", \"ring\": \"" << scheme.getRing() << "\"";
 
-        if (saveBuds || saveAll) {
+        if (saveBuds || saveBudsInvariant || saveAll) {
             FlipStructureOptimizer optimizer = scheme.getFullStructureOptimizer();
-            std::vector<Flip> buds = optimizer.getFlips();
-            line << ", \"buds\": " << buds;
+
+            if (saveBuds || saveAll)
+                line << ", \"buds\": " << optimizer.getFlips();
+
+            if (saveBudsInvariant || saveAll)
+                line << ", \"buds_invariant\": \"" << optimizer.getBudsInvariant() << "\"";
         }
 
         if (saveCoefficientSet || saveAll)
@@ -192,6 +198,7 @@ int main(int argc, char *argv[]) {
     parser.add("--save-buds", "-b", ArgType::Flag, "Save buds indices for U, V and W parts");
     parser.add("--save-coefficient-set", "-cs", ArgType::Flag, "Save unique coefficient set");
     parser.add("--save-type-invariant", "-ti", ArgType::Flag, "Save type invariant");
+    parser.add("--save-buds-invariant", "-bi", ArgType::Flag, "Save buds invariant");
     parser.add("--save-sign-canonized", "-sc", ArgType::Flag, "Save sign canonized check");
     parser.add("--save-all", "-a", ArgType::Flag, "Save all available parameters");
 
