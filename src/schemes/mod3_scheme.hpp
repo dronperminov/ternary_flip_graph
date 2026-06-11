@@ -223,18 +223,12 @@ std::string Mod3Scheme<T>::getHash() const {
 
 template <typename T>
 bool Mod3Scheme<T>::tryFlip(std::mt19937 &generator) {
-    size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();
     size_t sizePos = flips[0].size() + flips[1].size() + flips[2].size();
+    size_t sizeNeg = flipsNeg[0].size() + flipsNeg[1].size() + flipsNeg[2].size();
     size_t size = sizePos + sizeNeg;
 
     if (!size)
         return false;
-
-    if (flipsNeg[0].size() + flipsNeg[1].size() > flips[0].size() + flips[1].size())
-        normalize();
-
-    sizePos = flips[0].size() + flips[1].size() + flips[2].size();
-    size = sizePos + flipsNeg[2].size();
 
     size_t index = generator() % size;
     bool pos = index < sizePos;
@@ -258,11 +252,23 @@ bool Mod3Scheme<T>::tryFlip(std::mt19937 &generator) {
         k = 1;
         index -= flips[0].size() + flips[1].size();
     }
+    else if (index < sizePos + flipsNeg[0].size()) {
+        i = 0;
+        j = 1;
+        k = 2;
+        index -= sizePos;
+    }
+    else if (index < sizePos + flipsNeg[0].size() + flipsNeg[1].size()) {
+        i = 1;
+        j = 0;
+        k = 2;
+        index -= sizePos + flipsNeg[0].size();
+    }
     else {
         i = 2;
         j = 0;
         k = 1;
-        index -= sizePos;
+        index -= sizePos + flipsNeg[0].size() + flipsNeg[1].size();
     }
 
     int index1 = pos ? flips[i].index1(index) : flipsNeg[i].index1(index);
