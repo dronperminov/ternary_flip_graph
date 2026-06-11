@@ -8,6 +8,7 @@ void FlipParameters::parse(const ArgParser &parser) {
     plusDiff = std::stoi(parser["--plus-diff"]);
     sandwichingProbability = std::stod(parser["--sandwiching-probability"]);
     reduceProbability = std::stod(parser["--reduce-probability"]);
+    plusType = parser["--plus-type"];
 }
 
 void FlipParameters::writeJSON(std::ostream &os) const {
@@ -18,7 +19,8 @@ void FlipParameters::writeJSON(std::ostream &os) const {
     os << "\"reset_iterations\": " << resetIterations << ", ";
     os << "\"plus_diff\": " << plusDiff << ", ";
     os << "\"sandwiching_probability\": " << sandwichingProbability << ", ";
-    os << "\"reduce_probability\": " << reduceProbability;
+    os << "\"reduce_probability\": " << reduceProbability << ", ";
+    os << "\"plus_type\": \"" << plusType << "\"";
     os << "}";
 }
 
@@ -30,6 +32,7 @@ std::ostream& operator<<(std::ostream& os, const FlipParameters &flipParameters)
     os << "- plus diff: " << flipParameters.plusDiff << std::endl;
     os << "- sandwiching probability: " << flipParameters.sandwichingProbability << std::endl;
     os << "- reduce probability: " << flipParameters.reduceProbability << std::endl;
+    os << "- plus type: " << flipParameters.plusType << std::endl;
     return os;
 }
 
@@ -42,4 +45,5 @@ void FlipParameters::addToParser(ArgParser &parser, const std::string &sectionNa
     parser.add("--plus-diff", ArgType::UInt, "Maximum rank difference for plus operations", "4");
     parser.add("--sandwiching-probability", ArgType::Real, "Probability of sandwiching operation, from 0.0 to 1.0", "0");
     parser.add("--reduce-probability", ArgType::Real, "Probability of reduce operation, from 0.0 to 1.0", "0");
+    parser.addChoices("--plus-type", ArgType::String, "Type of plus operator", {"plus", "split", "random"}, "random");
 }

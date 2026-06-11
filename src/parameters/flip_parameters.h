@@ -12,6 +12,7 @@ struct FlipParameters {
     int plusDiff;
     double sandwichingProbability;
     double reduceProbability;
+    std::string plusType;
 
     void parse(const ArgParser &parser);
     void writeJSON(std::ostream &os) const;
