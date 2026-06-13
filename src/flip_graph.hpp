@@ -337,8 +337,10 @@ void FlipGraph<Scheme>::randomWalk(Scheme &scheme, Scheme &schemeBest, size_t &f
             iterationsCount = 0;
         }
 
-        if (flipsCount >= plusIterations && rank < bestRank + flipParameters.plusDiff && scheme.tryExpand(generator))
+        if (flipsCount >= plusIterations && rank < bestRank + flipParameters.plusDiff && scheme.tryExpand(generator)) {
             flipsCount = 0;
+            plusIterations = plusDistribution(generator);
+        }
 
         if (iterationsCount >= flipParameters.resetIterations) {
             Scheme &initial = improvements[generator() % improvements.size()];

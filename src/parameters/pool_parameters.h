@@ -9,7 +9,7 @@ struct PoolParameters {
     size_t maxIterations;
     size_t size;
     size_t minSize;
-    bool uniqueOnly;
+    std::string uniqueType;
     std::string selectStrategy;
 
     void parse(const ArgParser &parser);

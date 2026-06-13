@@ -61,6 +61,7 @@ private:
 
     std::string getPoolPath() const;
     std::string getSavePath(const Scheme &scheme, int version, const std::string path) const;
+    std::string getHash(const Scheme &scheme) const;
     void saveScheme(const Scheme &scheme, const std::string &path) const;
     size_t selectScheme(std::mt19937 &generator);
 
@@ -214,8 +215,8 @@ void FlipGraphPool<Scheme>::runIteration() {
     std::string path = getPoolPath();
     for (int i = 0; i < threads; i++) {
         for (const Scheme &scheme : poolIteration[i]) {
-            if (poolParameters.uniqueOnly) {
-                std::string hash = scheme.getHash();
+            if (!poolParameters.uniqueType.empty()) {
+                std::string hash = sha1.get(getHash(scheme));
                 if (hashes.find(hash) != hashes.end())
                     continue;
 
@@ -354,8 +355,10 @@ void FlipGraphPool<Scheme>::randomWalk(Scheme &scheme, size_t &flipsCount, size_
         if (rank < prevRank)
             flipsCount = 0;
 
-        if (flipsCount >= plusIterations && rank < poolRank + 1 + flipParameters.plusDiff && scheme.tryExpand(generator))
+        if (flipsCount >= plusIterations && rank < poolRank + 1 + flipParameters.plusDiff && scheme.tryExpand(generator)) {
             flipsCount = 0;
+            plusIterations = plusDistribution(generator);
+        }
     }
 }
 
@@ -363,8 +366,8 @@ template <typename Scheme>
 std::string FlipGraphPool<Scheme>::getPoolPath() const {
     std::stringstream ss;
     ss << outputPath;
-    ss << "/pool_" << initialPool[0].getDimension();
-    ss << "_rank" + std::to_string(poolRank);
+    ss << "/" << initialPool[0].getDimension();
+    ss << "/rank" + std::to_string(poolRank);
     return ss.str();
 }
 
@@ -374,16 +377,17 @@ std::string FlipGraphPool<Scheme>::getSavePath(const Scheme &scheme, int version
     ss << path << "/";
     ss << scheme.getDimension();
     ss << "_m" << scheme.getRank();
-
-    if (poolParameters.uniqueOnly) {
-        ss << "_" << sha1.get(scheme.getHash());
-    }
-    else {
-        ss << "_version" << std::setfill('0') << std::setw(5) << version;
-    }
-
+    ss << "_" << sha1.get(scheme.getHash());
     ss << "_" << scheme.getRing();
     return ss.str();
+}
+
+template <typename Scheme>
+std::string FlipGraphPool<Scheme>::getHash(const Scheme &scheme) const {
+    if (poolParameters.uniqueType == "structure")
+        return scheme.getStructureHash();
+
+    return scheme.getHash();
 }
 
 template <typename Scheme>
