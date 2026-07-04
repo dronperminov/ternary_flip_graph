@@ -12,7 +12,7 @@
 template <typename Scheme>
 class SchemesPool {
     size_t maxSize;
-    bool uniqueOnly;
+    std::string uniqueType;
     std::string path;
     std::string format;
 
@@ -31,7 +31,7 @@ class SchemesPool {
     std::unordered_set<std::string> hashes;
     SHA1 sha1;
 public:
-    SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format);
+    SchemesPool(size_t maxSize, const std::string uniqueType, const std::string &path, const std::string &format);
 
     size_t size() const;
     size_t getDiff() const;
@@ -41,16 +41,18 @@ public:
     int getMaxFlips() const;
 
     bool add(const Scheme &scheme, bool save);
+    bool contains(const Scheme &scheme) const;
     void copyRandom(Scheme &scheme, std::mt19937 &generator, bool selectUniform = true) const;
     void resetDiff();
 private:
     void saveScheme(const Scheme &scheme);
+    std::string getHash(const Scheme &scheme) const;
 };
 
 template <typename Scheme>
-SchemesPool<Scheme>::SchemesPool(size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format) {
+SchemesPool<Scheme>::SchemesPool(size_t maxSize, const std::string uniqueType, const std::string &path, const std::string &format) {
     this->maxSize = maxSize;
-    this->uniqueOnly = uniqueOnly;
+    this->uniqueType = uniqueType;
     this->path = path;
     this->format = format;
     this->index = 0;
@@ -96,8 +98,8 @@ int SchemesPool<Scheme>::getMaxFlips() const {
 
 template <typename Scheme>
 bool SchemesPool<Scheme>::add(const Scheme &scheme, bool save) {
-    if (uniqueOnly) {
-        std::string hash = sha1.get(scheme.getHash());
+    if (!uniqueType.empty()) {
+        std::string hash = sha1.get(getHash(scheme));
         if (hashes.find(hash) != hashes.end())
             return false;
 
@@ -130,6 +132,12 @@ bool SchemesPool<Scheme>::add(const Scheme &scheme, bool save) {
     changes++;
 
     return true;
+}
+
+template <typename Scheme>
+bool SchemesPool<Scheme>::contains(const Scheme &scheme) const {
+    std::string hash = getHash(scheme);
+    return hashes.find(hash) != hashes.end();
 }
 
 template <typename Scheme>
@@ -180,4 +188,12 @@ void SchemesPool<Scheme>::saveScheme(const Scheme &scheme) {
         scheme.saveJson(ss.str());
     else
         scheme.saveTxt(ss.str());
+}
+
+template <typename Scheme>
+std::string SchemesPool<Scheme>::getHash(const Scheme &scheme) const {
+    if (uniqueType == "structure")
+        return scheme.getStructureHash();
+
+    return scheme.getHash();
 }

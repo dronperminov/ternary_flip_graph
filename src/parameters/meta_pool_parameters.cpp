@@ -3,7 +3,7 @@
 void MetaPoolParameters::parse(const ArgParser &parser) {
     use = parser.isSet("--use-pool");
     size = parseNatural(parser["--pool-size"]);
-    uniqueOnly = parser.isSet("--pool-unique-only");
+    uniqueType = parser["--pool-unique-type"];
     resume = parser.isSet("--resume");
     liftOnly = parser.isSet("--lift-only");
     alternativesProbability = std::stod(parser["--save-alternatives-probability"]);
@@ -22,6 +22,10 @@ void MetaPoolParameters::parse(const ArgParser &parser) {
     projectMinN2 = std::stoi(parser["--project-min-n2"]);
     projectMinN3 = std::stoi(parser["--project-min-n3"]);
 
+    extendMaxN1 = std::stoi(parser["--extend-max-n1"]);
+    extendMaxN2 = std::stoi(parser["--extend-max-n2"]);
+    extendMaxN3 = std::stoi(parser["--extend-max-n3"]);
+
     selectRankScale = std::stod(parser["--select-rank-scale"]);
     metaRankScale = std::stod(parser["--meta-rank-scale"]);
 
@@ -31,7 +35,7 @@ void MetaPoolParameters::parse(const ArgParser &parser) {
 void MetaPoolParameters::writeJSON(std::ostream &os) const {
     os << "{";
     os << "\"size\": " << size << ", ";
-    os << "\"unique_only\": " << (uniqueOnly ? "true" : "false") << ", ";
+    os << "\"unique_type\": \"" << uniqueType << "\", ";
     os << "\"resume\": " << (resume ? "true" : "false") << ", ";
     os << "\"lift_only\": " << (liftOnly ? "true" : "false") << ", ";
     os << "\"save_alternatives_probability\": " << alternativesProbability << ", ";
@@ -44,6 +48,7 @@ void MetaPoolParameters::writeJSON(std::ostream &os) const {
     os << "\"project_probability\": " << projectProbability << ", ";
     os << "\"product_probability\": " << productProbability << ", ";
     os << "\"project_min_n\": [" << projectMinN1 << ", " << projectMinN2 << ", " << projectMinN3 << "], ";
+    os << "\"extend_max_n\": [" << extendMaxN1 << ", " << extendMaxN2 << ", " << extendMaxN3 << "], ";
     os << "\"select_rank_scale\": " << selectRankScale << ", ";
     os << "\"meta_rank_scale\": " << metaRankScale << ", ";
     os << "\"priorities_path\": " << prioritiesPath;
@@ -54,7 +59,7 @@ std::ostream& operator<<(std::ostream& os, const MetaPoolParameters &parameters)
     if (parameters.use) {
         os << "Pool parameters:" << std::endl;
         os << "- size: " << parameters.size << std::endl;
-        os << "- unique only: " << (parameters.uniqueOnly ? "yes" : "no") << std::endl;
+        os << "- unique only: " << (parameters.uniqueType.empty() ? "no" : "yes") << (parameters.uniqueType.empty() ? "" : " (" + parameters.uniqueType + ")") << std::endl;
         os << "- liftable only: " << (parameters.liftOnly ? "yes" : "no") << std::endl;
         os << "- resume: " << (parameters.resume ? "yes" : "no") << std::endl;
         os << "- save alternatives probability: " << parameters.alternativesProbability << std::endl;
@@ -63,6 +68,7 @@ std::ostream& operator<<(std::ostream& os, const MetaPoolParameters &parameters)
         os << "- project parameters (max diff: " << parameters.projectMaxDiff << ", probability: " << parameters.projectProbability << ")" << std::endl;
         os << "- product parameters (max diff: " << parameters.productMaxDiff << ", probability: " << parameters.productProbability << ")" << std::endl;
         os << "- project min N: " << parameters.projectMinN1 << ", " << parameters.projectMinN2 << ", " << parameters.projectMinN3 << std::endl;
+        os << "- extend max N: " << parameters.extendMaxN1 << ", " << parameters.extendMaxN2 << ", " << parameters.extendMaxN3 << std::endl;
         os << "- select rank scale: " << parameters.selectRankScale << std::endl;
         os << "- meta rank scale: " << parameters.metaRankScale << std::endl;
         os << "- priorities path: " << parameters.prioritiesPath << std::endl;
@@ -75,7 +81,7 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.addSection(sectionName);
     parser.add("--use-pool", ArgType::Flag, "Use pool strategy");
     parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
-    parser.add("--pool-unique-only", ArgType::Flag, "Save only unique schemes");
+    parser.addChoices("--pool-unique-type", ArgType::String, "Unique schemes check", {"structure", "coefficients"}, "");
     parser.add("--resume", ArgType::Flag, "Read schemes from output directories as initial");
     parser.add("--lift-only", ArgType::Flag, "Save only schemes that can lift");
     parser.add("--save-alternatives-probability", ArgType::Real, "Save alternative schemes after runner end probability", "0.01");
@@ -90,9 +96,13 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.add("--project-probability", ArgType::Real, "Probability of project operator", "0.8");
     parser.add("--product-probability", ArgType::Real, "Probability of product operator", "0.1");
 
-    parser.add("--project-min-n1", ArgType::Natural, "Min first dimension for project", "2");
-    parser.add("--project-min-n2", ArgType::Natural, "Min second dimension for project", "3");
-    parser.add("--project-min-n3", ArgType::Natural, "Min third dimension for project", "4");
+    parser.add("--project-min-n1", ArgType::Natural, "Min first dimension after project", "2");
+    parser.add("--project-min-n2", ArgType::Natural, "Min second dimension after project", "2");
+    parser.add("--project-min-n3", ArgType::Natural, "Min third dimension after project", "2");
+
+    parser.add("--extend-max-n1", ArgType::Natural, "Max first dimension after extend/merge/product", "16");
+    parser.add("--extend-max-n2", ArgType::Natural, "Max second dimension after extend/merge/product", "16");
+    parser.add("--extend-max-n3", ArgType::Natural, "Max third dimension after extend/merge/product", "16");
 
     parser.add("--select-rank-scale", ArgType::Real, "Scale for pool rank selection", "0.7");
     parser.add("--meta-rank-scale", ArgType::Real, "Scale for make meta operator", "0.5");

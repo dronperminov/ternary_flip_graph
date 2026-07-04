@@ -16,14 +16,14 @@ template <typename Scheme>
 class SchemesRankPool {
     std::string dimension;
     size_t maxSize;
-    bool uniqueOnly;
+    std::string uniqueType;
     std::string path;
     std::string format;
 
     std::vector<int> ranks;
     std::unordered_map<int, SchemesPool<Scheme>> rank2pool;
 public:
-    SchemesRankPool(const std::string &dimension, size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format);
+    SchemesRankPool(const std::string &dimension, size_t maxSize, const std::string &uniqueType, const std::string &path, const std::string &format);
 
     int minRank() const;
     int maxRank() const;
@@ -36,6 +36,7 @@ public:
     double fillRatio(int rank) const;
 
     bool add(const Scheme &scheme, bool save = false);
+    bool contains(const Scheme &scheme) const;
     void copyRandom(Scheme &scheme, std::mt19937 &generator, double alpha) const;
     void copyRandomMinRank(Scheme &scheme, std::mt19937 &generator) const;
     void resetDiff();
@@ -45,10 +46,10 @@ private:
 };
 
 template <typename Scheme>
-SchemesRankPool<Scheme>::SchemesRankPool(const std::string &dimension, size_t maxSize, bool uniqueOnly, const std::string &path, const std::string &format) {
+SchemesRankPool<Scheme>::SchemesRankPool(const std::string &dimension, size_t maxSize, const std::string &uniqueType, const std::string &path, const std::string &format) {
     this->dimension = dimension;
     this->maxSize = maxSize;
-    this->uniqueOnly = uniqueOnly;
+    this->uniqueType = uniqueType;
     this->path = path;
     this->format = format;
 }
@@ -117,12 +118,22 @@ bool SchemesRankPool<Scheme>::add(const Scheme &scheme, bool save) {
         ss << path << "/rank" << rank;
         std::string rankPath = ss.str();
 
-        rank2pool.emplace(rank, SchemesPool<Scheme>(maxSize, uniqueOnly, rankPath, format));
+        rank2pool.emplace(rank, SchemesPool<Scheme>(maxSize, uniqueType, rankPath, format));
         ranks.push_back(rank);
         std::sort(ranks.begin(), ranks.end());
     }
 
     return rank2pool.at(rank).add(scheme, save);
+}
+
+template <typename Scheme>
+bool SchemesRankPool<Scheme>::contains(const Scheme &scheme) const {
+    const auto& it = rank2pool.find(scheme.getRank());
+
+    if (it == rank2pool.end())
+        return false;
+
+    return it->second.contains(scheme);
 }
 
 template <typename Scheme>

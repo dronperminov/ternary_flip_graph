@@ -7,7 +7,7 @@
 struct MetaPoolParameters {
     bool use;
     size_t size;
-    bool uniqueOnly;
+    std::string uniqueType;
     bool resume;
     bool liftOnly;
     double alternativesProbability;
@@ -25,6 +25,10 @@ struct MetaPoolParameters {
     int projectMinN1;
     int projectMinN2;
     int projectMinN3;
+
+    int extendMaxN1;
+    int extendMaxN2;
+    int extendMaxN3;
 
     double selectRankScale;
     double metaRankScale;
