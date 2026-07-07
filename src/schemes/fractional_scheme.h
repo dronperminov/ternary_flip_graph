@@ -11,6 +11,7 @@
 
 #include "../algebra/fraction.h"
 #include "../algebra/matrix.h"
+#include "../algebra/mod_matrix.h"
 #include "../entities/ranks.h"
 #include "../entities/sha1.h"
 #include "base_scheme.h"
@@ -34,6 +35,7 @@ public:
     bool isInteger() const;
     bool isTernary() const;
     bool isSignCanonized() const;
+    bool check2Reduce() const;
 
     int getAvailableFlips() const;
     int getAvailableFlips(int index) const;

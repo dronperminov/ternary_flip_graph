@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <cstdint>
+#include "utils.h"
 
 class Fraction {
     int64_t num;
@@ -19,6 +20,7 @@ public:
     std::string pretty() const;
 
     double toDouble() const;
+    int64_t toModular(int64_t mod) const;
 
     bool isPositive() const;
     bool isInteger() const;

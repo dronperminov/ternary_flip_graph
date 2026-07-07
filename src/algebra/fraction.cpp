@@ -32,6 +32,12 @@ double Fraction::toDouble() const {
     return double(num) / den;
 }
 
+int64_t Fraction::toModular(int64_t mod) const {
+    int64_t numMod = ((num % mod) + mod) % mod;
+    int64_t denMod = modInverse(den, mod);
+    return (numMod * denMod) % mod;
+}
+
 bool Fraction::isPositive() const {
     return num > 0;
 }

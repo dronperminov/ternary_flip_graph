@@ -68,6 +68,7 @@ bool FractionalScheme::reconstruct(int n1, int n2, int n3, int rank, const std::
         if (!uvw[2][i].reconstruct(w[i], mod, bound))
             return false;
 
+    initFlips();
     return true;
 }
 
@@ -164,6 +165,27 @@ bool FractionalScheme::isSignCanonized() const {
             return false;
 
     return true;
+}
+
+bool FractionalScheme::check2Reduce() const {
+    int64_t mod = 1000003;
+
+    for (int p = 2; p >= 0; p--) {
+        int p1 = (p + 1) % 3;
+        int p2 = (p + 2) % 3;
+
+        ModMatrix matrix(rank, elements[p1] * elements[p2], mod);
+
+        for (int index = 0; index < rank; index++)
+            for (int i = 0; i < elements[p1]; i++)
+                for (int j = 0; j < elements[p2]; j++)
+                    matrix(index, i * elements[p2] + j) = (uvw[p1][index * elements[p1] + i] * uvw[p2][index * elements[p2] + j]).toModular(mod);
+
+        if (matrix.rank() < rank)
+            return true;
+    }
+
+    return false;
 }
 
 int FractionalScheme::getAvailableFlips() const {
