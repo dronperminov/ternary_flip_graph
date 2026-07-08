@@ -10,6 +10,7 @@
 
 #include "../entities/ternary_vector.hpp"
 #include "../algebra/matrix.h"
+#include "fractional_scheme.h"
 #include "base_scheme.h"
 
 template <typename T>
@@ -64,6 +65,7 @@ public:
     bool validate() const;
     bool validateParallel() const;
 
+    bool lift(FractionalScheme& lifted, int steps) const;
     bool canLift(int steps) const;
 protected:
     void initFlips();
@@ -872,6 +874,27 @@ bool TernaryScheme<T>::validateParallel() const {
                 valid = valid && validateEquation(i, j, k);
 
     return valid;
+}
+
+template <typename T>
+bool TernaryScheme<T>::lift(FractionalScheme& lifted, int steps) const {
+    std::vector<Fraction> u(rank * elements[0]);
+    std::vector<Fraction> v(rank * elements[1]);
+    std::vector<Fraction> w(rank * elements[2]);
+
+    for (int index = 0; index < rank; index++) {
+        for (int i = 0; i < elements[0]; i++)
+            u[index * elements[0] + i] = Fraction(uvw[0][index][i], 1);
+
+        for (int i = 0; i < elements[1]; i++)
+            v[index * elements[1] + i] = Fraction(uvw[1][index][i], 1);
+
+        for (int i = 0; i < elements[2]; i++)
+            w[index * elements[2] + i] = Fraction(uvw[2][index][i], 1);
+    }
+
+    lifted = std::move(FractionalScheme(dimension[0], dimension[1], dimension[2], rank, u, v, w));
+    return true;
 }
 
 template <typename T>

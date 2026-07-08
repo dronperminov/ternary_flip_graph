@@ -67,6 +67,7 @@ public:
     bool reconstruct(FractionalScheme &scheme) const;
 
     Mod3Lifter toLift() const;
+    bool lift(FractionalScheme& lifted, int steps) const;
     bool canLift(int steps) const;
 private:
     void initFlips();
@@ -875,18 +876,26 @@ Mod3Lifter Mod3Scheme<T>::toLift() const {
 }
 
 template <typename T>
-bool Mod3Scheme<T>::canLift(int steps) const {
-    FractionalScheme liftedScheme;
-    if (reconstruct(liftedScheme) && liftedScheme.validate())
+bool Mod3Scheme<T>::lift(FractionalScheme& lifted, int steps) const {
+    if (reconstruct(lifted) && lifted.validate())
         return true;
+
+    if (steps <= 1)
+        return false;
 
     Mod3Lifter lifter = toLift();
     bool reconstructed = false;
 
-    for (int step = 0; step < steps && !reconstructed && lifter.lift(); step++)
-        reconstructed = lifter.reconstruct(liftedScheme) && liftedScheme.validate();
+    for (int step = 1; step < steps && !reconstructed && lifter.lift(); step++)
+        reconstructed = lifter.reconstruct(lifted) && lifted.validate();
 
     return reconstructed;
+}
+
+template <typename T>
+bool Mod3Scheme<T>::canLift(int steps) const {
+    FractionalScheme lifted;
+    return lift(lifted, steps);
 }
 
 template <typename T>
