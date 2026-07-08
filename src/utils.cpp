@@ -34,6 +34,11 @@ std::string prettyTime(double elapsed) {
     return ss.str();
 }
 
+std::string prettyTime(const std::chrono::high_resolution_clock::time_point& t1, const std::chrono::high_resolution_clock::time_point& t2) {
+    double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / 1000.0;
+    return prettyTime(elapsed);
+}
+
 size_t parseNatural(std::string value) {
     size_t multiplier = 1;
 

@@ -7,12 +7,14 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <chrono>
 #include <algorithm>
 #include <filesystem>
 #include "algebra/fraction.h"
 
 std::string prettyInt(size_t value);
 std::string prettyTime(double elapsed);
+std::string prettyTime(const std::chrono::high_resolution_clock::time_point& t1, const std::chrono::high_resolution_clock::time_point& t2);
 
 size_t parseNatural(std::string value);
 Fraction parseFraction(const std::string &value);
