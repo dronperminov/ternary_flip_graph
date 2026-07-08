@@ -32,3 +32,4 @@ bool isPowerOfTwo(int n);
 std::vector<std::string> getSchemePathsFromDirectory(const std::string &inputPath, const std::vector<std::string> &extensions);
 std::vector<std::string> getSchemePathsFromDirectoryRecursive(const std::string &inputPath, const std::vector<std::string> &extensions);
 std::vector<std::string> getSchemePathsFromFile(const std::string &inputPath, const std::vector<std::string> &extensions);
+std::vector<std::string> getSchemePathsFromPath(const std::string &inputPath, const std::vector<std::string> &extensions, bool recursive);

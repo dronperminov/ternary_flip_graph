@@ -247,3 +247,16 @@ std::vector<std::string> getSchemePathsFromFile(const std::string &inputPath, co
     f.close();
     return paths;
 }
+
+std::vector<std::string> getSchemePathsFromPath(const std::string &inputPath, const std::vector<std::string> &extensions, bool recursive) {
+    if (std::filesystem::is_directory(inputPath))
+        return recursive ? getSchemePathsFromDirectoryRecursive(inputPath, extensions) : getSchemePathsFromDirectory(inputPath, extensions);
+
+    if (endsWith(inputPath, "paths.txt"))
+        return getSchemePathsFromFile(inputPath, extensions);
+
+    if (endsWith(inputPath, extensions))
+        return {inputPath};
+
+    return {};
+}
