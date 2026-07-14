@@ -10,6 +10,7 @@
 
 #include "../entities/ternary_vector.hpp"
 #include "../algebra/matrix.h"
+#include "../algebra/mod_matrix.h"
 #include "fractional_scheme.h"
 #include "base_scheme.h"
 
@@ -32,12 +33,17 @@ public:
     std::string getRing() const;
     std::string getHash() const;
 
+    std::vector<std::vector<int>> getExpressionsU() const;
+    std::vector<std::vector<int>> getExpressionsV() const;
+    std::vector<std::vector<int>> getExpressionsW() const;
+
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
     bool trySplit(std::mt19937 &generator);
     bool tryExpand(std::mt19937 &generator);
     bool trySandwiching(std::mt19937 &generator);
     bool tryReduce();
+    bool check2Reduce() const;
 
     bool tryProject(std::mt19937 &generator, int minN);
     bool tryExtend(std::mt19937 &generator, int maxN, int maxRank);
@@ -236,6 +242,39 @@ std::string TernaryScheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
+}
+
+template <typename T>
+std::vector<std::vector<int>> TernaryScheme<T>::getExpressionsU() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[0], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[0]; i++)
+            expressions[index][i] = uvw[0][index][i];
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> TernaryScheme<T>::getExpressionsV() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[1], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[1]; i++)
+            expressions[index][i] = uvw[1][index][i];
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> TernaryScheme<T>::getExpressionsW() const {
+    std::vector<std::vector<int>> expressions(elements[2], std::vector<int>(rank, 0));
+
+    for (int i = 0; i < elements[2]; i++)
+        for (int index = 0; index < rank; index++)
+            expressions[i][index] = uvw[2][index][i];
+
+    return expressions;
 }
 
 template <typename T>
@@ -462,6 +501,28 @@ bool TernaryScheme<T>::tryReduce() {
             reduceSub(0, index1, index2);
             return true;
         }
+    }
+
+    return false;
+}
+
+template <typename T>
+bool TernaryScheme<T>::check2Reduce() const {
+    int64_t mod = 1000003;
+
+    for (int p = 0; p < 3; p++) {
+        int p1 = (p + 1) % 3;
+        int p2 = (p + 2) % 3;
+
+        ModMatrix matrix(rank, elements[p1] * elements[p2], mod);
+
+        for (int index = 0; index < rank; index++)
+            for (int i = 0; i < elements[p1]; i++)
+                for (int j = 0; j < elements[p2]; j++)
+                    matrix(index, i * elements[p2] + j) = (uvw[p1][index][i] * uvw[p2][index][j] + mod) % mod;
+
+        if (matrix.rank() < rank)
+            return true;
     }
 
     return false;

@@ -32,12 +32,17 @@ public:
     std::string getRing() const;
     std::string getHash() const;
 
+    std::vector<std::vector<int>> getExpressionsU() const;
+    std::vector<std::vector<int>> getExpressionsV() const;
+    std::vector<std::vector<int>> getExpressionsW() const;
+
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
     bool trySplit(std::mt19937 &generator);
     bool tryExpand(std::mt19937 &generator);
     bool trySandwiching(std::mt19937 &generator);
     bool tryReduce();
+    bool check2Reduce() const;
 
     bool tryProject(std::mt19937 &generator, int minN);
     bool tryExtend(std::mt19937 &generator, int maxN, int maxRank);
@@ -220,6 +225,39 @@ std::string Mod3Scheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
+}
+
+template <typename T>
+std::vector<std::vector<int>> Mod3Scheme<T>::getExpressionsU() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[0], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[0]; i++)
+            expressions[index][i] = uvw[0][index][i];
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> Mod3Scheme<T>::getExpressionsV() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[1], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[1]; i++)
+            expressions[index][i] = uvw[1][index][i];
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> Mod3Scheme<T>::getExpressionsW() const {
+    std::vector<std::vector<int>> expressions(elements[2], std::vector<int>(rank, 0));
+
+    for (int i = 0; i < elements[2]; i++)
+        for (int index = 0; index < rank; index++)
+            expressions[i][index] = uvw[2][index][i];
+
+    return expressions;
 }
 
 template <typename T>
@@ -427,6 +465,28 @@ bool Mod3Scheme<T>::tryReduce() {
         int index2 = flipsNeg[1].index2(i);
 
         if (reduce(0, index1, index2, -uvw[2][index1].compare(uvw[2][index2])))
+            return true;
+    }
+
+    return false;
+}
+
+template <typename T>
+bool Mod3Scheme<T>::check2Reduce() const {
+    int64_t mod = 3;
+
+    for (int p = 0; p < 3; p++) {
+        int p1 = (p + 1) % 3;
+        int p2 = (p + 2) % 3;
+
+        ModMatrix matrix(rank, elements[p1] * elements[p2], mod);
+
+        for (int index = 0; index < rank; index++)
+            for (int i = 0; i < elements[p1]; i++)
+                for (int j = 0; j < elements[p2]; j++)
+                    matrix(index, i * elements[p2] + j) = (uvw[p1][index][i] * uvw[p2][index][j] + 3) % 3;
+
+        if (matrix.rank() < rank)
             return true;
     }
 
