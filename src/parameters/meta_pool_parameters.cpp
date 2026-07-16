@@ -81,7 +81,7 @@ void MetaPoolParameters::addToParser(ArgParser &parser, const std::string &secti
     parser.addSection(sectionName);
     parser.add("--use-pool", ArgType::Flag, "Use pool strategy");
     parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
-    parser.addChoices("--pool-unique-type", ArgType::String, "Unique schemes check", {"structure", "coefficients"}, "");
+    parser.addChoices("--pool-unique-type", ArgType::String, "Unique schemes check", {"structure", "coefficients", "type"}, "");
     parser.add("--resume", ArgType::Flag, "Read schemes from output directories as initial");
     parser.add("--lift-only", ArgType::Flag, "Save only schemes that can lift");
     parser.add("--save-alternatives-probability", ArgType::Real, "Save alternative schemes after runner end probability", "0.01");

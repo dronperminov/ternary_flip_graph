@@ -37,6 +37,6 @@ void PoolParameters::addToParser(ArgParser &parser, const std::string &sectionNa
     parser.add("--pool-size", ArgType::Natural, "Optimal size of pool", "1K");
     parser.add("--pool-min-size", ArgType::Natural, "Minimal size of pool", "5");
     parser.add("--pool-max-iterations", ArgType::Natural, "Max random walk iterations to reach min pool size", "1K");
-    parser.addChoices("--pool-unique-type", ArgType::String, "Keep schemes with unique property values (if empty, keep all)", {"structure", "coefficients"}, "");
+    parser.addChoices("--pool-unique-type", ArgType::String, "Keep schemes with unique property values (if empty, keep all)", {"structure", "coefficients", "type"}, "");
     parser.addChoices("--pool-select-strategy", ArgType::String, "Pool selection strategy", {"uniform", "flips"}, "uniform");
 }

@@ -387,6 +387,9 @@ std::string FlipGraphPool<Scheme>::getHash(const Scheme &scheme) const {
     if (poolParameters.uniqueType == "structure")
         return scheme.getStructureHash();
 
+    if (poolParameters.uniqueType == "type")
+        return scheme.getTypeInvariant();
+
     return scheme.getHash();
 }
 

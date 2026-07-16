@@ -195,5 +195,8 @@ std::string SchemesPool<Scheme>::getHash(const Scheme &scheme) const {
     if (uniqueType == "structure")
         return scheme.getStructureHash();
 
+    if (uniqueType == "type")
+        return scheme.getTypeInvariant();
+
     return scheme.getHash();
 }
