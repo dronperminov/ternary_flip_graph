@@ -13,6 +13,7 @@
 #include "../algebra/matrix.h"
 #include "../algebra/mod_matrix.h"
 #include "../entities/ranks.h"
+#include "../entities/invariants_builder.h"
 #include "../entities/sha1.h"
 #include "base_scheme.h"
 

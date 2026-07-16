@@ -10,6 +10,9 @@
 
 #include "../algebra/binary_matrix.h"
 #include "../algebra/binary_solver.h"
+#include "../algebra/mod_matrix.h"
+#include "../entities/ranks.h"
+#include "../entities/invariants_builder.h"
 #include "../entities/uint256_t.h"
 #include "../lift/binary_lifter.h"
 #include "fractional_scheme.h"
@@ -30,6 +33,8 @@ public:
     int getComplexity() const;
     std::string getRing() const;
     std::string getHash() const;
+
+    std::string getTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
@@ -216,6 +221,32 @@ std::string BinaryScheme<T>::getHash() const {
 
     return hash.str();
 }
+
+template <typename T>
+std::string BinaryScheme<T>::getTypeInvariant() const {
+    std::vector<Ranks> ranks;
+
+    for (int index = 0; index < rank; index++) {
+        ModMatrix u(dimension[0], dimension[1], 2);
+        ModMatrix v(dimension[1], dimension[2], 2);
+        ModMatrix w(dimension[2], dimension[0], 2);
+
+        for (int i = 0; i < elements[0]; i++)
+            u[i] = (int)((uvw[0][index] >> i) & 1);
+
+        for (int i = 0; i < elements[1]; i++)
+            v[i] = (int)((uvw[1][index] >> i) & 1);
+
+        for (int i = 0; i < elements[2]; i++)
+            w[i] = (int)((uvw[2][index] >> i) & 1);
+
+        ranks.push_back({u.rank(), v.rank(), w.rank()});
+    }
+
+    InvariantsBuilder invariants(ranks);
+    return invariants.getType();
+}
+
 
 template <typename T>
 std::vector<std::vector<int>> BinaryScheme<T>::getExpressionsU() const {

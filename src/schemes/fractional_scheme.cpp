@@ -473,38 +473,8 @@ std::string FractionalScheme::getTypeInvariant() const {
         ranks.push_back({u.rank(), v.rank(), w.rank()});
     }
 
-    std::unordered_map<Ranks, int> powers;
-    for (int index = 0; index < rank; index++) {
-        auto result = powers.find(ranks[index]);
-
-        if (result == powers.end())
-            powers[ranks[index]] = 1;
-        else
-            result->second++;
-    }
-
-    std::vector<std::string> types;
-    for (const auto &power: powers) {
-        std::stringstream type;
-
-        if (power.second > 1)
-            type << power.second;
-
-        type << power.first;
-        types.push_back(type.str());
-    }
-
-    std::sort(types.begin(), types.end());
-    std::stringstream type;
-
-    for (size_t i = 0; i < types.size(); i++) {
-        if (i > 0)
-            type << "+";
-
-        type << types[i];
-    }
-
-    return type.str();
+    InvariantsBuilder invariants(ranks);
+    return invariants.getType();
 }
 
 bool FractionalScheme::tryFlip(std::mt19937 &generator) {

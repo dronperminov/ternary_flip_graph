@@ -9,6 +9,8 @@
 #include <algorithm>
 
 #include "../entities/ternary_vector.hpp"
+#include "../entities/ranks.h"
+#include "../entities/invariants_builder.h"
 #include "../algebra/matrix.h"
 #include "../algebra/mod_matrix.h"
 #include "fractional_scheme.h"
@@ -32,6 +34,8 @@ public:
     int getComplexity() const;
     std::string getRing() const;
     std::string getHash() const;
+
+    std::string getTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
@@ -242,6 +246,31 @@ std::string TernaryScheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
+}
+
+template <typename T>
+std::string TernaryScheme<T>::getTypeInvariant() const {
+    std::vector<Ranks> ranks;
+
+    for (int index = 0; index < rank; index++) {
+        Matrix u(dimension[0], dimension[1]);
+        Matrix v(dimension[1], dimension[2]);
+        Matrix w(dimension[2], dimension[0]);
+
+        for (int i = 0; i < elements[0]; i++)
+            u[i] = uvw[0][index][i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[i] = uvw[1][index][i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[i] = uvw[2][index][i];
+
+        ranks.push_back({u.rank(), v.rank(), w.rank()});
+    }
+
+    InvariantsBuilder invariants(ranks);
+    return invariants.getType();
 }
 
 template <typename T>

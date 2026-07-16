@@ -9,7 +9,10 @@
 #include <algorithm>
 
 #include "../entities/mod3_vector.hpp"
+#include "../entities/ranks.h"
+#include "../entities/invariants_builder.h"
 #include "../algebra/matrix.h"
+#include "../algebra/mod_matrix.h"
 #include "../lift/mod3_lifter.h"
 #include "fractional_scheme.h"
 #include "base_scheme.h"
@@ -31,6 +34,8 @@ public:
     int getComplexity() const;
     std::string getRing() const;
     std::string getHash() const;
+
+    std::string getTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
@@ -225,6 +230,31 @@ std::string Mod3Scheme<T>::getHash() const {
         hash << lines[index];
 
     return hash.str();
+}
+
+template <typename T>
+std::string Mod3Scheme<T>::getTypeInvariant() const {
+    std::vector<Ranks> ranks;
+
+    for (int index = 0; index < rank; index++) {
+        ModMatrix u(dimension[0], dimension[1], 3);
+        ModMatrix v(dimension[1], dimension[2], 3);
+        ModMatrix w(dimension[2], dimension[0], 3);
+
+        for (int i = 0; i < elements[0]; i++)
+            u[i] = uvw[0][index][i];
+
+        for (int i = 0; i < elements[1]; i++)
+            v[i] = uvw[1][index][i];
+
+        for (int i = 0; i < elements[2]; i++)
+            w[i] = uvw[2][index][i];
+
+        ranks.push_back({u.rank(), v.rank(), w.rank()});
+    }
+
+    InvariantsBuilder invariants(ranks);
+    return invariants.getType();
 }
 
 template <typename T>
