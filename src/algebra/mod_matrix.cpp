@@ -57,6 +57,57 @@ int ModMatrix::rank() const {
     return rank;
 }
 
+bool ModMatrix::solve(const std::vector<int64_t> &b, std::vector<int64_t> &x) {
+    ModMatrix augmented(rows, columns + 1, mod);
+    std::vector<int> pivotCol(rows, -1);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++)
+            augmented(i, j) = values[i * columns + j];
+
+        augmented(i, columns) = b[i];
+    }
+
+    int rank = 0;
+    std::vector<int> rowIndices(rows);
+    for (int i = 0; i < rows; i++)
+        rowIndices[i] = i;
+
+    for (int column = 0; column < columns && rank < rows; column++) {
+        int pivotRow = rank;
+        while (pivotRow < rows && !augmented(rowIndices[pivotRow], column))
+            pivotRow++;
+
+        if (pivotRow == rows)
+            continue;
+
+        if (pivotRow != rank)
+            std::swap(rowIndices[rank], rowIndices[pivotRow]);
+
+        int pivot = modInverse(augmented(rowIndices[rank], column), mod);
+        augmented.multiplyRow(rowIndices[rank], pivot, column);
+
+        for (int row = 0; row < rows; row++) {
+            int value = augmented(rowIndices[row], column);
+
+            if (row != rank && value)
+                augmented.subtractRow(rowIndices[row], rowIndices[rank], value, column);
+        }
+
+        pivotCol[rank++] = column;
+    }
+
+    for (int i = rank; i < rows; i++)
+        if (augmented(rowIndices[i], columns))
+            return false;
+
+    x.assign(columns, 0);
+    for (int i = 0; i < rank; i++)
+        x[pivotCol[i]] = augmented(rowIndices[i], columns);
+
+    return true;
+}
+
 void ModMatrix::swapRows(int row1, int row2, int column) {
     for (int i = column; i < columns; i++)
         std::swap(values[row1 * columns + i], values[row2 * columns + i]);

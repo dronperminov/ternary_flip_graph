@@ -13,9 +13,11 @@
 #include "src/entities/sha1.h"
 #include "src/schemes/binary_scheme.hpp"
 #include "src/schemes/mod3_scheme.hpp"
+#include "src/schemes/mod_scheme.hpp"
 #include "src/schemes/fractional_scheme.h"
 #include "src/lift/binary_lifter.h"
 #include "src/lift/mod3_lifter.h"
+#include "src/lift/mod_lifter.h"
 
 std::vector<std::string> getSchemePaths(const std::string &inputPath) {
     if (std::filesystem::is_regular_file(inputPath))
@@ -29,7 +31,7 @@ std::vector<std::string> getSchemePaths(const std::string &inputPath) {
     return paths;
 }
 
-template <template<typename> typename Scheme, typename T>
+template <typename Scheme>
 int runLiftSchemes(const ArgParser &parser) {
     std::string inputPath = parser["--input-path"];
     std::string outputPath = parser["--output-path"];
@@ -41,7 +43,6 @@ int runLiftSchemes(const ArgParser &parser) {
 
     int threads = std::stoi(parser["--threads"]);
     std::string format = parser["--format"];
-    int maxMatrixElements = sizeof(T) * 8;
 
     if (!makeDirectory(outputPath))
         return -1;
@@ -54,7 +55,6 @@ int runLiftSchemes(const ArgParser &parser) {
     std::cout << "- fix fractions: " << (fixFractions ? "yes" : "no") << std::endl;
     std::cout << "- threads: " << threads << std::endl;
     std::cout << "- format: " << format << std::endl;
-    std::cout << "- max matrix elements: " << maxMatrixElements << " (uint" << maxMatrixElements << "_t)" << std::endl;
     std::cout << std::endl << std::endl;
 
     std::vector<std::string> paths = getSchemePaths(inputPath);
@@ -78,7 +78,7 @@ int runLiftSchemes(const ArgParser &parser) {
 
         auto t1 = std::chrono::high_resolution_clock::now();
 
-        Scheme<T> scheme;
+        Scheme scheme;
         if (!scheme.read(paths[i], !parser.isSet("--no-verify"))) {
             status = "invalid scheme";
             steps = -1;
@@ -149,23 +149,23 @@ int runLiftSchemesSizes(const ArgParser &parser) {
         return -1;
 
     if (maxMatrixElements <= 16)
-        return runLiftSchemes<Scheme, uint16_t>(parser);
+        return runLiftSchemes<Scheme<uint16_t>>(parser);
 
     if (maxMatrixElements <= 32)
-        return runLiftSchemes<Scheme, uint32_t>(parser);
+        return runLiftSchemes<Scheme<uint32_t>>(parser);
 
     if (maxMatrixElements <= 64)
-        return runLiftSchemes<Scheme, uint64_t>(parser);
+        return runLiftSchemes<Scheme<uint64_t>>(parser);
 
     if (maxMatrixElements <= 128)
-        return runLiftSchemes<Scheme, __uint128_t>(parser);
+        return runLiftSchemes<Scheme<__uint128_t>>(parser);
 
-    return runLiftSchemes<Scheme, uint256_t>(parser);
+    return runLiftSchemes<Scheme<uint256_t>>(parser);
 }
 
 int main(int argc, char *argv[]) {
     ArgParser parser("lift", "Lift schemes from Z2/Z3 field to general");
-    parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2}", {"Z2", "Z3"}, "", true);
+    parser.addChoices("--ring", "-r", ArgType::String, "Coefficient ring: Z2 - {0, 1}, Z3 - {0, 1, 2}", {"Z2", "Z3", "Z5", "Z7"}, "", true);
     parser.add("--threads", "-t", ArgType::Natural, "Number of OpenMP threads", std::to_string(omp_get_max_threads()));
     parser.addChoices("--format", "-f", ArgType::String, "Output format for saved schemes", {"json", "txt"}, "json");
 
@@ -190,6 +190,12 @@ int main(int argc, char *argv[]) {
 
     if (parser["--ring"] == "Z3")
         return runLiftSchemesSizes<Mod3Scheme>(parser);
+
+    if (parser["--ring"] == "Z5")
+        return runLiftSchemes<ModScheme<5>>(parser);
+
+    if (parser["--ring"] == "Z7")
+        return runLiftSchemes<ModScheme<7>>(parser);
 
     return 0;
 }

@@ -1,9 +1,9 @@
 CXX = g++
 FLAGS = -Wall -O3 -std=c++17 -fopenmp
 ALGEBRA_OBJECTS = src/algebra/fraction.o src/algebra/matrix.o src/algebra/binary_matrix.o src/algebra/mod_matrix.o src/algebra/binary_solver.o src/algebra/mod3_solver.o src/algebra/utils.o
-ENTITIES_OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o src/entities/ranks.o src/entities/invariants_builder.o src/entities/flip_structure_optimizer.o src/entities/uint256_t.o src/entities/sha1.o src/entities/ternary_vector.o src/entities/mod3_vector.o src/entities/buffer_writer.o src/entities/schemes_loader.o
+ENTITIES_OBJECTS = src/entities/arg_parser.o src/entities/flip_set.o src/entities/ranks.o src/entities/invariants_builder.o src/entities/flip_structure_optimizer.o src/entities/uint256_t.o src/entities/sha1.o src/entities/ternary_vector.o src/entities/mod3_vector.o src/entities/mod_vector.o src/entities/buffer_writer.o src/entities/schemes_loader.o
 PARAMETERS_OBJECTS = src/parameters/flip_parameters.o src/parameters/meta_parameters.o src/parameters/pool_parameters.o src/parameters/meta_pool_parameters.o src/parameters/metrics_parameters.o src/parameters/sandwiching_parameters.o src/parameters/sandwich_flip_parameters.o src/parameters/scale_parameters.o src/parameters/plus_parameters.o
-LIFT_OBJECTS = src/lift/binary_lifter.o src/lift/mod3_lifter.o
+LIFT_OBJECTS = src/lift/binary_lifter.o src/lift/mod3_lifter.o src/lift/mod_lifter.o
 SCHEMES_OBJECTS = src/schemes/base_scheme.o src/schemes/binary_scheme.o src/schemes/mod3_scheme.o src/schemes/ternary_scheme.o src/schemes/fractional_scheme.o
 OBJECTS = $(ALGEBRA_OBJECTS) ${ENTITIES_OBJECTS} ${PARAMETERS_OBJECTS} $(LIFT_OBJECTS) $(SCHEMES_OBJECTS) src/utils.o src/known_ranks.o src/sandwich_flip_optimizer.o
 

@@ -39,7 +39,7 @@ struct Mod3Vector {
     friend std::ostream& operator<<(std::ostream &os, const Mod3Vector<T1> &vector);
 
     template <typename T1>
-    friend std::istream& operator>>(std::ostream &is, Mod3Vector<T1> &vector);
+    friend std::istream& operator>>(std::istream &is, Mod3Vector<T1> &vector);
 };
 
 template <typename T>

@@ -21,6 +21,8 @@ public:
 
     int rank() const;
 
+    bool solve(const std::vector<int64_t> &b, std::vector<int64_t> &x);
+
     void swapRows(int row1, int row2, int column = 0);
     void multiplyRow(int row, int64_t multiplier, int column = 0);
     void subtractRow(int row1, int row2, int64_t value, int column = 0);
