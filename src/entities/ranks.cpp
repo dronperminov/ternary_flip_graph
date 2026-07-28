@@ -5,6 +5,16 @@ bool Ranks::operator==(const Ranks &ranks) const {
 }
 
 bool Ranks::operator<(const Ranks &ranks) const {
+    int uvw1 = u + v + w;
+    int uvw2 = ranks.u + ranks.v + ranks.w;
+    if (uvw1 != uvw2)
+        return uvw1 < uvw2;
+
+    int uv1 = u + v;
+    int uv2 = ranks.u + ranks.v;
+    if (uv1 != uv2)
+        return uv1 < uv2;
+
     if (u != ranks.u)
         return u < ranks.u;
 

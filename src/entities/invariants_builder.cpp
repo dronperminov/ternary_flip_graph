@@ -5,29 +5,30 @@ InvariantsBuilder::InvariantsBuilder(const std::vector<Ranks> &ranks) {
 }
 
 std::string InvariantsBuilder::getType() const {
+    std::vector<Ranks> uniqueRanks;
     std::unordered_map<Ranks, int> powers;
-    for (const Ranks& rankTriplet : ranks)
+
+    for (const Ranks& rankTriplet : ranks) {
+        if (powers.find(rankTriplet) == powers.end())
+            uniqueRanks.push_back(rankTriplet);
+
         powers[rankTriplet]++;
-
-    std::vector<std::string> types;
-    for (const auto &power: powers) {
-        std::stringstream type;
-
-        if (power.second > 1)
-            type << power.second;
-
-        type << power.first;
-        types.push_back(type.str());
     }
 
-    std::sort(types.begin(), types.end());
+    std::sort(uniqueRanks.begin(), uniqueRanks.end());
     std::stringstream type;
+    bool printed = false;
 
-    for (size_t i = 0; i < types.size(); i++) {
-        if (i > 0)
+    for (const Ranks& rankTriplet : uniqueRanks) {
+        if (printed)
             type << "+";
 
-        type << types[i];
+        int power = powers[rankTriplet];
+        if (power > 1)
+            type << power;
+
+        type << rankTriplet;
+        printed = true;
     }
 
     return type.str();
