@@ -12,6 +12,7 @@ void SandwichFlipParameters::parse(const ArgParser &parser) {
     maxDenominator = parser.isSet("--max-denominator") ? std::stoi(parser["--max-denominator"]) : INT_MAX;
     maxNumerator = parser.isSet("--max-numerator") ? std::stoi(parser["--max-numerator"]) : INT_MAX;
     maxWeight = parser.isSet("--max-weight") ? std::stoi(parser["--max-weight"]) : INT_MAX;
+    maxUniqueSet = parser.isSet("--max-unique-set") ? std::stoi(parser["--max-unique-set"]) : INT_MAX;
 
     fixFractions = parser.isSet("--fix-fractions");
     check = parser["--weight-check"];
@@ -26,7 +27,7 @@ std::ostream& operator<<(std::ostream& os, const SandwichFlipParameters &paramet
     os << "- fix fractions: " << (parameters.fixFractions ? "yes" : "no") << std::endl;
     os << "- check sequence: " << parameters.check << std::endl;
 
-    if (parameters.maxFractions < INT_MAX || parameters.maxDenominator < INT_MAX || parameters.maxNumerator < INT_MAX || parameters.maxWeight < INT_MAX) {
+    if (parameters.maxFractions < INT_MAX || parameters.maxDenominator < INT_MAX || parameters.maxNumerator < INT_MAX || parameters.maxWeight < INT_MAX || parameters.maxUniqueSet < INT_MAX) {
         os << "- restrictions on parameters:" << std::endl;
 
         if (parameters.maxFractions < INT_MAX)
@@ -37,6 +38,8 @@ std::ostream& operator<<(std::ostream& os, const SandwichFlipParameters &paramet
             os << "  - max numerator: " << parameters.maxNumerator << std::endl;
         if (parameters.maxWeight < INT_MAX)
             os << "  - max weight: " << parameters.maxWeight << std::endl;
+        if (parameters.maxUniqueSet < INT_MAX)
+            os << "  - max unique set: " << parameters.maxUniqueSet << std::endl;
     }
 
     return os;
@@ -55,6 +58,7 @@ void SandwichFlipParameters::addToParser(ArgParser &parser, const std::string &s
     parser.add("--max-denominator", ArgType::Natural, "Maximum denominator of scheme");
     parser.add("--max-numerator", ArgType::Natural, "Maximum numerator of scheme");
     parser.add("--max-weight", ArgType::Natural, "Maximum weight of scheme");
+    parser.add("--max-unique-set", ArgType::Natural, "Maximum number of scheme unique coefficients");
 
     parser.add("--fix-fractions", ArgType::Flag, "Try to convert fractions to integers");
     parser.add("--weight-check", ArgType::String, "Sequence to check metrics", "dfnw");

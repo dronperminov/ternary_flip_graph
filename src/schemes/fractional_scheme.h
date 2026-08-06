@@ -43,6 +43,7 @@ public:
     int getIndependentFlips() const;
     int getFractionsCount() const;
     int getFractionsCount(int index) const;
+    int getUniqueValuesCount() const;
     int getComplexity() const;
     int64_t getWeight() const;
     int getMaxAbsNumerator() const;

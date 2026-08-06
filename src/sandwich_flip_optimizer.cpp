@@ -35,6 +35,10 @@ bool SandwichFlipOptimizer::initializeFromFile(const std::string &path, bool che
 
     addImprovement(scheme);
 
+    #pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < count; i++)
+        bestSchemes[i].copy(scheme);
+
     noVerify = !checkCorrectness;
     bestWeight = getWeight(scheme, generators[0]);
 
@@ -57,6 +61,7 @@ bool SandwichFlipOptimizer::initializeFromFile(const std::string &path, bool che
     std::cout << "- max abs value: " << bestWeight.numerator << " (count: " << bestWeight.numeratorCount << ")" << std::endl;
     std::cout << "- weight: " << bestWeight.weight << std::endl;
     std::cout << "- complexity: " << bestWeight.complexity << std::endl;
+    std::cout << "- unique coefficients: " << bestWeight.uniqueSet << std::endl;
     std::cout << std::endl;
 
     double sumP = sandwichingParameters.probability + scaleParameters.probability;
@@ -119,6 +124,7 @@ void SandwichFlipOptimizer::run(size_t maxNoImprovements) {
             std::cout << std::setw(7) << bestWeight.numeratorCount << " | ";
             std::cout << std::setw(10) << bestWeight.weight << " | ";
             std::cout << std::setw(10) << bestWeight.complexity << " | ";
+            std::cout << std::setw(5) << bestWeight.uniqueSet << " | ";
             std::cout << std::setw(11) << prettyTime(elapsedTime) << " |";
             std::cout << std::endl;
         }
@@ -404,6 +410,9 @@ void SandwichFlipOptimizer::printHeader() const {
     headers1.push_back("  naive   ");
     headers2.push_back("complexity");
 
+    headers1.push_back("coefs");
+    headers2.push_back(" set ");
+
     headers1.push_back("  elapsed  ");
     headers2.push_back("    time   ");
 
@@ -446,11 +455,12 @@ Weight SandwichFlipOptimizer::getWeight(const FractionalScheme &scheme, std::mt1
     weight.numeratorCount = scheme.getAbsNumeratorCount(weight.numerator);
     weight.weight = scheme.getWeight();
     weight.complexity = scheme.getComplexity();
+    weight.uniqueSet = scheme.getUniqueValuesCount();
     return weight;
 }
 
 bool SandwichFlipOptimizer::compareWeight(const Weight &w1, const Weight &w2) {
-    if (w1.fractions > sandwichFlipParameters.maxFractions || w1.denominator > sandwichFlipParameters.maxDenominator || w1.numerator > sandwichFlipParameters.maxNumerator || w1.weight > sandwichFlipParameters.maxWeight)
+    if (w1.fractions > sandwichFlipParameters.maxFractions || w1.denominator > sandwichFlipParameters.maxDenominator || w1.numerator > sandwichFlipParameters.maxNumerator || w1.weight > sandwichFlipParameters.maxWeight || w1.uniqueSet > sandwichFlipParameters.maxUniqueSet)
         return false;
 
     if (sandwichFlipParameters.minimizeNorm && w1.norm != w2.norm)
@@ -522,6 +532,9 @@ bool SandwichFlipOptimizer::compareWeight(const Weight &w1, const Weight &w2) {
 
         if (c == 'c' && w1.complexity != w2.complexity)
             return w1.complexity < w2.complexity;
+
+        if (c == 's' && w1.uniqueSet != w2.uniqueSet)
+            return w1.uniqueSet < w2.uniqueSet;
     }
 
     return false;

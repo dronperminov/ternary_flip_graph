@@ -17,6 +17,7 @@ struct SandwichFlipParameters {
     int maxDenominator;
     int maxNumerator;
     int maxWeight;
+    int maxUniqueSet;
 
     bool fixFractions;
     std::string check;

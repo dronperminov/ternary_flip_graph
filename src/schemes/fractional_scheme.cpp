@@ -236,6 +236,16 @@ int FractionalScheme::getFractionsCount(int index) const {
     return count;
 }
 
+int FractionalScheme::getUniqueValuesCount() const {
+    std::unordered_set<Fraction> unique;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < rank * elements[i]; j++)
+            unique.insert(uvw[i][j]);
+
+    return unique.size();
+}
+
 int FractionalScheme::getComplexity() const {
     int complexity = 0;
 

@@ -28,6 +28,7 @@ struct Weight {
     int numeratorCount;
     int weight;
     int complexity;
+    int uniqueSet;
     double norm;
 };
 
