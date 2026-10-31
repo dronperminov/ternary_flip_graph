@@ -63,7 +63,10 @@ public:
     FlipStructureOptimizer getStructureOptimizer() const;
     FlipStructureOptimizer getFullStructureOptimizer() const;
 
+    std::vector<Ranks> getRanks() const;
     std::string getTypeInvariant() const;
+    std::string getMinTypeInvariant() const;
+    std::string getInvariantF() const;
 
     bool tryFlip(std::mt19937 &generator);
     void plus(std::mt19937 &generator);

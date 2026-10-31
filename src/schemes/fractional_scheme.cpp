@@ -463,7 +463,7 @@ FlipStructureOptimizer FractionalScheme::getFullStructureOptimizer() const {
     return optimizer;
 }
 
-std::string FractionalScheme::getTypeInvariant() const {
+std::vector<Ranks> FractionalScheme::getRanks() const {
     std::vector<Ranks> ranks;
 
     for (int index = 0; index < rank; index++) {
@@ -483,8 +483,22 @@ std::string FractionalScheme::getTypeInvariant() const {
         ranks.push_back({u.rank(), v.rank(), w.rank()});
     }
 
-    InvariantsBuilder invariants(ranks);
-    return invariants.getType();
+    return ranks;
+}
+
+std::string FractionalScheme::getTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
+    return InvariantsBuilder(ranks).getType();
+}
+
+std::string FractionalScheme::getMinTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
+    return InvariantsBuilder(ranks).getMinType();
+}
+
+std::string FractionalScheme::getInvariantF() const {
+    std::vector<Ranks> ranks = getRanks();
+    return InvariantsBuilder(ranks).getF();
 }
 
 bool FractionalScheme::tryFlip(std::mt19937 &generator) {

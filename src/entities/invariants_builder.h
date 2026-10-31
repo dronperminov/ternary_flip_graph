@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <tuple>
 #include <vector>
 #include <unordered_map>
 #include "ranks.h"
@@ -12,4 +13,6 @@ public:
     InvariantsBuilder(const std::vector<Ranks> &ranks);
 
     std::string getType() const;
+    std::string getMinType() const;
+    std::string getF() const;
 };
