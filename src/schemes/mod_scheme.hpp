@@ -35,7 +35,9 @@ public:
     std::string getRing() const;
     std::string getHash() const;
 
+    std::vector<Ranks> getRanks() const;
     std::string getTypeInvariant() const;
+    std::string getMinTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
@@ -233,7 +235,7 @@ std::string ModScheme<M>::getHash() const {
 }
 
 template <int64_t M>
-std::string ModScheme<M>::getTypeInvariant() const {
+std::vector<Ranks> ModScheme<M>::getRanks() const {
     std::vector<Ranks> ranks;
 
     for (int index = 0; index < rank; index++) {
@@ -253,8 +255,21 @@ std::string ModScheme<M>::getTypeInvariant() const {
         ranks.push_back({u.rank(), v.rank(), w.rank()});
     }
 
+    return ranks;
+}
+
+template <int64_t M>
+std::string ModScheme<M>::getTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
     InvariantsBuilder invariants(ranks);
     return invariants.getType();
+}
+
+template <int64_t M>
+std::string ModScheme<M>::getMinTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
+    InvariantsBuilder invariants(ranks);
+    return invariants.getMinType();
 }
 
 template <int64_t M>

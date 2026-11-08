@@ -35,11 +35,14 @@ public:
     std::string getRing() const;
     std::string getHash() const;
 
+    std::vector<Ranks> getRanks() const;
     std::string getTypeInvariant() const;
+    std::string getMinTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
     std::vector<std::vector<int>> getExpressionsW() const;
+    std::vector<std::vector<int>> getExpressionsWT() const;
 
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
@@ -249,7 +252,7 @@ std::string TernaryScheme<T>::getHash() const {
 }
 
 template <typename T>
-std::string TernaryScheme<T>::getTypeInvariant() const {
+std::vector<Ranks> TernaryScheme<T>::getRanks() const {
     std::vector<Ranks> ranks;
 
     for (int index = 0; index < rank; index++) {
@@ -269,8 +272,21 @@ std::string TernaryScheme<T>::getTypeInvariant() const {
         ranks.push_back({u.rank(), v.rank(), w.rank()});
     }
 
+    return ranks;
+}
+
+template <typename T>
+std::string TernaryScheme<T>::getTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
     InvariantsBuilder invariants(ranks);
     return invariants.getType();
+}
+
+template <typename T>
+std::string TernaryScheme<T>::getMinTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
+    InvariantsBuilder invariants(ranks);
+    return invariants.getMinType();
 }
 
 template <typename T>
@@ -302,6 +318,17 @@ std::vector<std::vector<int>> TernaryScheme<T>::getExpressionsW() const {
     for (int i = 0; i < elements[2]; i++)
         for (int index = 0; index < rank; index++)
             expressions[i][index] = uvw[2][index][i];
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> TernaryScheme<T>::getExpressionsWT() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[2], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[2]; i++)
+            expressions[index][i] = uvw[2][index][i];
 
     return expressions;
 }

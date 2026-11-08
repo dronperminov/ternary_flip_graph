@@ -34,11 +34,14 @@ public:
     std::string getRing() const;
     std::string getHash() const;
 
+    std::vector<Ranks> getRanks() const;
     std::string getTypeInvariant() const;
+    std::string getMinTypeInvariant() const;
 
     std::vector<std::vector<int>> getExpressionsU() const;
     std::vector<std::vector<int>> getExpressionsV() const;
     std::vector<std::vector<int>> getExpressionsW() const;
+    std::vector<std::vector<int>> getExpressionsWT() const;
 
     bool tryFlip(std::mt19937 &generator);
     bool tryPlus(std::mt19937 &generator);
@@ -223,7 +226,7 @@ std::string BinaryScheme<T>::getHash() const {
 }
 
 template <typename T>
-std::string BinaryScheme<T>::getTypeInvariant() const {
+std::vector<Ranks> BinaryScheme<T>::getRanks() const {
     std::vector<Ranks> ranks;
 
     for (int index = 0; index < rank; index++) {
@@ -243,10 +246,22 @@ std::string BinaryScheme<T>::getTypeInvariant() const {
         ranks.push_back({u.rank(), v.rank(), w.rank()});
     }
 
+    return ranks;
+}
+
+template <typename T>
+std::string BinaryScheme<T>::getTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
     InvariantsBuilder invariants(ranks);
     return invariants.getType();
 }
 
+template <typename T>
+std::string BinaryScheme<T>::getMinTypeInvariant() const {
+    std::vector<Ranks> ranks = getRanks();
+    InvariantsBuilder invariants(ranks);
+    return invariants.getMinType();
+}
 
 template <typename T>
 std::vector<std::vector<int>> BinaryScheme<T>::getExpressionsU() const {
@@ -277,6 +292,17 @@ std::vector<std::vector<int>> BinaryScheme<T>::getExpressionsW() const {
     for (int i = 0; i < elements[2]; i++)
         for (int index = 0; index < rank; index++)
             expressions[i][index] = (uvw[2][index] >> i) & 1;
+
+    return expressions;
+}
+
+template <typename T>
+std::vector<std::vector<int>> BinaryScheme<T>::getExpressionsWT() const {
+    std::vector<std::vector<int>> expressions(rank, std::vector<int>(elements[2], 0));
+
+    for (int index = 0; index < rank; index++)
+        for (int i = 0; i < elements[2]; i++)
+            expressions[index][i] = (uvw[2][index] >> i) & 1;
 
     return expressions;
 }
@@ -377,9 +403,43 @@ bool BinaryScheme<T>::trySandwiching(std::mt19937 &generator) {
     BinaryMatrix v1(dimension[1], dimension[1]);
     BinaryMatrix w1(dimension[2], dimension[2]);
 
-    u.randomInvertible(u1, generator);
-    v.randomInvertible(v1, generator);
-    w.randomInvertible(w1, generator);
+    int variant = generator() % 7;
+
+    u.identity();
+    u1.identity();
+
+    v.identity();
+    v1.identity();
+
+    w.identity();
+    w1.identity();
+
+    if (variant == 0) {
+        u.randomInvertible(u1, generator);
+    }
+    else if (variant == 1) {
+        v.randomInvertible(v1, generator);
+    }
+    else if (variant == 2) {
+        w.randomInvertible(w1, generator);
+    }
+    else if (variant == 3) {
+        u.randomInvertible(u1, generator);
+        v.randomInvertible(v1, generator);
+    }
+    else if (variant == 4) {
+        u.randomInvertible(u1, generator);
+        w.randomInvertible(w1, generator);
+    }
+    else if (variant == 5) {
+        v.randomInvertible(v1, generator);
+        w.randomInvertible(w1, generator);
+    }
+    else {
+        u.randomInvertible(u1, generator);
+        v.randomInvertible(v1, generator);
+        w.randomInvertible(w1, generator);
+    }
 
     for (int index = 0; index < rank; index++) {
         BinaryMatrix mu(dimension[0], dimension[1]);

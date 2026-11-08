@@ -390,6 +390,9 @@ std::string FlipGraphPool<Scheme>::getHash(const Scheme &scheme) const {
     if (poolParameters.uniqueType == "type")
         return scheme.getTypeInvariant();
 
+    if (poolParameters.uniqueType == "min-type")
+        return scheme.getMinTypeInvariant();
+
     return scheme.getHash();
 }
 

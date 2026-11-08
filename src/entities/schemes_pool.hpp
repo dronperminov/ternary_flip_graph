@@ -198,5 +198,8 @@ std::string SchemesPool<Scheme>::getHash(const Scheme &scheme) const {
     if (uniqueType == "type")
         return scheme.getTypeInvariant();
 
+    if (uniqueType == "min-type")
+        return scheme.getMinTypeInvariant();
+
     return scheme.getHash();
 }
